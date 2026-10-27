@@ -3,8 +3,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    // Transparently proxies /api requests to backend URL (local or hosted backend)
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    // Transparently proxies /api requests to backend URL (Render in production, or BACKEND_URL env override)
+    const backendUrl = process.env.BACKEND_URL || 'https://azwari.onrender.com';
     return [
       {
         source: '/api/:path*',

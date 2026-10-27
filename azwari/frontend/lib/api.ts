@@ -18,10 +18,18 @@ import {
   PayoutResponse,
 } from '../types';
 
-const API_BASE = (
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
-  (typeof window !== 'undefined' ? '/api' : 'http://localhost:5000/api')
-).replace(/\/$/, '');
+const getApiBase = () => {
+  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  const backend = (typeof process !== 'undefined' && process.env?.BACKEND_URL) || 'https://azwari.onrender.com';
+  return `${backend.replace(/\/$/, '')}/api`;
+};
+
+const API_BASE = getApiBase().replace(/\/$/, '');
 
 export interface ApiResponse<T = any> {
   success: boolean;

@@ -162,7 +162,6 @@ export interface AppContextType {
   }) => Promise<{ success: boolean; agent?: SalesPartnerProfile; error?: string }>;
 
   // Auth & RBAC
-  currentUser: AuthUser | null;
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
   permissionError: string | null;
