@@ -1,0 +1,1428 @@
+# MASTER BUILD PROMPT — ETHIOPIAN SALES AGENT MARKETPLACE
+
+## 1. Project Overview
+
+Act as a senior product architect, full-stack engineer, fintech systems designer, UI/UX designer, database architect, security engineer, and startup product strategist.
+
+Build a production-minded MVP for an **Ethiopian salesperson-assisted sales marketplace** that connects product owners and service providers with independent salespeople who earn commissions for generating successful sales.
+
+The platform is not a conventional ecommerce store. Its primary purpose is to provide businesses with a distributed sales force without hiring every salesperson as a permanent employee.
+
+Independent salespeople discover products, promote them through TikTok, Instagram, Telegram, WhatsApp, phone calls, personal networks, and face-to-face interactions, then create orders through the platform on behalf of interested customers.
+
+Customers should not be forced to register for an account or complete a traditional ecommerce checkout. They should receive order details and payment instructions through SMS and have a straightforward way to submit payment evidence and receive delivery updates.
+
+The platform coordinates the sales process, tracks attribution, verifies order progress, manages commission obligations, secures revenue through appropriate payment arrangements, and provides accountability for all participants.
+
+### Core business principle
+
+Build a platform that makes it easy for businesses to sell through independent people and makes it transparent and reliable for salespeople to earn from successful sales.
+
+The system must solve these problems:
+
+- Businesses need more customers without recruiting a large permanent sales team.
+- Salespeople need products to sell without purchasing inventory or investing their own money in stock.
+- Buyers need a simple way to order products with assistance from a real person.
+- Suppliers need order management, payment verification, and delivery coordination.
+- Salespeople need trustworthy commission tracking and reliable settlement.
+- The platform needs a sustainable revenue model that does not depend entirely on suppliers voluntarily paying invoices after every sale.
+- Administrators need tools to prevent fraud, resolve disputes, and maintain trust.
+
+Do not build a generic affiliate marketing clone. Build around the practical realities of Ethiopian business transactions, especially in Addis Ababa.
+
+---
+
+## 2. Target Market and Operating Assumptions
+
+### Initial geography
+
+Launch in Addis Ababa, Ethiopia, with an architecture that can later expand to other Ethiopian cities.
+
+### Currency
+
+Use Ethiopian birr (ETB) as the primary currency. Design currency fields so additional currencies can be supported later.
+
+### Customer behavior
+
+Assume that many buyers prefer interacting with a salesperson over browsing a website and checking out independently.
+
+Therefore:
+
+- Buyers can order without creating a platform account.
+- Salespeople can create orders on behalf of buyers, with their consent.
+- SMS is the primary order and payment notification channel.
+- Mobile-friendly web pages are used for receipt uploads, order confirmation, and optional tracking.
+- The supplier remains responsible for product availability and delivery.
+- Payment instructions clearly identify the verified supplier receiving the money.
+- The platform must not require every customer to install an application.
+
+### Internet and device constraints
+
+Design for inconsistent connectivity and mobile-first use.
+
+- Optimize dashboards for low-bandwidth connections.
+- Support responsive mobile browsers.
+- Preserve order form inputs when a connection temporarily fails.
+- Prevent accidental duplicate order creation after retries.
+- Make essential workflows usable on lower-end Android devices.
+- Use lightweight pages for customers accessing links through SMS.
+- Do not require a native mobile application for the MVP.
+
+### Business assumptions to validate
+
+Do not treat any of these as proven:
+
+- Suppliers will accept commission agreements.
+- Salespeople can consistently generate profitable sales.
+- Customers will pay through the proposed payment workflow.
+- SMS delivery will be reliable across all providers.
+- A particular Ethiopian payment provider supports marketplace split settlement.
+- Suppliers will pay commission reserves or platform subscriptions.
+- Customers will accept the proposed delivery and return conditions.
+
+Build a testable MVP that helps validate these assumptions before investing in complex integrations.
+
+---
+
+## 3. User Roles
+
+Implement role-based access control with four primary user types.
+
+### A. Product Owner / Supplier
+
+The supplier owns the products, inventory, pricing, and fulfillment responsibility.
+
+Capabilities:
+
+- Register a business.
+- Complete business verification.
+- Add and manage products.
+- Set prices, stock quantities, product variants, and minimum order quantities.
+- Upload product photos and descriptions.
+- Define delivery areas, fees, schedules, and restrictions.
+- Define commission terms for salespeople.
+- Approve or reject salesperson enrollment where necessary.
+- Configure verified bank or wallet payment details.
+- View orders generated by salespeople.
+- Confirm product availability.
+- Review submitted payment evidence.
+- Verify actual payment using bank or wallet records.
+- Accept or reject a requested delivery time.
+- Schedule delivery and update fulfillment status.
+- Handle cancellations, returns, refunds, and customer complaints.
+- View completed sales, commissions owed, platform fees, and settlement records.
+- Review invoices and outstanding obligations.
+- Submit evidence for commission payments.
+- Manage employees with restricted permissions where supported.
+
+Suppliers must not be allowed to alter completed order prices, rewrite historical commission terms, delete financial records, or mark a commission as paid without creating an auditable settlement record.
+
+### B. Salesperson / Sales Partner
+
+The salesperson finds customers and earns commissions for qualifying sales.
+
+Capabilities:
+
+- Register and create a profile.
+- Complete identity or phone verification appropriate to the business's risk level.
+- Browse available products and offers.
+- View product prices, availability, commission rates, delivery terms, and sales restrictions.
+- Enroll in an offer and accept its commission terms.
+- Generate referral codes and optional referral links.
+- Create customer orders manually on behalf of consenting buyers.
+- Enter buyer details, quantity, address, delivery preference, and instructions.
+- View order progress.
+- Receive updates when payment is verified or delivery is scheduled.
+- Track pending, eligible, disputed, and paid commissions.
+- View the exact calculation for each commission.
+- Register a payout destination.
+- Request settlement where the chosen payout model requires it.
+- View payout references and settlement history.
+- Raise a dispute when a supplier rejects a legitimate sale or fails to settle an obligation.
+- View sales performance and completed-order analytics.
+
+Salespeople must never be allowed to verify their own payment evidence, alter supplier prices, approve their own payouts, or change commission terms after an order is created.
+
+### C. Buyer / Customer
+
+A buyer does not need a full platform account.
+
+Capabilities:
+
+- Receive an SMS containing an order reference.
+- See the product, quantity, total amount, supplier name, payment instructions, and delivery details.
+- Confirm that an order was created with their consent.
+- Access a secure order page using an expiring, high-entropy access token.
+- Upload payment evidence.
+- Receive payment verification updates.
+- Receive delivery schedule updates.
+- Confirm receipt of the product.
+- Request cancellation, report a problem, or initiate a return according to the published policy.
+- Contact the supplier or platform support.
+
+Do not expose full bank account information, internal user IDs, other customers' details, or private receipts to unauthorized parties.
+
+### D. Platform Administrator
+
+Capabilities:
+
+- Review and verify suppliers.
+- Review salesperson accounts.
+- Suspend fraudulent or noncompliant users.
+- Review disputed orders and payments.
+- Inspect audit logs.
+- Manage platform pricing and subscription plans.
+- Configure commission-related policies.
+- Review financial obligations and settlement reconciliation.
+- Investigate duplicate or suspicious orders.
+- Manage product and offer moderation.
+- Review SMS failures and retry queues.
+- Manage customer complaints.
+- Resolve commission disputes with documented reasons.
+- Review payout evidence.
+- Generate operational and financial reports.
+
+Use a dedicated admin role with stronger authentication and granular permissions.
+
+---
+
+## 4. Product and Offer Management
+
+Create a product catalog where approved suppliers publish products or services that salespeople can promote.
+
+Each product should support:
+
+- Product name.
+- Unique identifier.
+- Supplier.
+- Description.
+- Category and subcategory.
+- Images.
+- Product price.
+- Optional sale price.
+- Stock quantity or availability mode.
+- Variants such as size, color, or model.
+- Minimum and maximum quantities.
+- Delivery areas.
+- Delivery fee rules.
+- Estimated fulfillment time.
+- Return and cancellation conditions.
+- Product status.
+- Supplier verification status.
+- Commission options.
+- Offer start and end dates.
+- Sales restrictions.
+- Created and updated timestamps.
+
+Support both physical products and services, but distinguish their fulfillment workflows.
+
+For physical products, track stock and delivery.
+
+For services, support booking, appointment confirmation, service completion, and cancellation.
+
+For digital products, support activation or delivery confirmation.
+
+### Commission configuration
+
+Allow suppliers to configure:
+
+1. Fixed commission per qualifying unit.
+2. Percentage commission on an explicitly defined basis.
+3. Fixed commission per completed order.
+4. Tiered commission rates as a future feature.
+
+The commission basis must be explicit. For example, a percentage may apply to product subtotal but exclude delivery fees, taxes, discounts, or refunded items.
+
+Store a versioned commission agreement that contains:
+
+- Commission type.
+- Commission amount or rate.
+- Calculation basis.
+- Eligibility conditions.
+- Return and cancellation rules.
+- Settlement deadline.
+- Effective dates.
+- Terms version.
+- Supplier acceptance.
+- Salesperson acceptance.
+
+When an order is created, snapshot the applicable terms. Later changes must not alter existing orders.
+
+---
+
+## 5. Salesperson Order Creation
+
+This is the core workflow of the platform.
+
+The salesperson meets or communicates with a buyer through social media, messaging, telephone, or in person. When the buyer agrees to purchase, the salesperson creates an order inside the platform.
+
+### Order form fields
+
+- Product.
+- Product variant.
+- Quantity.
+- Buyer name.
+- Buyer phone number.
+- Delivery address.
+- Delivery area.
+- Preferred delivery date.
+- Preferred delivery time.
+- Delivery instructions.
+- Payment method or supplier payment account.
+- Optional salesperson notes.
+
+Validate phone numbers using an appropriate Ethiopian numbering strategy while preserving the original input and normalized representation.
+
+Before submitting, display:
+
+- Product and supplier.
+- Unit price.
+- Quantity.
+- Subtotal.
+- Delivery fee.
+- Discounts.
+- Total due.
+- Preferred delivery schedule.
+- Payment recipient.
+- Applicable cancellation and return terms.
+- Expected salesperson commission, clearly labeled as estimated until eligible.
+
+The buyer's consent must be obtained before their personal details are entered. Record the consent method and timestamp.
+
+### Server-side order creation
+
+The backend must:
+
+1. Authenticate the salesperson.
+2. Verify their account is active.
+3. Verify enrollment in the product's commission terms.
+4. Verify the supplier and product are active.
+5. Load the current price and commission agreement from the database.
+6. Validate stock and delivery eligibility.
+7. Validate quantity and delivery date.
+8. Calculate all monetary amounts server-side.
+9. Snapshot prices and commission terms.
+10. Create a unique order number.
+11. Create an order event and audit record.
+12. Generate payment instructions only after verifying the supplier's payment account and commercial eligibility.
+13. Queue the appropriate SMS.
+14. Return the order number and current state.
+
+Use an idempotency key to prevent duplicate orders when the salesperson retries a request because of poor connectivity.
+
+---
+
+## 6. Order Lifecycle
+
+Use a state machine with validated transitions.
+
+Recommended order states:
+
+- `draft`
+- `awaiting_payment`
+- `payment_review`
+- `payment_verified`
+- `confirmed`
+- `preparing`
+- `scheduled`
+- `ready_for_delivery`
+- `out_for_delivery`
+- `delivered`
+- `completed`
+- `cancelled`
+- `payment_expired`
+- `disputed`
+- `returned`
+- `refunded`
+
+Not every state needs to be used in every order type. Define valid transitions in the backend and reject invalid transitions.
+
+For example, a supplier must not mark an order delivered if the payment is still under review, unless an explicitly configured and audited exception permits delivery before payment.
+
+Keep payment, fulfillment, and commission states separate from the overall order state.
+
+Every transition should record:
+
+- Previous state.
+- New state.
+- Actor.
+- Timestamp.
+- Reason.
+- Related evidence.
+- Optional notes.
+
+Never rely on a frontend dropdown alone to enforce business rules.
+
+---
+
+## 7. Customer Payment and Verification
+
+The initial operating model is supplier-direct payment.
+
+The customer pays the supplier's verified bank or wallet account. The platform records the payment workflow but does not assume it has received the funds.
+
+### Payment instructions
+
+After order creation, generate an order-specific payment attempt containing:
+
+- Order reference.
+- Amount due.
+- Supplier account.
+- Account holder name.
+- Bank or wallet provider.
+- Payment reference where supported.
+- Expiration timestamp.
+- Payment status.
+- Creation timestamp.
+
+The customer receives the payment instructions by SMS.
+
+Use a 15-minute payment window as the initial configurable default. The server creates the expiry timestamp; the browser only displays the countdown.
+
+Do not automatically cancel an order merely because the timer reaches zero. Expire the payment attempt, notify the buyer, and allow an extension or replacement attempt under the applicable stock and order rules.
+
+If the SMS provider supports delivery receipts, record them. Otherwise, distinguish between submission to the SMS gateway and confirmed delivery to the handset.
+
+### Receipt submission
+
+Provide a mobile-friendly upload page protected by a short-lived order access token.
+
+The customer or an authorized salesperson may submit:
+
+- Receipt screenshot.
+- Transaction reference, if available.
+- Amount shown.
+- Transfer date and time.
+- Optional explanatory notes.
+
+Validate file types and sizes. Store receipts in private object storage. Use signed URLs with short expiration periods for authorized access.
+
+Do not treat a screenshot as definitive proof of payment.
+
+### Payment verification
+
+The supplier must compare the evidence with their actual bank or wallet transaction record.
+
+The supplier can:
+
+- Verify the payment.
+- Reject the evidence with a reason.
+- Request clarification.
+- Flag a discrepancy.
+
+Store the verifier, timestamp, amount, reference, and evidence used.
+
+Prevent duplicate verification and ensure repeated clicks cannot create duplicate commission entries.
+
+If a compatible provider later offers authorized payment verification APIs, add them as a separate integration.
+
+---
+
+## 8. Commission and Platform Revenue Model
+
+This is one of the most important parts of the application.
+
+The system must distinguish three things:
+
+1. Commission earned by the salesperson.
+2. Platform revenue owed to the business.
+3. Actual funds received and paid out.
+
+A database balance is not a substitute for real money.
+
+### Revenue sources
+
+Design the application to support two configurable sources of platform revenue:
+
+**A. Supplier subscription**
+
+Suppliers pay in advance for access to the platform, product listings, sales tools, or a defined number of active offers.
+
+Support configurable monthly and annual plans, billing status, invoices, subscription expiration, and renewal reminders.
+
+Do not automatically renew a subscription without the appropriate billing authorization.
+
+**B. Platform fee per completed sale**
+
+Optionally charge a disclosed platform fee on qualifying sales.
+
+The fee must have a clearly defined basis and must be accepted in the supplier agreement.
+
+Possible calculation bases include product subtotal, completed order value excluding delivery, or a fixed amount per qualifying sale.
+
+Support a subscription-only model, a per-sale fee model, or a combination.
+
+### Salesperson commission
+
+The platform calculates the salesperson's commission from the order's immutable commission snapshot.
+
+Use the following states:
+
+- `estimated`
+- `pending`
+- `eligible`
+- `reserved_for_payout`
+- `paid`
+- `disputed`
+- `reversed`
+
+A commission becomes eligible only after the configured sale conditions are satisfied, including payment verification, fulfillment confirmation, and applicable cancellation or return conditions.
+
+### Platform fee accounting
+
+Track the platform fee separately from salesperson commission.
+
+Possible states:
+
+- `estimated`
+- `accrued`
+- `secured`
+- `paid`
+- `overdue`
+- `disputed`
+- `reversed`
+
+Only mark a fee as secured when there is real, verifiable financial backing or a confirmed payment—not merely because the application has calculated it.
+
+### Preventing unpaid commissions
+
+Do not depend exclusively on a supplier's promise to pay later.
+
+Implement a payment model abstraction that supports the following strategies:
+
+**Strategy 1: Approved payment-provider settlement**
+
+If a payment provider confirms that it supports the required marketplace structure, the platform may request the appropriate distribution of funds to the supplier, salesperson, and platform.
+
+Before enabling this strategy, verify provider capabilities, recipient onboarding, settlement timing, fees, refunds, dispute handling, and legal requirements.
+
+Do not assume any particular Ethiopian provider supports automatic split settlement.
+
+**Strategy 2: Properly structured prepaid commission reserve**
+
+Where a compliant arrangement is available, suppliers fund a commission reserve in advance. The system tracks verified available funds, pending obligations, and deductions for eligible commissions.
+
+The application must not represent an internal database balance as money held for suppliers. A reserve must be supported by real funds held under an approved, appropriately safeguarded arrangement.
+
+**Strategy 3: Supplier-direct settlement pilot**
+
+If the first two strategies are unavailable, run a limited pilot with vetted suppliers, explicit settlement agreements, documented payment deadlines, outstanding-balance monitoring, and consequences for repeated nonpayment.
+
+Clearly label this as supplier-dependent settlement. Do not claim commissions are guaranteed.
+
+### Settlement engine
+
+Create a settlement module that:
+
+- Calculates obligations.
+- Checks available and reserved funds where applicable.
+- Prevents double allocation.
+- Groups eligible commissions by salesperson.
+- Groups platform fees by supplier.
+- Records settlement batches.
+- Records provider or bank references.
+- Handles partial settlement.
+- Handles failed transfers.
+- Supports reconciliation.
+- Supports reversals through compensating entries.
+- Provides dispute workflows.
+- Generates auditable settlement reports.
+
+Do not build a wallet that holds user funds or implement custody or escrow-like functionality without appropriate legal, regulatory, and payment-provider review.
+
+### Commission example
+
+For an illustrative product price of ETB 2,000:
+
+- Salesperson commission at 15% of product price: ETB 300.
+- Platform fee at 2% of product price: ETB 40.
+- Supplier remainder before delivery and other costs: ETB 1,660.
+
+These values are examples only. The actual percentages and calculation basis must be configurable and agreed by the parties.
+
+---
+
+## 9. Supplier Delivery Management
+
+The supplier is responsible for delivery in the initial MVP.
+
+Provide supplier controls for:
+
+- Confirming stock.
+- Accepting or rejecting a requested delivery time.
+- Setting a delivery fee.
+- Scheduling delivery.
+- Assigning an internal delivery person.
+- Recording the delivery status.
+- Contacting the buyer.
+- Recording failed delivery attempts.
+- Recording proof of delivery.
+- Handling returns and exchanges.
+
+Suggested delivery states:
+
+- `not_scheduled`
+- `scheduled`
+- `preparing`
+- `ready`
+- `out_for_delivery`
+- `delivered`
+- `failed_attempt`
+- `rescheduled`
+- `returned`
+
+The supplier should not be allowed to silently change the agreed delivery schedule. Schedule changes must create an order event and trigger an appropriate buyer notification.
+
+For the MVP, do not build a full courier marketplace or live GPS tracking. Use manual scheduling and delivery confirmation.
+
+Design a future extension point for independent courier integrations.
+
+---
+
+## 10. SMS Notification System
+
+SMS is the primary customer communication channel.
+
+Create a notification service that abstracts the SMS provider so the gateway can be changed without rewriting order logic.
+
+### Required message events
+
+1. Order created.
+2. Payment instructions issued.
+3. Payment window reminder, if appropriate.
+4. Payment window expired.
+5. Receipt received.
+6. Payment verified.
+7. Payment rejected.
+8. Supplier confirmed stock.
+9. Delivery scheduled.
+10. Delivery rescheduled.
+11. Order out for delivery.
+12. Delivery completed.
+13. Cancellation or return update.
+14. Dispute or support update.
+
+Include the order reference and support contact where appropriate.
+
+Do not include unnecessary personal or financial information in SMS.
+
+### Reliable delivery architecture
+
+Create a persistent SMS outbox.
+
+For each message, record:
+
+- Message ID.
+- Recipient.
+- Message template.
+- Related order.
+- Provider.
+- Provider reference.
+- Attempt count.
+- Submission timestamp.
+- Delivery status, when available.
+- Last error.
+- Next retry time.
+
+Queue messages in the same database transaction as the business event using a transactional outbox pattern. A worker sends them asynchronously.
+
+Implement bounded retries, exponential backoff, and a failed-message queue.
+
+A failed SMS must not erase an order or cause an unintended financial state transition.
+
+---
+
+## 11. Database Architecture
+
+Use PostgreSQL with migrations and foreign-key constraints.
+
+Use UUIDs as primary keys and `NUMERIC(14,2)` or an appropriate fixed-precision representation for monetary amounts.
+
+Never use floating-point arithmetic for financial calculations.
+
+### Required tables
+
+**Identity and business**
+
+- `users`
+- `businesses`
+- `supplier_payment_accounts`
+- `sales_partner_profiles`
+- `business_verification_records`
+
+**Catalog**
+
+- `products`
+- `product_variants`
+- `product_images`
+- `product_inventory_movements`
+- `commission_terms`
+- `partner_product_enrollments`
+
+**Orders**
+
+- `orders`
+- `order_items`
+- `order_events`
+- `order_consents`
+- `deliveries`
+- `delivery_evidence`
+
+**Payments**
+
+- `payment_attempts`
+- `payment_evidence`
+- `payment_verifications`
+- `payment_reconciliation_records`
+
+**Commissions and settlements**
+
+- `commission_ledger`
+- `platform_fee_ledger`
+- `commission_reserves`
+- `settlement_batches`
+- `settlement_items`
+- `payout_destinations`
+- `payout_records`
+- `supplier_invoices`
+- `supplier_subscriptions`
+
+**Communication and operations**
+
+- `sms_outbox`
+- `sms_delivery_events`
+- `notifications`
+- `support_tickets`
+- `disputes`
+- `audit_logs`
+- `idempotency_keys`
+- `background_jobs`
+
+Not every table needs a dedicated frontend in the first release, but the schema should preserve the separation of concerns.
+
+### Core order fields
+
+Include:
+
+- Order ID.
+- Human-readable unique order number.
+- Supplier ID.
+- Salesperson ID.
+- Buyer name and phone.
+- Order status.
+- Currency.
+- Subtotal.
+- Discount.
+- Delivery fee.
+- Total amount.
+- Agreed commission amount.
+- Commission terms snapshot.
+- Platform fee snapshot.
+- Delivery address.
+- Preferred delivery time.
+- Confirmed delivery time.
+- Payment status.
+- Created timestamp.
+- Updated timestamp.
+- Completion timestamp.
+
+Use order items rather than assuming every order will always contain exactly one product, even if the initial UI defaults to a single item.
+
+### Financial data integrity
+
+Use database transactions for order creation, stock reservation, commission accrual, settlement allocation, and reversals.
+
+Enforce:
+
+- Unique order numbers.
+- Foreign-key relationships.
+- Nonnegative quantity and monetary amounts where appropriate.
+- Unique provider transaction references where supported.
+- Idempotent payment verification.
+- Idempotent settlement processing.
+- Immutable historical order pricing.
+- Auditable commission reversals.
+- Concurrency-safe stock updates.
+- Consistent ledger entries.
+
+A correction must create an auditable adjustment rather than deleting financial history.
+
+---
+
+## 12. Backend Architecture
+
+Use a modular monolith built with Node.js, Express, and TypeScript.
+
+Organize modules around business domains rather than creating one large controller.
+
+Recommended structure:
+
+```text
+src/
+  app.ts
+  server.ts
+
+  config/
+    env.ts
+    database.ts
+    storage.ts
+
+  middleware/
+    authenticate.ts
+    authorize.ts
+    validate.ts
+    rateLimit.ts
+    errorHandler.ts
+    requestId.ts
+
+  modules/
+    auth/
+    users/
+    businesses/
+    products/
+    commissionTerms/
+    enrollments/
+    orders/
+    payments/
+    deliveries/
+    commissions/
+    settlements/
+    subscriptions/
+    sms/
+    disputes/
+    admin/
+    analytics/
+
+  integrations/
+    sms/
+    paymentProviders/
+    storage/
+
+  jobs/
+    processSmsOutbox.ts
+    expirePaymentAttempts.ts
+    reconcileSettlements.ts
+    checkOverdueObligations.ts
+
+  database/
+    migrations/
+    seeds/
+
+  shared/
+    money.ts
+    errors.ts
+    permissions.ts
+    logger.ts
+    idempotency.ts
+```
+
+Use controllers for HTTP concerns, services for business logic, and repositories or query modules for database access.
+
+Do not put business rules in React components or rely on frontend validation as a security boundary.
+
+### Validation
+
+Use Zod schemas for:
+
+- Request bodies.
+- Route parameters.
+- Query parameters.
+- Environment variables.
+- Provider webhook payloads.
+
+### Error handling
+
+Return a consistent error structure containing:
+
+- Machine-readable error code.
+- Human-readable message.
+- Optional field validation errors.
+- Request ID.
+
+Never return database stack traces, secrets, access tokens, or sensitive provider responses to clients.
+
+---
+
+## 13. REST API
+
+Use the `/api/v1` prefix.
+
+### Authentication and accounts
+
+- `GET /api/v1/me`
+- `PATCH /api/v1/me`
+- `GET /api/v1/me/permissions`
+- `POST /api/v1/businesses`
+- `GET /api/v1/businesses/me`
+- `POST /api/v1/businesses/me/verification`
+- `GET /api/v1/supplier/payment-accounts`
+- `POST /api/v1/supplier/payment-accounts`
+- `PATCH /api/v1/supplier/payment-accounts/:id`
+
+### Product catalog
+
+- `GET /api/v1/products`
+- `POST /api/v1/products`
+- `GET /api/v1/products/:id`
+- `PATCH /api/v1/products/:id`
+- `POST /api/v1/products/:id/activate`
+- `POST /api/v1/products/:id/deactivate`
+- `GET /api/v1/supplier/products`
+
+### Commission agreements
+
+- `POST /api/v1/products/:id/commission-terms`
+- `GET /api/v1/products/:id/commission-terms`
+- `POST /api/v1/products/:id/enroll`
+- `GET /api/v1/partner/enrollments`
+- `GET /api/v1/partner/commission-terms`
+
+### Orders
+
+- `POST /api/v1/orders`
+- `GET /api/v1/orders`
+- `GET /api/v1/orders/:id`
+- `POST /api/v1/orders/:id/confirm-stock`
+- `POST /api/v1/orders/:id/cancel`
+- `POST /api/v1/orders/:id/reschedule`
+- `GET /api/v1/orders/:id/events`
+
+### Payment workflow
+
+- `POST /api/v1/orders/:id/payment-attempts`
+- `GET /api/v1/orders/:id/payment-status`
+- `POST /api/v1/payment-attempts/:id/evidence`
+- `POST /api/v1/payment-attempts/:id/verify`
+- `POST /api/v1/payment-attempts/:id/reject`
+- `POST /api/v1/payment-attempts/:id/extend`
+
+### Buyer access
+
+- `GET /api/v1/public/orders/:token`
+- `POST /api/v1/public/orders/:token/confirm`
+- `POST /api/v1/public/orders/:token/payment-evidence`
+- `POST /api/v1/public/orders/:token/delivery-confirmation`
+- `POST /api/v1/public/orders/:token/support-request`
+
+Public endpoints must use short-lived, high-entropy tokens, rate limits, and narrowly scoped permissions.
+
+### Delivery
+
+- `POST /api/v1/orders/:id/schedule-delivery`
+- `POST /api/v1/orders/:id/mark-ready`
+- `POST /api/v1/orders/:id/mark-out-for-delivery`
+- `POST /api/v1/orders/:id/mark-delivered`
+- `POST /api/v1/orders/:id/record-failed-delivery`
+
+### Earnings and settlements
+
+- `GET /api/v1/partner/earnings`
+- `GET /api/v1/partner/commission-ledger`
+- `GET /api/v1/partner/payouts`
+- `POST /api/v1/partner/payouts`
+- `GET /api/v1/supplier/commission-obligations`
+- `GET /api/v1/supplier/platform-fees`
+- `GET /api/v1/supplier/settlements`
+- `POST /api/v1/supplier/settlements/reconcile`
+
+### Subscription and billing
+
+- `GET /api/v1/plans`
+- `POST /api/v1/supplier/subscriptions`
+- `GET /api/v1/supplier/invoices`
+- `GET /api/v1/supplier/invoices/:id`
+
+### Administration
+
+- `GET /api/v1/admin/suppliers`
+- `POST /api/v1/admin/suppliers/:id/verify`
+- `POST /api/v1/admin/suppliers/:id/suspend`
+- `GET /api/v1/admin/disputes`
+- `POST /api/v1/admin/disputes/:id/resolve`
+- `GET /api/v1/admin/settlements`
+- `GET /api/v1/admin/audit-logs`
+- `GET /api/v1/admin/reports`
+
+### Integrations
+
+- `POST /api/v1/webhooks/sms`
+- `POST /api/v1/webhooks/payments/:provider`
+
+Only implement provider-specific payment webhooks when an actual supported integration has been configured. Verify webhook signatures, reject replayed events, and make handlers idempotent.
+
+---
+
+## 14. Frontend and User Experience
+
+Use Next.js, TypeScript, Tailwind CSS, and an accessible component library such as shadcn/ui.
+
+Build a professional, trustworthy, modern interface suitable for Ethiopian small and medium businesses.
+
+Avoid a generic template aesthetic. Prioritize clear financial information, efficient order entry, visible statuses, and mobile usability.
+
+### Public marketing website
+
+Include:
+
+- Homepage explaining the business model.
+- How it works.
+- Benefits for suppliers.
+- Benefits for salespeople.
+- Commission and settlement explanation.
+- Supplier and salesperson onboarding.
+- Pricing.
+- FAQ.
+- Contact and support.
+- Terms of service.
+- Privacy policy.
+- Commission policy.
+- Cancellation and refund policy.
+- Supplier agreement.
+- Dispute policy.
+
+Do not claim that commission payments are guaranteed unless the underlying financial arrangement genuinely supports that claim.
+
+### Supplier dashboard
+
+Include:
+
+- Overview of orders and sales.
+- Products and inventory.
+- Commission terms.
+- Payment account management.
+- Orders awaiting payment verification.
+- Orders requiring stock confirmation.
+- Delivery scheduling.
+- Completed orders.
+- Commission obligations.
+- Platform fee invoices.
+- Subscription status.
+- Settlement history.
+- Disputes and support.
+- Reports.
+
+### Salesperson dashboard
+
+Include:
+
+- Available offers.
+- Search and category filters.
+- Product detail pages.
+- Commission rates.
+- Enrollment status.
+- Create-order flow.
+- Order history.
+- Customer communication status.
+- Earnings summary.
+- Commission ledger.
+- Eligible and disputed commissions.
+- Payout history.
+- Sales performance.
+- Support and dispute submission.
+
+### Admin dashboard
+
+Include:
+
+- User and supplier verification.
+- Product moderation.
+- Orders requiring attention.
+- Payment discrepancies.
+- SMS failures.
+- Commission obligations.
+- Settlement reconciliation.
+- Subscription billing.
+- Disputes.
+- Audit log.
+- Operational analytics.
+
+### Order creation UI
+
+Make the salesperson's workflow fast enough to use while speaking to a customer.
+
+Use a short, multi-step form:
+
+1. Select product.
+2. Enter quantity.
+3. Enter buyer details.
+4. Enter delivery address and preferred time.
+5. Review total and payment instructions.
+6. Confirm buyer consent.
+7. Create order and send SMS.
+
+Provide clear validation, a review screen, duplicate-submission protection, and a printable or shareable order summary.
+
+### Customer order page
+
+The customer page must be lightweight and mobile-friendly.
+
+Show:
+
+- Order number.
+- Supplier identity.
+- Product and quantity.
+- Total amount.
+- Payment account details.
+- Payment status.
+- Secure receipt upload.
+- Delivery schedule.
+- Support contact.
+- Cancellation or return instructions.
+
+Do not force buyers to create accounts or provide unnecessary personal data.
+
+---
+
+## 15. Authentication, Security and Privacy
+
+Implement:
+
+- Secure authentication.
+- Role-based authorization.
+- Object-level access control.
+- Server-side input validation.
+- Rate limiting.
+- Secure session handling.
+- CSRF protection where applicable.
+- Secure CORS configuration.
+- Content security policy.
+- Upload validation.
+- Private file storage.
+- Signed URLs for sensitive files.
+- Password reset or supported identity recovery.
+- Audit logging.
+- Secrets management.
+- Database least-privilege access.
+- Production error monitoring.
+- Backup and recovery procedures.
+
+Never trust a client-supplied user ID, supplier ID, commission amount, payment state, or role.
+
+Ensure suppliers can access only their own business records, salespeople can access only authorized orders and earnings, and buyers can access only the specific order granted by their secure token.
+
+Encrypt sensitive account information at rest where appropriate. Mask bank account details in the UI. Never store online banking credentials, bank passwords, or payment PINs.
+
+Minimize collection of identity documents and other sensitive information. Establish retention periods for buyer information, receipts, and verification records.
+
+Have local legal and payment specialists review the proposed operating model, privacy obligations, business contracts, and any payment or stored-value functionality before launch.
+
+---
+
+## 16. Fraud Prevention and Disputes
+
+Implement practical safeguards from the beginning.
+
+### Order fraud
+
+- Require buyer consent.
+- Detect repeated orders for the same buyer and product.
+- Prevent duplicate submission.
+- Record salesperson attribution.
+- Flag suspicious order frequency.
+- Verify supplier stock before fulfillment.
+- Track failed deliveries and repeated cancellations.
+
+### Payment fraud
+
+- Do not treat screenshots as definitive payment.
+- Compare evidence with actual account transactions.
+- Detect duplicate transaction references.
+- Prevent reuse of evidence across unrelated orders.
+- Record the verifier and verification timestamp.
+- Provide a dispute path for rejected transfers.
+
+### Commission fraud
+
+- Freeze the applicable commission terms at order creation.
+- Prevent salespeople from changing order attribution after payment verification.
+- Detect self-referrals where prohibited by policy.
+- Use an auditable commission ledger.
+- Require authorization for adjustments.
+- Use compensating entries for reversals.
+- Prevent duplicate payout batches.
+- Reconcile reported supplier payments with evidence.
+
+### Supplier nonpayment
+
+- Track overdue commission obligations.
+- Notify suppliers of approaching deadlines.
+- Flag repeated late settlements.
+- Restrict new sales offers where policy permits.
+- Allow salespeople to raise disputes.
+- Preserve all evidence and order histories.
+- Avoid labeling unsecured commissions as guaranteed.
+
+### Dispute workflow
+
+Support disputes concerning:
+
+- Payment evidence.
+- Missing or delayed delivery.
+- Incorrect product.
+- Customer cancellation.
+- Returns or refunds.
+- Commission attribution.
+- Commission calculation.
+- Supplier nonpayment.
+- Platform fee calculation.
+
+Each dispute should have a status, assigned reviewer, evidence, communication history, decision, and audit record.
+
+---
+
+## 17. Analytics and Reporting
+
+Provide operational analytics for each role.
+
+### Supplier analytics
+
+- Orders created.
+- Orders paid.
+- Orders delivered.
+- Conversion rate.
+- Sales revenue.
+- Average order value.
+- Sales by salesperson.
+- Product performance.
+- Failed delivery rate.
+- Refund and cancellation rate.
+- Commission obligations.
+- Platform fees.
+- Settlement delays.
+
+### Salesperson analytics
+
+- Orders created.
+- Orders completed.
+- Conversion rate.
+- Total attributed revenue.
+- Pending commissions.
+- Eligible commissions.
+- Paid commissions.
+- Average commission per completed order.
+- Best-performing products.
+- Failed and cancelled orders.
+- Disputed commissions.
+
+### Platform analytics
+
+- Active suppliers.
+- Active salespeople.
+- Active offers.
+- Orders per day and month.
+- Completed sales volume.
+- Revenue earned and actually collected.
+- Subscription revenue.
+- Platform fees accrued versus paid.
+- Commission obligations versus settled commissions.
+- Supplier settlement delays.
+- SMS submission and delivery rates.
+- Disputes and refund rates.
+- Supplier and salesperson retention.
+
+Clearly distinguish calculated revenue, invoiced revenue, collected revenue, outstanding obligations, and money actually held or settled.
+
+---
+
+## 18. Recommended Technical Implementation
+
+Use a modular monolith with clear domain boundaries.
+
+### Frontend
+
+- Next.js.
+- TypeScript.
+- Tailwind CSS.
+- shadcn/ui.
+- React Hook Form.
+- Zod.
+- TanStack Query where useful.
+
+### Backend
+
+- Node.js.
+- Express.
+- TypeScript.
+- Zod.
+- PostgreSQL.
+- A supported database client or query builder.
+- Structured logging.
+- Background workers.
+
+### Authentication and storage
+
+Use Supabase Auth and private Supabase Storage if they meet the requirements. PostgreSQL can be hosted through Supabase or another managed PostgreSQL provider.
+
+If using Supabase, configure row-level security for directly exposed data and ensure backend service credentials never reach the browser.
+
+### Background processing
+
+Start with PostgreSQL-backed jobs and a dedicated worker process.
+
+Use jobs for:
+
+- Payment-attempt expiry.
+- SMS dispatch and retries.
+- Overdue commission reminders.
+- Subscription reminders.
+- Settlement reconciliation.
+- Scheduled reporting.
+
+Make every job idempotent. If a job runs twice, it must not create duplicate messages, commissions, or payments.
+
+### Testing
+
+Use unit tests, integration tests, and end-to-end tests.
+
+At minimum, test:
+
+- Supplier authorization.
+- Salesperson authorization.
+- Order creation.
+- Price and commission snapshots.
+- Concurrent stock reservation.
+- Payment attempt expiry.
+- Receipt upload access control.
+- Payment verification.
+- Duplicate transaction detection.
+- Delivery state transitions.
+- Commission eligibility.
+- Commission reversals.
+- Payout reconciliation.
+- SMS retry behavior.
+- Duplicate API requests.
+- Supplier subscription expiry.
+- Failed settlement.
+- Database rollback after errors.
+
+Use a staging environment with test data before production deployment.
+
+---
+
+## 19. MVP Scope and Development Phases
+
+Do not attempt to implement every future feature at once.
+
+### Phase 1 — Functional MVP
+
+Build:
+
+- Authentication and role management.
+- Supplier onboarding and verification.
+- Product management.
+- Commission term creation and acceptance.
+- Salesperson offer browsing.
+- Manual order creation.
+- Unique order numbers.
+- Order and payment state management.
+- Supplier payment instructions.
+- SMS integration with a suitable gateway.
+- Private receipt uploads.
+- Manual payment verification.
+- Supplier-managed delivery scheduling.
+- Delivery confirmation.
+- Commission calculation.
+- Commission ledger.
+- Platform fee accounting.
+- Manual settlement reconciliation.
+- Basic subscriptions or prepaid supplier access.
+- Admin dashboard.
+- Audit logs.
+- Dispute workflow.
+
+### Phase 2 — Operational improvements
+
+Add:
+
+- Better payment reconciliation.
+- More reliable SMS delivery tracking.
+- Supplier settlement reminders.
+- Payout batching.
+- Subscription billing improvements.
+- Improved fraud detection.
+- Buyer self-service pages.
+- Return and refund workflows.
+- More comprehensive analytics.
+
+### Phase 3 — Integrations and scale
+
+Only after validating the MVP, consider:
+
+- Supported automated payment-provider integrations.
+- Approved split settlements.
+- Compliant commission-reserve arrangements.
+- Courier integrations.
+- Automated supplier accounting.
+- WhatsApp notifications where authorized.
+- Referral attribution links.
+- Sales teams and managers.
+- Recurring commissions for eligible products.
+- Additional Ethiopian cities.
+- Native mobile apps.
+- Multi-currency support where commercially appropriate.
+
+---
+
+## 20. Required Development Deliverables
+
+Before implementation, produce:
+
+1. A concise product requirements document.
+2. An architecture diagram.
+3. A role and permission matrix.
+4. An entity-relationship diagram.
+5. PostgreSQL schema and migration files.
+6. An order state-transition specification.
+7. Payment, commission, and settlement state diagrams.
+8. REST API documentation.
+9. UI wireframes for the principal dashboards.
+10. A security and threat model.
+11. An implementation roadmap.
+12. A testing plan.
+13. A deployment and environment configuration guide.
+14. A list of unresolved business and regulatory assumptions.
+
+Then build the application incrementally.
+
+For each feature:
+
+- Explain the objective.
+- Implement the database migration.
+- Implement the backend service and API.
+- Add authorization and validation.
+- Build the frontend.
+- Add error and loading states.
+- Write tests.
+- Verify the complete workflow before moving on.
+
+Do not generate a large collection of disconnected mockup screens and call it a completed product. Each major interface must connect to functional backend logic.
+
+Use seed data for development, but never use fake payment verification or fake financial balances in production.
+
+If a payment provider, SMS provider, or other external integration is not configured, use a clearly labeled development adapter and document the integration boundary. Do not claim that money has moved when only a simulated event has occurred.
+
+---
+
+## 21. Final Product Standard
+
+The completed MVP must allow the following end-to-end scenario to work:
+
+1. A supplier registers, verifies their business, lists a product, defines commission terms, and configures an approved payment account.
+2. A salesperson registers, accepts those terms, finds a buyer, and creates an order with the buyer's consent.
+3. The platform calculates the order total and expected commission from server-side data.
+4. The buyer receives payment instructions by SMS.
+5. The buyer submits payment evidence through a secure mobile page.
+6. The supplier verifies the actual transaction and confirms product availability.
+7. The supplier schedules and completes delivery.
+8. The platform evaluates commission eligibility using the agreed policy.
+9. The platform records the salesperson's commission and any applicable platform fee.
+10. The configured settlement mechanism records how those obligations are funded and paid.
+11. The salesperson can see the commission's true state without confusing a pending obligation with secured money or a completed payout.
+12. The supplier can see their sales, fees, and settlement responsibilities.
+13. Administrators can audit every important state change and resolve disputes.
+
+The business model must remain transparent: **the supplier owns and fulfills the product, the salesperson generates the sale, and the platform provides the infrastructure and earns its agreed revenue.**
+
+Prioritize trust, reliable order handling, clear financial records, and a simple user experience over unnecessary technical complexity.
+
+Start by reviewing the business rules and identifying any unresolved payment, settlement, or legal dependencies. Then produce the architecture and schema, and proceed to implementation in small, testable increments.

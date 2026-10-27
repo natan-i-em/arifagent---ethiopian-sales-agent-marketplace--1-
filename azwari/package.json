@@ -1,0 +1,24 @@
+{
+  "name": "azwari",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n \"backend,frontend\" -c \"blue,cyan\" \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "test:wallet": "npm run test:wallet -w backend",
+    "reconcile": "npm run reconcile -w backend",
+    "prisma:generate": "npm run prisma:generate -w backend",
+    "prisma:migrate": "npm run prisma:migrate -w backend",
+    "tunnel:ngrok": "npx ngrok http 5000",
+    "tunnel:lt": "npx localtunnel --port 5000"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

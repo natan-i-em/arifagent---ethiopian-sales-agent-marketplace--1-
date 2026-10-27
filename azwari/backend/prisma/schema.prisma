@@ -1,0 +1,497 @@
+// Prisma schema for Azwari Multi-Party Commerce & Escrow Platform
+// Configured for Supabase PostgreSQL with connection pooling and direct migrations
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentProvider {
+  TELEBIRR
+  CBE
+  AWASH_BANK
+  BANK_OF_ABYSSINIA
+  DASHEN_BANK
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_SUBMITTED
+  CONFIRMED
+  SCHEDULED
+  DISPATCHED
+  DELIVERED
+  DISPUTED
+  CANCELLED
+}
+
+enum CommissionStatus {
+  PENDING_ESCROW
+  ELIGIBLE
+  PAID
+  FORFEITED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  authUserId  String?  @unique // Links to Supabase auth.users.id
+  email       String   @unique
+  fullName    String?
+  phone       String?
+  role        String   @default("salesperson") // "salesperson" | "supplier" | "admin"
+  subcity     String?
+  avatarUrl   String?
+  wallets     Wallet[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Business {
+  id                        String                   @id @default(uuid())
+  authUserId                String?                  @unique
+  name                      String
+  tradeName                 String
+  tinNumber                 String                   @unique
+  licenseNumber             String                   @unique
+  verificationStatus        VerificationStatus       @default(PENDING)
+  verificationDocumentUrl   String?
+  city                      String                   @default("Addis Ababa")
+  subcity                   String
+  specificLocation          String
+  phone                     String
+  contactEmail              String
+  commissionReserveBalance  Decimal                  @default(0.0) @db.Decimal(12, 2)
+  subscriptionPlan          String                   @default("business_growth")
+  subscriptionStatus        String                   @default("active")
+  paymentAccounts           SupplierPaymentAccount[]
+  products                  Product[]
+  orders                    Order[]
+  platformFeeLedgers        PlatformFeeLedger[]
+  wallet                    Wallet?
+  deposits                  Deposit[]
+  auditLogs                 AuditLog[]
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+
+  @@index([tinNumber])
+  @@index([subcity])
+}
+
+model SupplierPaymentAccount {
+  id                String          @id @default(uuid())
+  businessId        String
+  business          Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider          PaymentProvider
+  accountNumber     String
+  accountHolderName String
+  isPrimary         Boolean         @default(false)
+  verified          Boolean         @default(true)
+  instructions      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([businessId, accountNumber])
+}
+
+model SalesPartner {
+  id                    String             @id @default(uuid())
+  authUserId            String?            @unique
+  email                 String?
+  fullName              String
+  phone                 String             @unique
+  telegramUsername      String?
+  idNumber              String?
+  verificationStatus    VerificationStatus @default(VERIFIED)
+  city                  String             @default("Addis Ababa")
+  subcity               String
+  payoutProvider        PaymentProvider    @default(TELEBIRR)
+  payoutAccountNumber   String
+  payoutAccountName     String
+  referralCode          String             @unique
+  totalAttributedSales  Decimal            @default(0.0) @db.Decimal(12, 2)
+  pendingCommissions    Decimal            @default(0.0) @db.Decimal(12, 2)
+  eligibleCommissions   Decimal            @default(0.0) @db.Decimal(12, 2)
+  paidCommissions       Decimal            @default(0.0) @db.Decimal(12, 2)
+  orders                Order[]
+  commissionEscrows     CommissionEscrow[]
+  payoutBatches         SettlementBatch[]
+  wallet                Wallet?
+  payouts               Payout[]
+  enrolledProductIds    String[]           @default([])
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([referralCode])
+  @@index([phone])
+}
+
+model Product {
+  id                        String            @id @default(uuid())
+  businessId                String
+  business                  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name                      String
+  sku                       String            @unique
+  category                  String
+  description               String
+  unitPrice                 Decimal           @db.Decimal(10, 2)
+  suggestedRetailPrice      Decimal?          @db.Decimal(10, 2)
+  costPrice                 Decimal           @db.Decimal(10, 2)
+  stock                     Int               @default(0)
+  minimumOrderQty           Int               @default(1)
+  deliveryAreas             String[]          // Addis Ababa subcities
+  standardDeliveryFee       Decimal           @default(120.0) @db.Decimal(10, 2)
+  estimatedFulfillmentHours Int               @default(24)
+  fulfillmentType           String            @default("physical")
+  isActive                  Boolean           @default(true)
+  imageUrl                  String?
+  images                    String[]          @default([])
+  variants                  ProductVariant[]
+  orderItems                OrderItem[]
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+
+  @@index([businessId])
+  @@index([category])
+}
+
+model ProductVariant {
+  id              String      @id @default(uuid())
+  productId       String
+  product         Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name            String
+  sku             String      @unique
+  additionalPrice Decimal     @default(0.0) @db.Decimal(10, 2)
+  stock           Int         @default(0)
+  orderItems      OrderItem[]
+  createdAt       DateTime    @default(now())
+
+  @@index([productId])
+}
+
+model Order {
+  id                   String            @id @default(uuid())
+  orderNumber          String            @unique
+  publicAccessToken    String            @unique
+  businessId           String
+  business             Business          @relation(fields: [businessId], references: [id])
+  salesPartnerId       String
+  salesPartner         SalesPartner      @relation(fields: [salesPartnerId], references: [id])
+  buyerName            String
+  buyerPhone           String
+  deliverySubcity      String
+  specificAddress      String
+  preferredDate        String
+  preferredTimeSlot    String
+  specialInstructions  String?
+  subtotalAmount       Decimal           @db.Decimal(12, 2)
+  deliveryFee          Decimal           @db.Decimal(10, 2)
+  totalAmount          Decimal            @db.Decimal(12, 2)
+  commissionAmount     Decimal            @db.Decimal(10, 2)
+  platformFee          Decimal            @default(0.0) @db.Decimal(10, 2)
+  supplierNetPayout    Decimal            @default(0.0) @db.Decimal(12, 2)
+  status               OrderStatus        @default(PENDING_PAYMENT)
+  paymentExpiresAt     DateTime
+  assignedDriverName   String?
+  assignedDriverPhone  String?
+  scheduledAt          DateTime?
+  dispatchedAt         DateTime?
+  deliveredAt          DateTime?
+  deliveryNotes        String?
+  items                OrderItem[]
+  paymentReceipts      PaymentReceipt[]
+  commissionEscrow     CommissionEscrow?
+  platformFeeLedger    PlatformFeeLedger?
+  disputes             Dispute[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([orderNumber])
+  @@index([publicAccessToken])
+  @@index([businessId])
+  @@index([salesPartnerId])
+  @@index([status])
+}
+
+model OrderItem {
+  id               String          @id @default(uuid())
+  orderId          String
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product         @relation(fields: [productId], references: [id])
+  variantId        String?
+  variant          ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity         Int
+  unitPrice        Decimal         @db.Decimal(10, 2)
+  subtotal         Decimal         @db.Decimal(12, 2)
+  commissionAmount Decimal         @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model PaymentReceipt {
+  id                   String          @id @default(uuid())
+  orderId              String
+  order                Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider             PaymentProvider
+  transactionReference String
+  amountTransferred    Decimal         @db.Decimal(12, 2)
+  receiptImageUrl      String?
+  buyerNotes           String?
+  verifiedAt           DateTime?
+  verifiedBy           String?
+  rejectionReason      String?
+  createdAt            DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([transactionReference])
+}
+
+model CommissionEscrow {
+  id                     String           @id @default(uuid())
+  orderId                String           @unique
+  order                  Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  salesPartnerId         String
+  salesPartner           SalesPartner     @relation(fields: [salesPartnerId], references: [id])
+  amount                 Decimal          @db.Decimal(10, 2)
+  status                 CommissionStatus @default(PENDING_ESCROW)
+  eligibleAt             DateTime?
+  settledAt              DateTime?
+  settlementBatchId      String?
+  settlementBatch        SettlementBatch? @relation(fields: [settlementBatchId], references: [id])
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([salesPartnerId])
+  @@index([status])
+}
+
+model SettlementBatch {
+  id                   String             @id @default(uuid())
+  batchNumber          String             @unique
+  salesPartnerId       String
+  salesPartner         SalesPartner       @relation(fields: [salesPartnerId], references: [id])
+  totalAmount          Decimal            @db.Decimal(12, 2)
+  payoutMethod         String
+  destinationAccount   String
+  transactionReference String?
+  status               String             @default("settled")
+  settledAt            DateTime?
+  commissions          CommissionEscrow[]
+  createdAt            DateTime           @default(now())
+
+  @@index([salesPartnerId])
+}
+
+model Dispute {
+  id            String        @id @default(uuid())
+  disputeNumber String        @unique
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id])
+  raisedByRole  String
+  raisedByName  String
+  category      String
+  reason        String
+  status        DisputeStatus @default(OPEN)
+  resolution    String?
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  createdAt     DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model SmsLog {
+  id             String   @id @default(uuid())
+  recipientPhone String
+  templateName   String
+  orderNumber    String?
+  messageBody    String
+  provider       String   @default("Ethio Telecom SMS Gateway")
+  providerRef    String?
+  status         String   @default("delivered")
+  createdAt      DateTime @default(now())
+
+  @@index([recipientPhone])
+  @@index([orderNumber])
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  actorRole   String
+  actorName   String
+  action      String
+  entityType  String
+  entityId    String
+  description String
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  timestamp   DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+}
+
+model PlatformFeeLedger {
+  id               String          @id @default(uuid())
+  orderId          String          @unique
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderNumber      String
+  businessId       String
+  business         Business        @relation(fields: [businessId], references: [id])
+  amount           Decimal         @db.Decimal(10, 2)
+  rate             Decimal         @default(0.02) @db.Decimal(4, 3)
+  status           String          @default("accrued") // accrued | secured | reversed
+  createdAt        DateTime        @default(now())
+
+  @@index([businessId])
+}
+
+model WaitlistEntry {
+  id                String       @id @default(uuid())
+  fullName          String
+  phone             String
+  role              String       // sales_agent | supplier
+  subcity           String
+  telegramUsername  String?
+  categoryOrChannel String
+  estimatedScale    String
+  referralCode      String       @unique
+  referralCount     Int          @default(0)
+  waitlistNumber    Int          @default(autoincrement())
+  status            String       @default("waitlisted") // waitlisted | invited | onboarded
+  joinedAt          DateTime     @default(now())
+  invitedAt         DateTime?
+}
+
+model IdempotencyRecord {
+  id             String       @id @default(uuid())
+  key            String       @unique
+  endpoint       String
+  userId         String?
+  statusCode     Int
+  responseBody   Json
+  createdAt      DateTime     @default(now())
+}
+
+model Wallet {
+  id               String              @id @default(uuid())
+  ownerType        String              // "MERCHANT" | "SALESPERSON"
+  businessId       String?             @unique
+  business         Business?           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  salesPartnerId   String?             @unique
+  salesPartner     SalesPartner?       @relation(fields: [salesPartnerId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  availableBalance BigInt              @default(0) // In cents (1 ETB = 100 cents)
+  lockedBalance    BigInt              @default(0) // In cents
+  currency         String              @default("ETB")
+  transactions     WalletTransaction[]
+  deposits         Deposit[]
+  payouts          Payout[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([businessId])
+  @@index([salesPartnerId])
+  @@index([userId])
+}
+
+model WalletTransaction {
+  id                    String   @id @default(uuid())
+  walletId              String
+  wallet                Wallet   @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type                  String   // DEPOSIT | COMMISSION_LOCK | COMMISSION_UNLOCK | COMMISSION_SETTLE_DEBIT | COMMISSION_SETTLE_CREDIT | PAYOUT_HOLD | PAYOUT_SUCCESS | PAYOUT_REFUND | DISPUTE_HOLD | DISPUTE_RELEASE
+  amount                BigInt   // In cents (positive integer)
+  ref                   String   // tx_ref, orderId, payoutId, disputeId
+  status                String   @default("COMPLETED") // COMPLETED | PENDING | FAILED
+  balanceAfterAvailable BigInt
+  balanceAfterLocked    BigInt
+  metadata              Json?
+  createdAt             DateTime @default(now())
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([ref])
+}
+
+model Deposit {
+  id                 String    @id @default(uuid())
+  walletId           String
+  wallet             Wallet    @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  businessId         String
+  business           Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  amount             BigInt    // In cents
+  currency           String    @default("ETB")
+  txRef              String    @unique
+  chapaReference     String?
+  status             String    @default("PENDING") // PENDING | SUCCESS | FAILED
+  checkoutUrl        String?
+  rawWebhookPayload  Json?
+  verifiedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([txRef])
+  @@index([walletId, status])
+  @@index([businessId])
+}
+
+model Payout {
+  id                 String       @id @default(uuid())
+  walletId           String
+  wallet             Wallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  salesPartnerId     String
+  salesPartner       SalesPartner @relation(fields: [salesPartnerId], references: [id], onDelete: Restrict)
+  amount             BigInt       // In cents
+  currency           String       @default("ETB")
+  bankCode           String
+  bankName           String?
+  accountNumber      String
+  accountName        String
+  reference          String       @unique
+  chapaTransferId    String?
+  status             String       @default("PENDING") // PENDING | SUCCESS | FAILED
+  failureReason      String?
+  rawWebhookPayload  Json?
+  verifiedAt         DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([reference])
+  @@index([walletId, status])
+  @@index([salesPartnerId])
+}
+
+model CachedBank {
+  id        String   @id
+  code      String   @unique
+  name      String
+  acronym   String?
+  updatedAt DateTime @default(now()) @updatedAt
+}
+

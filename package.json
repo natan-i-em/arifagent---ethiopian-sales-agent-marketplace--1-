@@ -1,0 +1,14 @@
+{
+  "name": "azwari-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix azwari",
+    "dev:frontend": "npm run dev:frontend --prefix azwari",
+    "dev:backend": "npm run dev:backend --prefix azwari",
+    "build": "npm run build --prefix azwari",
+    "test:wallet": "npm run test:wallet --prefix azwari",
+    "reconcile": "npm run reconcile --prefix azwari",
+    "tunnel:ngrok": "npm run tunnel:ngrok --prefix azwari",
+    "tunnel:lt": "npm run tunnel:lt --prefix azwari"
+  }
+}
