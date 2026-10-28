@@ -1,6 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ClientLayout } from '@/components/layout/ClientLayout';
+import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: 'Azwari Ethiopia - Commission-Only Sales Marketplace & Escrow',
@@ -16,6 +25,22 @@ export const metadata: Metadata = {
     'Chapa',
     'Telebirr',
   ],
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Azwari',
+  },
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -32,9 +57,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-slate-50 text-slate-900 antialiased selection:bg-slate-900 selection:text-white">
+        <ServiceWorkerRegister />
         <ClientLayout>{children}</ClientLayout>
+        <InstallPrompt />
       </body>
     </html>
   );
