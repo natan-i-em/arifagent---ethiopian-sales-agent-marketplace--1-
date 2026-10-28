@@ -69,9 +69,8 @@ export const LandingView: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center space-y-6">
 
-
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
-              Multi-Party Commerce & Financial Escrow for Ethiopia
+              Azwari: Multi-Party Commerce & Financial Escrow for Ethiopia
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto text-balance font-normal">

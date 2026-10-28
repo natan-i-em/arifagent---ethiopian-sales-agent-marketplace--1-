@@ -93,16 +93,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
               >
                 Marketplace Discovery
               </Link>
-              <Link
-                href="/track"
-                className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-                  pathname.startsWith('/track')
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold border border-white/80'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
-                }`}
-              >
-                Track Order
-              </Link>
             </div>
           )}
 
