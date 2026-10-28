@@ -20,7 +20,6 @@ import {
   X,
   CreditCard,
   Send,
-  Menu,
   Package,
   ShoppingCart,
   WalletCards,
@@ -97,6 +96,7 @@ export const SupplierView: React.FC = () => {
       }
     };
     window.addEventListener('popstate', handleTabPop);
+    window.addEventListener('portal-tab-change', handleTabPop);
 
     // Initial check for deposit return parameter
     const params = new URLSearchParams(window.location.search);
@@ -104,7 +104,10 @@ export const SupplierView: React.FC = () => {
       setActiveTabState('wallet');
     }
 
-    return () => window.removeEventListener('popstate', handleTabPop);
+    return () => {
+      window.removeEventListener('popstate', handleTabPop);
+      window.removeEventListener('portal-tab-change', handleTabPop);
+    };
   }, []);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -274,15 +277,12 @@ export const SupplierView: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Mobile Header Bar with Hamburger Button */}
+      {/* Mobile Top Header Bar */}
       <div className="lg:hidden flex items-center justify-between mb-4 glass-card p-3 rounded-2xl border border-white/90">
-        <button
-          onClick={() => setMobileSidebarOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold"
-        >
-          <Menu className="w-4 h-4 text-amber-400" />
-          <span>Navigation Menu</span>
-        </button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-900 border border-blue-200/80 text-xs font-bold">
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span>Merchant Console</span>
+        </div>
 
         <div className="flex items-center gap-2 text-right">
           <span className="text-xs font-bold text-slate-900 truncate max-w-[150px]">

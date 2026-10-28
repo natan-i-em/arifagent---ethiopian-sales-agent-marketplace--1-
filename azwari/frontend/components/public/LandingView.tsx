@@ -6,15 +6,15 @@ import { useApp } from '../../context/AppContext';
 import { ProductImage } from '../common/ProductImage';
 import { ProductDetailsModal } from '../common/ProductDetailsModal';
 import { Product } from '../../types';
-import { 
-  ArrowRight, 
-  ShieldCheck, 
-  Smartphone, 
-  Building2, 
+import {
+  ArrowRight,
+  ShieldCheck,
+  Smartphone,
+  Building2,
   UserCheck,
   ChevronRight,
   Coins,
-  CheckCircle2, 
+  CheckCircle2,
   Layers,
   Lock,
   UserPlus,
@@ -22,14 +22,14 @@ import {
 } from 'lucide-react';
 
 export const LandingView: React.FC = () => {
-  const { 
+  const {
     currentUser,
     currentView,
     setCurrentView,
     setAuthRolePreference,
-    setActiveRole, 
-    products, 
-    setShowWaitlistModal, 
+    setActiveRole,
+    products,
+    setShowWaitlistModal,
     setWaitlistRolePreference,
     businesses,
     salesPartners,
@@ -43,7 +43,7 @@ export const LandingView: React.FC = () => {
 
   const calcProduct = products[calcProductIndex] || products[0];
   const unitPrice = calcProduct ? calcProduct.unitPrice : 3850;
-  
+
   let unitCommission = 0;
   if (calcProduct) {
     if (calcProduct.commissionTerms.type === 'fixed_per_unit') {
@@ -68,13 +68,7 @@ export const LandingView: React.FC = () => {
       <section className="pt-16 pb-20 border-b border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center space-y-6">
-            {/* Live Platform Badge - Light Specular Glass, Zero Gradient */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 glass-card rounded-full text-xs font-semibold text-slate-800 shadow-2xs border border-slate-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Azwari Production Network — Live in Addis Ababa</span>
-              <span className="text-slate-400">·</span>
-              <span className="font-mono-numbers text-slate-600">{businesses.length} Verified Suppliers</span>
-            </div>
+
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
               Multi-Party Commerce & Financial Escrow for Ethiopia
@@ -149,7 +143,7 @@ export const LandingView: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* 1: Sales Agent Hub */}
-          <div 
+          <div
             onClick={() => setActiveRole('salesperson')}
             className="glass-card-hover p-6 rounded-3xl cursor-pointer flex flex-col justify-between group space-y-4"
           >
@@ -172,7 +166,7 @@ export const LandingView: React.FC = () => {
           </div>
 
           {/* 2: Supplier Console */}
-          <div 
+          <div
             onClick={() => setActiveRole('supplier')}
             className="glass-card-hover p-6 rounded-3xl cursor-pointer flex flex-col justify-between group space-y-4"
           >
@@ -220,7 +214,7 @@ export const LandingView: React.FC = () => {
           </div>
 
           {/* 4: Admin Compliance Desk */}
-          <div 
+          <div
             onClick={() => setActiveRole('admin')}
             className="glass-card-hover p-6 rounded-3xl cursor-pointer flex flex-col justify-between group space-y-4"
           >
@@ -428,7 +422,7 @@ export const LandingView: React.FC = () => {
                   </span>
                 </div>
 
-                <h3 
+                <h3
                   onClick={() => setSelectedProductForModal(prod)}
                   className="text-base font-bold text-slate-900 cursor-pointer hover:text-slate-700 transition-colors"
                 >

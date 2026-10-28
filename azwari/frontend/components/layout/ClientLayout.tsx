@@ -23,7 +23,6 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     logout
   } = useApp();
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     // Automatically detect tokenized SMS checkout link
@@ -53,8 +52,8 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 selection:bg-slate-900 selection:text-white">
-      {/* Strict Role-Based Navbar with Mobile Drawer */}
-      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
+      {/* Strict Role-Based Navbar */}
+      <Navbar />
 
       {/* Permission Restriction Alert Banner */}
       {permissionError && (
@@ -89,7 +88,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </main>
 
       {/* Thumb-friendly mobile bottom navigation bar */}
-      <MobileBottomNav onOpenMobileMenu={() => setMobileMenuOpen(true)} />
+      <MobileBottomNav />
 
       {/* Interactive Account Registration / Onboarding Modal */}
       <WaitlistModal />

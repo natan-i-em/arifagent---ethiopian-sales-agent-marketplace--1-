@@ -24,7 +24,6 @@ import {
   Check,
   PackageCheck,
   Coins,
-  Menu,
   Lock,
   ArrowRight,
   Eye,
@@ -74,10 +73,15 @@ export const SalespersonView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SalespersonTab;
-      if (tabParam) setActiveTabState(tabParam);
+      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'ledger', 'payouts', 'disputes'];
+      if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
-    return () => window.removeEventListener('popstate', handleTabPop);
+    window.addEventListener('portal-tab-change', handleTabPop);
+    return () => {
+      window.removeEventListener('popstate', handleTabPop);
+      window.removeEventListener('portal-tab-change', handleTabPop);
+    };
   }, []);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -182,15 +186,12 @@ export const SalespersonView: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Mobile Top Header Bar with Hamburger Button */}
+      {/* Mobile Top Header Bar */}
       <div className="lg:hidden flex items-center justify-between mb-4 glass-card p-3 rounded-2xl border border-white/90">
-        <button
-          onClick={() => setMobileSidebarOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold"
-        >
-          <Menu className="w-4 h-4 text-amber-400" />
-          <span>Agent Menu</span>
-        </button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/80 text-xs font-bold">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Agent Portal</span>
+        </div>
 
         <div className="flex items-center gap-2 text-right">
           <span className="text-xs font-bold text-slate-900 truncate max-w-[150px]">

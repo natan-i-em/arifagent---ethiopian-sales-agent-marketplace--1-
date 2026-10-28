@@ -32,7 +32,6 @@ import {
   ExternalLink,
   ChevronRight,
   Layers,
-  Menu,
   Coins,
   Award,
   Sparkles,
@@ -97,10 +96,15 @@ export const AdminView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      if (tabParam) setActiveTabState(tabParam);
+      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
-    return () => window.removeEventListener('popstate', handleTabPop);
+    window.addEventListener('portal-tab-change', handleTabPop);
+    return () => {
+      window.removeEventListener('popstate', handleTabPop);
+      window.removeEventListener('portal-tab-change', handleTabPop);
+    };
   }, []);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -366,14 +370,10 @@ export const AdminView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mobile Operations Menu Toggle */}
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="lg:hidden flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 transition-colors border border-slate-700"
-          >
-            <Menu className="w-4 h-4 text-amber-400" />
-            <span>Governance Menu</span>
-          </button>
+          <div className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/80 text-purple-200 border border-purple-800 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+            <span>Escrow Control</span>
+          </div>
         </div>
       </div>
 
