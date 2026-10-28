@@ -18,7 +18,15 @@ import {
   X,
   LogIn,
   ArrowRight,
-  Coins
+  Coins,
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  AlertTriangle,
+  Plus,
+  Copy,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -35,6 +43,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     logout,
     salesPartners,
     businesses,
+    orders,
+    products,
+    commissionLedger,
     selectedSalespersonId,
     selectedSupplierId,
     setAuthRolePreference
@@ -42,13 +53,35 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const pathname = usePathname() || '/';
   const [internalMenuOpen, setInternalMenuOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const isMenuOpen = controlledOpen !== undefined ? controlledOpen : internalMenuOpen;
   const setIsMenuOpen = setControlledOpen || setInternalMenuOpen;
 
   // Active role-specific models
-  const currentAgent = salesPartners.find(sp => sp.id === (currentUser?.salespersonId || selectedSalespersonId)) || salesPartners[0];
+  const currentAgent = salesPartners.find(sp => sp.id === (currentUser?.salespersonId || selectedSalespersonId)) || salesPartners[0] || {
+    id: 'sp_default',
+    fullName: currentUser?.name || 'Independent Sales Agent',
+    phone: currentUser?.phone || '+251 91 123 4567',
+    telegramUsername: '@agent',
+    subcity: 'Bole',
+    referralCode: 'ARIF-AGENT',
+    pendingCommissions: 4200,
+    eligibleCommissions: 12500,
+  };
   const currentSupplier = businesses.find(b => b.id === (currentUser?.supplierId || selectedSupplierId)) || businesses[0];
+
+  const agentOrders = orders ? orders.filter(o => o.salespersonId === currentAgent.id) : [];
+  const activeOffersCount = products ? products.filter(p => p.status === 'active').length : 0;
+  const agentLedger = commissionLedger ? commissionLedger.filter(l => l.salespersonId === currentAgent.id) : [];
+
+  const handleCopyReferral = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(currentAgent.referralCode || 'ARIF-AGENT');
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
 
   const brandHref = !currentUser 
     ? '/' 
@@ -270,14 +303,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-xs">
-                  <Layers className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-xs">
+                  <UserCheck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
                   <span className="font-extrabold text-slate-900 text-base leading-none block">
-                    Azwari
+                    Sales Agent Menu
                   </span>
-                  <span className="text-[10px] text-slate-500 font-medium">Addis Ababa, Ethiopia</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Azwari Commerce & Escrow</span>
                 </div>
               </div>
 
@@ -290,136 +323,184 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* User Profile Card (If logged in) */}
-            {currentUser && (
-              <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs">
-                    {currentUser.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="font-bold text-slate-900 text-xs truncate block">
-                      {currentUser.name}
-                    </span>
-                    <span className="text-[11px] text-slate-500 truncate block">
-                      {currentUser.email || currentUser.phone}
-                    </span>
-                  </div>
+            {/* Agent Profile & Referral Code Card */}
+            <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+                  {currentAgent.fullName.charAt(0)}
                 </div>
-
-                {/* Role and Balance Badge */}
-                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                    {currentUser.role === 'salesperson' ? 'Sales Agent' : currentUser.role === 'supplier' ? 'Merchant' : 'Admin'}
-                  </span>
-
-                  {currentUser.role === 'salesperson' && (
-                    <span className="font-semibold text-emerald-700 text-[11px] flex items-center gap-1">
-                      <Coins className="w-3 h-3" />
-                      ETB {currentAgent.eligibleCommissions.toLocaleString()}
-                    </span>
-                  )}
-
-                  {currentUser.role === 'supplier' && (
-                    <span className="font-semibold text-blue-700 text-[11px] flex items-center gap-1">
-                      <Building2 className="w-3 h-3" />
-                      ETB {currentSupplier.commissionReserveBalance.toLocaleString()}
-                    </span>
-                  )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-slate-900 text-sm truncate">
+                    {currentAgent.fullName}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0" />
+                    {currentAgent.subcity || 'Bole'}, Addis Ababa
+                  </p>
                 </div>
               </div>
-            )}
 
-            {/* Main Navigation Links */}
-            <div className="mt-5 space-y-1 flex-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block mb-2">
-                Navigation
-              </span>
+              {/* Referral Code Chip */}
+              <div className="pt-2.5 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                <span className="text-slate-500 text-[11px]">Referral Code:</span>
+                <button
+                  onClick={handleCopyReferral}
+                  title="Click to copy your unique referral code"
+                  className="flex items-center gap-1.5 font-mono font-bold text-[11px] text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-300 shadow-2xs hover:bg-slate-100 transition-colors"
+                >
+                  {copiedCode ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{currentAgent.referralCode || 'ARIF-AGENT'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick CTA: Create Order */}
+            <div className="mt-3">
+              <Link
+                href="/portal/salesperson"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>Create Order for Buyer</span>
+              </Link>
+            </div>
+
+            {/* Agent Menu Navigation */}
+            <div className="mt-4 space-y-1 flex-1">
+              <div className="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Agent Portal
+              </div>
 
               <Link
-                href="/"
+                href="/portal/salesperson?tab=overview"
                 onClick={closeMenu}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                  pathname === '/'
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-700 hover:bg-slate-100'
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  pathname.startsWith('/portal/salesperson') && (!pathname.includes('tab=') || pathname.includes('tab=overview'))
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Marketplace Discovery</span>
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className="w-4 h-4 text-emerald-500" />
+                  <span>Agent Overview</span>
+                </div>
               </Link>
 
               <Link
-                href="/track"
+                href="/portal/salesperson?tab=orders"
                 onClick={closeMenu}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                  pathname.startsWith('/track')
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
-                <Search className="w-4 h-4" />
-                <span>Track Order (SMS Link)</span>
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className="w-4 h-4 text-slate-500" />
+                  <span>My Orders (Read Only)</span>
+                </div>
+                {agentOrders.length > 0 && (
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 font-semibold">
+                    {agentOrders.length}
+                  </span>
+                )}
               </Link>
 
-              {/* Role Workspaces */}
-              <div className="pt-3 mt-3 border-t border-slate-200/70">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block mb-2">
-                  Workspaces
+              <Link
+                href="/portal/salesperson?tab=offers"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Package className="w-4 h-4 text-slate-500" />
+                  <span>Available Offers</span>
+                </div>
+                {activeOffersCount > 0 && (
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
+                    {activeOffersCount}
+                  </span>
+                )}
+              </Link>
+
+              <Link
+                href="/portal/salesperson?tab=ledger"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Coins className="w-4 h-4 text-slate-500" />
+                  <span>Commission Ledger</span>
+                </div>
+                {agentLedger.length > 0 && (
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 font-semibold">
+                    {agentLedger.length}
+                  </span>
+                )}
+              </Link>
+
+              <Link
+                href="/portal/salesperson?tab=payouts"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <span>Payouts & Banking</span>
+                </div>
+                {currentAgent.eligibleCommissions > 0 && (
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+                    ETB {currentAgent.eligibleCommissions.toLocaleString()}
+                  </span>
+                )}
+              </Link>
+
+              <Link
+                href="/portal/salesperson?tab=disputes"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <span>Disputes & Support</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* Commissions in Escrow Card */}
+            <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-2 border border-slate-700/80 shadow-md">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  Commissions in Escrow:
                 </span>
-
+              </div>
+              <div className="font-mono-numbers text-lg font-bold text-white">
+                ETB {currentAgent.pendingCommissions.toLocaleString()}
+              </div>
+              <div className="text-[10px] text-slate-300 leading-tight flex items-center justify-between pt-1 border-t border-slate-700/60">
+                <span>Locked until buyer delivery</span>
                 <Link
-                  href="/portal/salesperson"
+                  href="/portal/salesperson?tab=payouts"
                   onClick={closeMenu}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    pathname.startsWith('/portal/salesperson')
-                      ? 'bg-emerald-50 text-emerald-950 font-bold border border-emerald-200'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
+                  className="text-amber-300 hover:text-amber-200 font-semibold"
                 >
-                  <div className="flex items-center gap-3">
-                    <UserCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Independent Sales Agent</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                </Link>
-
-                <Link
-                  href="/portal/supplier"
-                  onClick={closeMenu}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors mt-1 ${
-                    pathname.startsWith('/portal/supplier')
-                      ? 'bg-blue-50 text-blue-950 font-bold border border-blue-200'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Building2 className="w-4 h-4 text-blue-600" />
-                    <span>Merchant & Supplier Console</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                </Link>
-
-                <Link
-                  href="/portal/admin"
-                  onClick={closeMenu}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors mt-1 ${
-                    pathname.startsWith('/portal/admin')
-                      ? 'bg-purple-50 text-purple-950 font-bold border border-purple-200'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-4 h-4 text-purple-600" />
-                    <span>Central Escrow Clearinghouse</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  Payouts →
                 </Link>
               </div>
             </div>
 
+            <div className="text-[11px] text-slate-400 text-center py-2">
+              <span>Azwari Sales Agent Portal v2.4</span>
+            </div>
+
             {/* Bottom Auth CTA */}
-            <div className="pt-4 border-t border-slate-200 space-y-2">
+            <div className="pt-3 border-t border-slate-200 space-y-2">
               {!currentUser ? (
                 <>
                   <Link
@@ -431,7 +512,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-800 font-bold text-xs hover:bg-slate-50 transition-colors"
                   >
                     <LogIn className="w-4 h-4" />
-                    <span>Sign In</span>
+                    <span>Sign In as Agent</span>
                   </Link>
                   <Link
                     href="/signup"
@@ -442,7 +523,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs"
                   >
                     <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Get Started</span>
+                    <span>Join as Sales Agent</span>
                   </Link>
                 </>
               ) : (
