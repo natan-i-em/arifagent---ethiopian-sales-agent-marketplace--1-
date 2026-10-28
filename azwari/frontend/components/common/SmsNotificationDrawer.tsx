@@ -24,7 +24,7 @@ export const SmsNotificationDrawer: React.FC = () => {
   return (
     <aside
       aria-label="SMS Notification"
-      className={`fixed bottom-5 right-5 z-50 max-w-md w-full bg-slate-900/95 text-white rounded-2xl shadow-2xl border ${
+      className={`fixed bottom-20 md:bottom-5 left-3 right-3 md:left-auto md:right-5 z-50 max-w-md w-auto md:w-full bg-slate-900/95 text-white rounded-2xl shadow-2xl border ${
         isFailed ? 'border-rose-500/50' : 'border-slate-700/80'
       } p-4 backdrop-blur-xl animate-in slide-in-from-bottom duration-200`}
     >

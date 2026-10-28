@@ -5,6 +5,7 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Navbar } from './Navbar';
+import { MobileBottomNav } from './MobileBottomNav';
 import { SmsNotificationDrawer } from '@/components/common/SmsNotificationDrawer';
 import { WaitlistModal } from '@/components/common/WaitlistModal';
 import { Layers, X, ShieldAlert, ArrowRight } from 'lucide-react';
@@ -22,6 +23,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     logout
   } = useApp();
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     // Automatically detect tokenized SMS checkout link
@@ -51,8 +53,8 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 selection:bg-slate-900 selection:text-white">
-      {/* Strict Role-Based Navbar */}
-      <Navbar />
+      {/* Strict Role-Based Navbar with Mobile Drawer */}
+      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
 
       {/* Permission Restriction Alert Banner */}
       {permissionError && (
@@ -81,10 +83,13 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
       )}
 
-      {/* Page Content */}
-      <main className="flex-1">
+      {/* Page Content with safe padding for mobile bottom bar */}
+      <main className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* Thumb-friendly mobile bottom navigation bar */}
+      <MobileBottomNav onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
       {/* Interactive Account Registration / Onboarding Modal */}
       <WaitlistModal />

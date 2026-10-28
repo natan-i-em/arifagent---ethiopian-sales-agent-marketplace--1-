@@ -411,7 +411,7 @@ export const LandingView: React.FC = () => {
                 />
                 <button
                   onClick={() => setSelectedProductForModal(prod)}
-                  className="absolute bottom-3 right-3 bg-white/95 hover:bg-white text-slate-900 text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-md border border-slate-200/80 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5"
+                  className="absolute bottom-3 right-3 bg-white/95 hover:bg-white text-slate-900 text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-md border border-slate-200/80 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all flex items-center gap-1.5"
                 >
                   <Eye className="w-3.5 h-3.5 text-slate-700" />
                   <span>Inspect Visuals</span>
