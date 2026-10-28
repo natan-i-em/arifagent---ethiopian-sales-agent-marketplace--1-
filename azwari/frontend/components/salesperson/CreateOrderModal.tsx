@@ -43,6 +43,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ initialProdu
     selectedSalespersonId, 
     salesPartners, 
     createOrder,
+    sendNotification,
     setActiveRole,
     setSelectedCustomerToken
   } = useApp();
@@ -165,6 +166,30 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ initialProdu
           token: result.order.publicAccessToken,
           totalAmount: result.order.totalAmount,
           commissionAmount: result.order.agreedCommissionAmount,
+        });
+
+        // Instant notification to supplier
+        sendNotification({
+          recipientRole: 'supplier',
+          recipientId: product.supplierId,
+          type: 'order',
+          title: `New Order ${result.order.orderNumber}`,
+          message: `Agent ${salesperson?.fullName || 'Sales Agent'} created an order for ${buyerName} (${product.name}, ETB ${result.order.totalAmount.toLocaleString()}).`,
+          severity: 'info',
+          link: '/portal/supplier?tab=orders',
+          metadata: { orderNumber: result.order.orderNumber, amount: result.order.totalAmount }
+        });
+
+        // Instant notification to salesperson
+        sendNotification({
+          recipientRole: 'salesperson',
+          recipientId: salesperson?.id,
+          type: 'order',
+          title: `Order Generated: ${result.order.orderNumber}`,
+          message: `Attributed order placed for ${buyerName}. Commission of ETB ${result.order.agreedCommissionAmount.toLocaleString()} will lock in escrow upon payment.`,
+          severity: 'success',
+          link: '/portal/salesperson?tab=orders',
+          metadata: { orderNumber: result.order.orderNumber, amount: result.order.agreedCommissionAmount }
         });
       } else {
         setErrorMsg(result.error || 'Failed to create order.');

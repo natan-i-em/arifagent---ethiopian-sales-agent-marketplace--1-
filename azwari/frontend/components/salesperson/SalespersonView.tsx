@@ -44,7 +44,8 @@ export const SalespersonView: React.FC = () => {
     setActiveRole, 
     setSelectedCustomerToken,
     setCurrentView,
-    createDispute
+    createDispute,
+    sendNotification
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -167,6 +168,32 @@ export const SalespersonView: React.FC = () => {
     e.preventDefault();
     if (!disputeOrderId || !disputeReason) return;
     createDispute(disputeOrderId, disputeCategory, disputeReason, 'salesperson', currentAgent.fullName);
+    const targetOrder = orders.find(o => o.id === disputeOrderId);
+
+    // Notify supplier of dispute
+    if (targetOrder) {
+      sendNotification({
+        recipientRole: 'supplier',
+        recipientId: targetOrder.supplierId,
+        type: 'dispute',
+        title: `Dispute Filed: ${targetOrder.orderNumber}`,
+        message: `Agent ${currentAgent.fullName} raised a dispute: "${disputeReason}". Central Escrow arbitration reviewing.`,
+        severity: 'urgent',
+        link: '/portal/supplier?tab=orders',
+        metadata: { orderNumber: targetOrder.orderNumber }
+      });
+    }
+
+    // Notify admin
+    sendNotification({
+      recipientRole: 'admin',
+      type: 'dispute',
+      title: `New Arbitration Case: ${targetOrder?.orderNumber || disputeOrderId}`,
+      message: `Dispute raised by ${currentAgent.fullName}: "${disputeReason}". Review escrow funds.`,
+      severity: 'urgent',
+      link: '/portal/admin?tab=disputes'
+    });
+
     setDisputeSuccess(true);
     setDisputeReason('');
     setTimeout(() => setDisputeSuccess(false), 3000);

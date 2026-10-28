@@ -8,6 +8,8 @@ import { Navbar } from './Navbar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { SmsNotificationDrawer } from '@/components/common/SmsNotificationDrawer';
 import { WaitlistModal } from '@/components/common/WaitlistModal';
+import { NotificationToast } from '@/components/notifications/NotificationToast';
+import { AutoAlertWatcher } from '@/components/notifications/AutoAlertWatcher';
 import { Layers, X, ShieldAlert, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -95,6 +97,12 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       {/* Floating real-time SMS outbox simulation */}
       <SmsNotificationDrawer />
+
+      {/* Real-time floating Notification Toast */}
+      <NotificationToast />
+
+      {/* Automated Background Alert Watcher for Low Stock, Low Reserve & Disputes */}
+      <AutoAlertWatcher />
 
       {/* Footer - Light Glassmorphism */}
       <footer className="glass-nav py-12 mt-auto text-slate-600 border-t border-slate-200/80 bg-white">

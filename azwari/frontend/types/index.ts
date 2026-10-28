@@ -397,3 +397,36 @@ export interface PayoutResponse {
   message: string;
 }
 
+export type NotificationType = 
+  | 'order'
+  | 'inventory'
+  | 'wallet'
+  | 'dispute'
+  | 'escrow'
+  | 'system';
+
+export type NotificationSeverity = 'info' | 'success' | 'warning' | 'urgent';
+
+export interface AppNotification {
+  id: string;
+  recipientRole: 'salesperson' | 'supplier' | 'admin' | 'all';
+  recipientId?: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  severity: NotificationSeverity;
+  link?: string;
+  read: boolean;
+  createdAt: string;
+  metadata?: {
+    orderId?: string;
+    orderNumber?: string;
+    productId?: string;
+    productName?: string;
+    stockRemaining?: number;
+    amount?: number;
+    disputeId?: string;
+  };
+}
+
+

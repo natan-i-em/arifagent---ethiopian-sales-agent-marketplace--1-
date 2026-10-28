@@ -67,7 +67,8 @@ export const AdminView: React.FC = () => {
     currentUser,
     inviteWaitlistEntry,
     verifyBusiness,
-    resolveDispute
+    resolveDispute,
+    sendNotification
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -329,6 +330,35 @@ export const AdminView: React.FC = () => {
     e.preventDefault();
     if (!selectedDisputeId || !disputeDecision) return;
     resolveDispute(selectedDisputeId, disputeDecision, disputeNote);
+    const disp = disputes.find(d => d.id === selectedDisputeId);
+    const ord = disp ? orders.find(o => o.id === disp.orderId) : null;
+
+    if (ord) {
+      // Notify supplier
+      sendNotification({
+        recipientRole: 'supplier',
+        recipientId: ord.supplierId,
+        type: 'dispute',
+        title: `Dispute Resolved: ${ord.orderNumber}`,
+        message: `Arbitration decision: ${disputeDecision.toUpperCase()}. Note: ${disputeNote || 'Escrow updated.'}`,
+        severity: 'info',
+        link: '/portal/supplier?tab=orders',
+        metadata: { orderNumber: ord.orderNumber }
+      });
+
+      // Notify agent
+      sendNotification({
+        recipientRole: 'salesperson',
+        recipientId: ord.salespersonId,
+        type: 'dispute',
+        title: `Dispute Resolved: ${ord.orderNumber}`,
+        message: `Arbitration concluded: ${disputeDecision.toUpperCase()}. Commission escrow disposition finalized.`,
+        severity: 'info',
+        link: '/portal/salesperson?tab=disputes',
+        metadata: { orderNumber: ord.orderNumber }
+      });
+    }
+
     setSelectedDisputeId(null);
     setDisputeDecision('');
     setDisputeNote('');

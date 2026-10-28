@@ -56,6 +56,7 @@ export const SupplierView: React.FC = () => {
     updateBusinessProfile,
     addPaymentAccount,
     deletePaymentAccount,
+    sendNotification,
     setActiveRole,
     setSelectedCustomerToken
   } = useApp();
@@ -217,6 +218,18 @@ export const SupplierView: React.FC = () => {
     // Immediately open driver dispatch modal for this verified order
     if (ord) {
       setSchedulingOrder(ord);
+
+      // Notify the attributing sales agent
+      sendNotification({
+        recipientRole: 'salesperson',
+        recipientId: ord.salespersonId,
+        type: 'order',
+        title: `Payment Verified: ${ord.orderNumber}`,
+        message: `Supplier verified buyer payment for ${ord.buyerName}. Commission of ETB ${ord.agreedCommissionAmount.toLocaleString()} is locked in escrow.`,
+        severity: 'success',
+        link: '/portal/salesperson?tab=orders',
+        metadata: { orderNumber: ord.orderNumber, amount: ord.agreedCommissionAmount }
+      });
     }
   };
 
@@ -249,6 +262,18 @@ export const SupplierView: React.FC = () => {
     // 2. Dispatch order immediately to driver!
     dispatchOrder(schedulingOrder.id);
 
+    // Notify attributing sales agent
+    sendNotification({
+      recipientRole: 'salesperson',
+      recipientId: schedulingOrder.salespersonId,
+      type: 'order',
+      title: `Dispatched: ${schedulingOrder.orderNumber}`,
+      message: `Order for ${schedulingOrder.buyerName} assigned to driver ${driverName} (${driverPhone}) and is out for delivery.`,
+      severity: 'info',
+      link: '/portal/salesperson?tab=orders',
+      metadata: { orderNumber: schedulingOrder.orderNumber }
+    });
+
     setOrderActionNotice(
       `Order #${schedulingOrder.orderNumber} verified and dispatched to driver ${driverName} (${driverPhone})! Customer notified via SMS.`
     );
@@ -271,6 +296,19 @@ export const SupplierView: React.FC = () => {
 
     const entryIds = agentGroup.entries.map((e) => e.id);
     settleCommissions(settlingAgentId, entryIds, settleMethod, payoutReference);
+
+    // Notify agent of paid commissions
+    sendNotification({
+      recipientRole: 'salesperson',
+      recipientId: settlingAgentId,
+      type: 'escrow',
+      title: 'Commissions Paid Out!',
+      message: `Merchant settled ETB ${agentGroup.totalAmount.toLocaleString()} via ${settleMethod}. Ref: ${payoutReference}.`,
+      severity: 'success',
+      link: '/portal/salesperson?tab=payouts',
+      metadata: { amount: agentGroup.totalAmount }
+    });
+
     setSettlingAgentId(null);
     setPayoutReference('');
   };

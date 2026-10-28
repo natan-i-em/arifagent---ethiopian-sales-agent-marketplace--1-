@@ -24,6 +24,9 @@ import {
   X
 } from 'lucide-react';
 
+import { ProductImage } from '../common/ProductImage';
+import { useApp } from '../../context/AppContext';
+
 interface SupplierWalletManagerProps {
   currentSupplier: Business;
   products: Product[];
@@ -36,6 +39,7 @@ export const SupplierWalletManager: React.FC<SupplierWalletManagerProps> = ({
   products,
 }) => {
   const queryClient = useQueryClient();
+  const { sendNotification } = useApp();
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -101,6 +105,17 @@ export const SupplierWalletManager: React.FC<SupplierWalletManagerProps> = ({
               refetchWallet();
               queryClient.invalidateQueries({ queryKey: ['supplierWallet'] });
               queryClient.invalidateQueries({ queryKey: ['businesses'] });
+
+              sendNotification({
+                recipientRole: 'supplier',
+                recipientId: currentSupplier.id,
+                type: 'wallet',
+                title: 'Collateral Deposit Confirmed',
+                message: `Deposit verified! Your available reserve wallet balance is now ETB ${res.walletBalanceEtb.toLocaleString()}.`,
+                severity: 'success',
+                link: '/portal/supplier?tab=wallet',
+                metadata: { amount: res.walletBalanceEtb }
+              });
 
               // Clean return params while keeping tab=wallet
               const cleanUrl = `${window.location.pathname}?tab=wallet`;
