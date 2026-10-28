@@ -65,13 +65,50 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'azwari_auth_session';
 
+// Safe sessionStorage helper with automatic legacy localStorage migration and cleanup for security
+const sessionStore = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const val = window.sessionStorage.getItem(key);
+      if (val) return val;
+      // Auto-migrate from legacy localStorage once, then wipe from localStorage
+      const legacyVal = window.localStorage.getItem(key);
+      if (legacyVal) {
+        window.sessionStorage.setItem(key, legacyVal);
+        window.localStorage.removeItem(key);
+        return legacyVal;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(key, value);
+      window.localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('[SessionStorage] Unable to save session:', e);
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.removeItem(key);
+      window.localStorage.removeItem(key);
+    } catch {}
+  },
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = sessionStore.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -88,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = sessionStore.getItem(STORAGE_KEY);
       return saved ? 'portal' : 'marketplace';
     } catch {
       return 'marketplace';
@@ -115,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [activeRole, setActiveRole] = useState<Role>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = sessionStore.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved).role || 'public';
     } catch {}
     return 'public';
@@ -151,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setActiveRole(formattedUser.role);
             if (formattedUser.supplierId) setSelectedSupplierId(formattedUser.supplierId);
             if (formattedUser.salespersonId) setSelectedSalespersonId(formattedUser.salespersonId);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(formattedUser));
+            sessionStore.setItem(STORAGE_KEY, JSON.stringify(formattedUser));
           }
         }
       } catch (e) {
@@ -170,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Only wipe credentials on explicit user sign-out
         setCurrentUser(null);
         setActiveRole('public');
-        localStorage.removeItem(STORAGE_KEY);
+        sessionStore.removeItem(STORAGE_KEY);
         setIsAuthLoading(false);
       }
     });
@@ -216,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveRole(user.role);
         if (user.supplierId) setSelectedSupplierId(user.supplierId);
         if (user.salespersonId) setSelectedSalespersonId(user.salespersonId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+        sessionStore.setItem(STORAGE_KEY, JSON.stringify(user));
         setCurrentView('portal');
         return { success: true, user };
       }
@@ -246,7 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut().catch(() => {});
     setCurrentUser(null);
     setActiveRole('public');
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStore.removeItem(STORAGE_KEY);
     setCurrentView('marketplace');
   };
 
