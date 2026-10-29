@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   Clock,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import { AppNotification, NotificationType, NotificationSeverity } from '@/types';
 
@@ -46,6 +47,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     markAllAsRead,
     clearNotification,
     clearAll,
+    openModal,
   } = useNotifications();
 
   const { currentUser } = useApp();
@@ -319,6 +321,19 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                         </span>
 
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              markAsRead(notif.id);
+                              openModal(notif);
+                              onClose();
+                            }}
+                            className="font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors"
+                            title="Inspect in modal"
+                          >
+                            <Eye className="w-3 h-3 text-amber-500" />
+                            <span>Modal</span>
+                          </button>
+
                           {notif.link && (
                             <Link
                               href={notif.link}
@@ -328,7 +343,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                               }}
                               className="font-bold text-slate-900 hover:text-emerald-700 flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors"
                             >
-                              <span>View</span>
+                              <span>Tab</span>
                               <ChevronRight className="w-3 h-3" />
                             </Link>
                           )}
@@ -360,9 +375,23 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-slate-200 bg-slate-50 text-center text-[10px] text-slate-400 shrink-0">
-          <span>Azwari Real-Time Alert Dispatcher · Addis Ababa, Ethiopia</span>
+        {/* Footer with link to Full Portal Tab */}
+        <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+          <Link
+            href={
+              currentUser?.role === 'supplier'
+                ? '/portal/supplier?tab=notifications'
+                : currentUser?.role === 'salesperson'
+                ? '/portal/salesperson?tab=notifications'
+                : '/portal/admin?tab=notifications'
+            }
+            onClick={onClose}
+            className="font-bold text-slate-900 hover:text-amber-600 flex items-center gap-1"
+          >
+            <span>Open Notification Center Tab</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+          <span className="text-[10px] text-slate-400">Addis Ababa, ET</span>
         </div>
       </aside>
     </div>

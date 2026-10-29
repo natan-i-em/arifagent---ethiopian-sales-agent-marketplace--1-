@@ -16,7 +16,8 @@ import {
   ChevronRight, 
   X,
   Server,
-  Database
+  Database,
+  Bell
 } from 'lucide-react';
 
 export type AdminTab = 
@@ -25,6 +26,7 @@ export type AdminTab =
   | 'verifications' 
   | 'waitlist' 
   | 'disputes' 
+  | 'notifications'
   | 'sms' 
   | 'audit' 
   | 'finances';
@@ -38,6 +40,7 @@ interface AdminSidebarProps {
   usersCount: number;
   ordersCount: number;
   totalGMV: number;
+  unreadNotificationsCount?: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
 }
@@ -51,6 +54,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   usersCount,
   ordersCount,
   totalGMV,
+  unreadNotificationsCount,
   mobileOpen,
   setMobileOpen,
 }) => {
@@ -72,6 +76,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: Users,
       badge: usersCount,
       badgeColor: 'bg-slate-200 text-slate-800',
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: Bell,
+      badge: unreadNotificationsCount && unreadNotificationsCount > 0 ? `${unreadNotificationsCount} new` : undefined,
+      badgeColor: 'bg-amber-500 text-slate-950 font-bold',
     },
     {
       id: 'verifications',

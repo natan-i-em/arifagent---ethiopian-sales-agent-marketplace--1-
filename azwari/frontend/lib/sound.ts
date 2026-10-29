@@ -23,7 +23,7 @@ function getAudioContext(): AudioContext | null {
   }
 }
 
-export function playNotificationSound(severity: 'info' | 'success' | 'warning' | 'urgent' = 'info') {
+export function playNotificationSound(severity: 'info' | 'success' | 'warning' | 'urgent' | 'error' = 'info') {
   if (typeof window === 'undefined') return;
 
   try {
@@ -33,8 +33,9 @@ export function playNotificationSound(severity: 'info' | 'success' | 'warning' |
     const now = ctx.currentTime;
 
     // Frequencies tailored to severity
-    const note1Freq = severity === 'urgent' ? 659.25 : severity === 'warning' ? 587.33 : 523.25; // E5, D5, C5
-    const note2Freq = severity === 'urgent' ? 880.00 : severity === 'warning' ? 739.99 : 659.25; // A5, F#5, E5
+    const isUrgent = severity === 'urgent' || severity === 'error';
+    const note1Freq = isUrgent ? 659.25 : severity === 'warning' ? 587.33 : 523.25; // E5, D5, C5
+    const note2Freq = isUrgent ? 880.00 : severity === 'warning' ? 739.99 : 659.25; // A5, F#5, E5
 
     // Tone 1
     const osc1 = ctx.createOscillator();

@@ -8,8 +8,10 @@ import { Navbar } from './Navbar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { SmsNotificationDrawer } from '@/components/common/SmsNotificationDrawer';
 import { WaitlistModal } from '@/components/common/WaitlistModal';
-import { NotificationToast } from '@/components/notifications/NotificationToast';
+import { TopRightToastContainer } from '@/components/notifications/TopRightToastContainer';
+import { NotificationDetailModal } from '@/components/notifications/NotificationDetailModal';
 import { AutoAlertWatcher } from '@/components/notifications/AutoAlertWatcher';
+import { useNotifications } from '@/context/NotificationContext';
 import { Layers, X, ShieldAlert, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,6 +26,16 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     setSelectedCustomerToken,
     logout
   } = useApp();
+  const {
+    toasts,
+    dismissToast,
+    selectedModalNotification,
+    isModalOpen,
+    closeModal,
+    openModalById,
+    markAsRead,
+    clearNotification,
+  } = useNotifications();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -98,8 +110,21 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Floating real-time SMS outbox simulation */}
       <SmsNotificationDrawer />
 
-      {/* Real-time floating Notification Toast */}
-      <NotificationToast />
+      {/* Top-Right Notification & System Toast Stack */}
+      <TopRightToastContainer
+        toasts={toasts}
+        onDismiss={dismissToast}
+        onOpenNotificationModal={openModalById}
+      />
+
+      {/* Interactive Notification Details Inspection Modal */}
+      <NotificationDetailModal
+        notification={selectedModalNotification}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onMarkAsRead={markAsRead}
+        onDelete={clearNotification}
+      />
 
       {/* Automated Background Alert Watcher for Low Stock, Low Reserve & Disputes */}
       <AutoAlertWatcher />

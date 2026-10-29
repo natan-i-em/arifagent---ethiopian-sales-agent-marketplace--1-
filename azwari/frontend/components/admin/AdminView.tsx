@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AdminSidebar, AdminTab } from './AdminSidebar';
+import { PortalNotificationsTab } from '../notifications/PortalNotificationsTab';
 import { 
   ShieldCheck, 
   Building2, 
@@ -68,7 +69,8 @@ export const AdminView: React.FC = () => {
     inviteWaitlistEntry,
     verifyBusiness,
     resolveDispute,
-    sendNotification
+    sendNotification,
+    unreadNotificationsCount
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -76,7 +78,7 @@ export const AdminView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'users', 'notifications', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (validTabs.includes(tabParam)) return tabParam;
     }
     return 'analytics';
@@ -97,7 +99,7 @@ export const AdminView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'users', 'notifications', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
@@ -419,6 +421,7 @@ export const AdminView: React.FC = () => {
           usersCount={unifiedUsers.length}
           ordersCount={orders.length}
           totalGMV={totalGMV}
+          unreadNotificationsCount={unreadNotificationsCount}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
         />
@@ -736,6 +739,11 @@ export const AdminView: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: NOTIFICATIONS & CENTRAL CLEARINGHOUSE ALERTS */}
+          {activeTab === 'notifications' && (
+            <PortalNotificationsTab role="admin" />
           )}
 
           {/* TAB 2: USERS DIRECTORY */}

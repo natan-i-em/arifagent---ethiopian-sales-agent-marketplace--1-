@@ -16,6 +16,7 @@ import { uploadRouter } from './routes/uploadRoutes.js';
 import { waitlistRouter } from './routes/waitlistRoutes.js';
 import { walletRouter } from './routes/walletRoutes.js';
 import { webhookRouter } from './routes/webhookRoutes.js';
+import { notificationRouter } from './routes/notificationRoutes.js';
 import { startOrderExpirationWorker } from './workers/orderExpirationWorker.js';
 import { SmsEthiopiaService } from './services/smsEthiopiaService.js';
 
@@ -93,6 +94,7 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/wallet', walletRouter);
 app.use('/api/webhooks', webhookRouter);
+app.use('/api/notifications', notificationRouter);
 
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {

@@ -65,16 +65,25 @@ export interface AppContextType {
   unreadNotificationsCount: number;
   sendNotification: (input: {
     recipientRole: 'salesperson' | 'supplier' | 'admin' | 'all';
-    recipientId?: string;
+    recipientId?: string | null;
     type: NotificationType;
     title: string;
     message: string;
     severity: NotificationSeverity;
-    link?: string;
+    link?: string | null;
     metadata?: AppNotification['metadata'];
-  }) => void;
-  markNotificationAsRead: (id: string) => void;
-  markAllNotificationsAsRead: () => void;
+  }) => Promise<AppNotification | null>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+  openNotificationModal: (notification: AppNotification) => void;
+  openNotificationModalById: (id: string) => void;
+  toast: {
+    success: (title: string, message: string, options?: any) => string;
+    error: (title: string, message: string, options?: any) => string;
+    warning: (title: string, message: string, options?: any) => string;
+    message: (title: string, message: string, options?: any) => string;
+    info: (title: string, message: string, options?: any) => string;
+  };
 
   // Actions
   joinWaitlist: (data: {
@@ -279,6 +288,9 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
     sendNotification: notifs.sendNotification,
     markNotificationAsRead: notifs.markAsRead,
     markAllNotificationsAsRead: notifs.markAllAsRead,
+    openNotificationModal: notifs.openModal,
+    openNotificationModalById: notifs.openModalById,
+    toast: notifs.toast,
 
     // Waitlist
     waitlist: waitlist.waitlist,

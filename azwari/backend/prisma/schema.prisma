@@ -495,3 +495,22 @@ model CachedBank {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+model Notification {
+  id             String   @id @default(uuid())
+  recipientRole  String   // 'supplier' | 'salesperson' | 'admin' | 'all'
+  recipientId    String?  // businessId or salesPartnerId or userId
+  type           String   // 'order' | 'stock' | 'wallet' | 'dispute' | 'message' | 'system'
+  title          String
+  message        String
+  severity       String   @default("info") // 'info' | 'success' | 'warning' | 'error'
+  link           String?
+  metadata       Json?
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([recipientRole, recipientId])
+  @@index([recipientRole, isRead])
+  @@index([createdAt])
+}
+

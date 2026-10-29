@@ -17,11 +17,12 @@ import {
   Store,
   Layers,
   Sparkles,
-  Wallet
+  Wallet,
+  Bell
 } from 'lucide-react';
 import { Business, Order, Product } from '../../types';
 
-export type SupplierTab = 'overview' | 'products' | 'orders' | 'wallet' | 'settlement' | 'accounts' | 'settings';
+export type SupplierTab = 'overview' | 'products' | 'orders' | 'notifications' | 'wallet' | 'settlement' | 'accounts' | 'settings';
 
 interface SupplierSidebarProps {
   currentSupplier: Business;
@@ -32,6 +33,7 @@ interface SupplierSidebarProps {
   ordersNeedingVerificationCount: number;
   eligibleSettlementCount: number;
   walletBalance?: number;
+  unreadNotificationsCount?: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
 }
@@ -45,6 +47,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
   ordersNeedingVerificationCount,
   eligibleSettlementCount,
   walletBalance,
+  unreadNotificationsCount,
   mobileOpen,
   setMobileOpen,
 }) => {
@@ -74,6 +77,13 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
       icon: ShoppingCart,
       badge: ordersNeedingVerificationCount > 0 ? `${ordersNeedingVerificationCount} pending` : ordersCount,
       badgeColor: ordersNeedingVerificationCount > 0 ? 'bg-amber-500 text-white font-bold' : 'bg-slate-200 text-slate-800',
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: Bell,
+      badge: unreadNotificationsCount && unreadNotificationsCount > 0 ? `${unreadNotificationsCount} new` : undefined,
+      badgeColor: 'bg-amber-500 text-slate-950 font-bold',
     },
     {
       id: 'wallet',

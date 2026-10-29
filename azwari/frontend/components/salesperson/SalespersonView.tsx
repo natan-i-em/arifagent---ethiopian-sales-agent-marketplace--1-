@@ -8,6 +8,7 @@ import { ProductImage } from '../common/ProductImage';
 import { ProductDetailsModal } from '../common/ProductDetailsModal';
 import { Product } from '../../types';
 import { SalespersonPayoutManager } from './SalespersonPayoutManager';
+import { PortalNotificationsTab } from '../notifications/PortalNotificationsTab';
 import { 
   Plus, 
   ShoppingBag, 
@@ -45,7 +46,8 @@ export const SalespersonView: React.FC = () => {
     setSelectedCustomerToken,
     setCurrentView,
     createDispute,
-    sendNotification
+    sendNotification,
+    unreadNotificationsCount
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -53,7 +55,7 @@ export const SalespersonView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SalespersonTab;
-      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'ledger', 'payouts', 'disputes'];
+      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'notifications', 'ledger', 'payouts', 'disputes'];
       if (validTabs.includes(tabParam)) return tabParam;
     }
     return 'overview';
@@ -74,7 +76,7 @@ export const SalespersonView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SalespersonTab;
-      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'ledger', 'payouts', 'disputes'];
+      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'notifications', 'ledger', 'payouts', 'disputes'];
       if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
@@ -240,6 +242,7 @@ export const SalespersonView: React.FC = () => {
           ledgerCount={agentLedger.length}
           pendingCommissions={currentAgent.pendingCommissions}
           eligibleCommissions={currentAgent.eligibleCommissions}
+          unreadNotificationsCount={unreadNotificationsCount}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
           onCreateOrderClick={() => {
@@ -515,6 +518,11 @@ export const SalespersonView: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: NOTIFICATIONS & REAL-TIME ALERTS */}
+          {activeTab === 'notifications' && (
+            <PortalNotificationsTab role="salesperson" recipientId={currentAgent.id} />
           )}
 
           {/* TAB 2: MY ORDERS (STRICTLY READ-ONLY) */}

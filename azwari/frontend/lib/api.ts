@@ -338,3 +338,57 @@ export const walletApi = {
     });
   },
 };
+
+export const notificationsApi = {
+  getAll: async (params?: { role?: string; recipientId?: string; unreadOnly?: boolean; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.role) query.append('role', params.role);
+    if (params?.recipientId) query.append('recipientId', params.recipientId);
+    if (params?.unreadOnly) query.append('unreadOnly', 'true');
+    if (params?.limit) query.append('limit', String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ success: boolean; count: number; notifications: any[] }>(`/notifications${qs}`);
+  },
+  create: async (data: {
+    recipientRole: string;
+    recipientId?: string | null;
+    type: string;
+    title: string;
+    message: string;
+    severity?: string;
+    link?: string | null;
+    metadata?: any;
+  }) => {
+    return apiRequest<{ success: boolean; notification: any }>('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  markAsRead: async (id: string) => {
+    return apiRequest<{ success: boolean; message: string }>(`/notifications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isRead: true }),
+    });
+  },
+  markAllAsRead: async (params: { role?: string; recipientId?: string }) => {
+    return apiRequest<{ success: boolean; message: string }>('/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ markAllRead: true, ...params }),
+    });
+  },
+  delete: async (id: string) => {
+    return apiRequest<{ success: boolean; message: string }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  clearAll: async (params?: { role?: string; recipientId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.role) query.append('role', params.role);
+    if (params?.recipientId) query.append('recipientId', params.recipientId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ success: boolean; message: string }>(`/notifications${qs}`, {
+      method: 'DELETE',
+    });
+  },
+};
+

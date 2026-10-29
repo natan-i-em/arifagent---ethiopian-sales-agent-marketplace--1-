@@ -9,7 +9,9 @@ export interface AuthUser {
   name: string;
   role: 'salesperson' | 'supplier' | 'admin';
   salespersonId?: string; // Links to SalesPartnerProfile
+  salesPartnerId?: string; // Alias
   supplierId?: string; // Links to Business
+  businessId?: string; // Alias
   subcity?: string;
   avatarUrl?: string;
   createdAt: string;
@@ -400,12 +402,14 @@ export interface PayoutResponse {
 export type NotificationType = 
   | 'order'
   | 'inventory'
+  | 'stock'
   | 'wallet'
   | 'dispute'
   | 'escrow'
+  | 'message'
   | 'system';
 
-export type NotificationSeverity = 'info' | 'success' | 'warning' | 'urgent';
+export type NotificationSeverity = 'info' | 'success' | 'warning' | 'urgent' | 'error';
 
 export interface AppNotification {
   id: string;

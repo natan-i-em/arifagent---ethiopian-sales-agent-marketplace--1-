@@ -34,6 +34,7 @@ import { SupplierSidebar, SupplierTab } from './SupplierSidebar';
 import { SupplierProductManager } from './SupplierProductManager';
 import { SupplierProfileSettings } from './SupplierProfileSettings';
 import { SupplierWalletManager } from './SupplierWalletManager';
+import { PortalNotificationsTab } from '../notifications/PortalNotificationsTab';
 
 export const SupplierView: React.FC = () => {
   const { 
@@ -57,6 +58,7 @@ export const SupplierView: React.FC = () => {
     addPaymentAccount,
     deletePaymentAccount,
     sendNotification,
+    unreadNotificationsCount,
     setActiveRole,
     setSelectedCustomerToken
   } = useApp();
@@ -66,7 +68,7 @@ export const SupplierView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SupplierTab;
-      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'wallet', 'settlement', 'accounts', 'settings'];
+      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'notifications', 'wallet', 'settlement', 'accounts', 'settings'];
       if (validTabs.includes(tabParam)) return tabParam;
       if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
         return 'wallet';
@@ -342,6 +344,7 @@ export const SupplierView: React.FC = () => {
           ordersNeedingVerificationCount={ordersNeedingVerification.length}
           eligibleSettlementCount={Object.keys(commissionsByAgent).length}
           walletBalance={liveWalletBalance}
+          unreadNotificationsCount={unreadNotificationsCount}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
         />
@@ -771,6 +774,11 @@ export const SupplierView: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: NOTIFICATIONS & REAL-TIME ALERTS */}
+          {activeTab === 'notifications' && (
+            <PortalNotificationsTab role="supplier" recipientId={currentSupplier.id} />
           )}
 
           {/* TAB 4: COLLATERAL WALLET & CHAPA DEPOSITS */}
