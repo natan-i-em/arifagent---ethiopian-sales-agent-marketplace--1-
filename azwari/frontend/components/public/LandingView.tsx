@@ -110,13 +110,7 @@ export const LandingView: React.FC = () => {
                     <span>Register as Merchant</span>
                   </Link>
 
-                  <Link
-                    href="/signin"
-                    className="px-5 py-3.5 rounded-xl glass-card hover:bg-white text-slate-900 font-bold text-xs border border-slate-300 shadow-2xs transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Lock className="w-4 h-4 text-slate-700" />
-                    <span>Sign In</span>
-                  </Link>
+
                 </>
               )}
             </div>
