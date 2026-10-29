@@ -6,7 +6,6 @@ import { CatalogProvider, useCatalog } from './CatalogContext';
 import { OrdersProvider, useOrders } from './OrdersContext';
 import { FinanceProvider, useFinance } from './FinanceContext';
 import { WaitlistProvider, useWaitlist } from './WaitlistContext';
-import { NotificationProvider, useNotifications } from './NotificationContext';
 import {
   Role,
   AppView,
@@ -25,9 +24,6 @@ import {
   PaymentMethodProvider,
   SupplierPaymentAccount,
   WaitlistEntry,
-  AppNotification,
-  NotificationType,
-  NotificationSeverity,
 } from '../types';
 
 export interface AppContextType {
@@ -59,31 +55,6 @@ export interface AppContextType {
   setWaitlistRolePreference: (role: 'sales_agent' | 'supplier') => void;
   recentSmsAlert: SmsMessage | null;
   dismissSmsAlert: () => void;
-
-  // Real-time Notifications
-  notifications: AppNotification[];
-  unreadNotificationsCount: number;
-  sendNotification: (input: {
-    recipientRole: 'salesperson' | 'supplier' | 'admin' | 'all';
-    recipientId?: string | null;
-    type: NotificationType;
-    title: string;
-    message: string;
-    severity: NotificationSeverity;
-    link?: string | null;
-    metadata?: AppNotification['metadata'];
-  }) => Promise<AppNotification | null>;
-  markNotificationAsRead: (id: string) => Promise<void>;
-  markAllNotificationsAsRead: () => Promise<void>;
-  openNotificationModal: (notification: AppNotification) => void;
-  openNotificationModalById: (id: string) => void;
-  toast: {
-    success: (title: string, message: string, options?: any) => string;
-    error: (title: string, message: string, options?: any) => string;
-    warning: (title: string, message: string, options?: any) => string;
-    message: (title: string, message: string, options?: any) => string;
-    info: (title: string, message: string, options?: any) => string;
-  };
 
   // Actions
   joinWaitlist: (data: {
@@ -217,7 +188,6 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const orders = useOrders();
   const finance = useFinance();
   const waitlist = useWaitlist();
-  const notifs = useNotifications();
 
   const resetToDemoData = () => {
     window.location.reload();
@@ -282,16 +252,6 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
     createDispute: finance.createDispute,
     resolveDispute: finance.resolveDispute,
 
-    // Notifications
-    notifications: notifs.notifications,
-    unreadNotificationsCount: notifs.unreadCount,
-    sendNotification: notifs.sendNotification,
-    markNotificationAsRead: notifs.markAsRead,
-    markAllNotificationsAsRead: notifs.markAllAsRead,
-    openNotificationModal: notifs.openModal,
-    openNotificationModalById: notifs.openModalById,
-    toast: notifs.toast,
-
     // Waitlist
     waitlist: waitlist.waitlist,
     showWaitlistModal: waitlist.showWaitlistModal,
@@ -316,9 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         <OrdersProvider>
           <FinanceProvider>
             <WaitlistProvider>
-              <NotificationProvider>
-                <AppFacadeBridge>{children}</AppFacadeBridge>
-              </NotificationProvider>
+              <AppFacadeBridge>{children}</AppFacadeBridge>
             </WaitlistProvider>
           </FinanceProvider>
         </OrdersProvider>

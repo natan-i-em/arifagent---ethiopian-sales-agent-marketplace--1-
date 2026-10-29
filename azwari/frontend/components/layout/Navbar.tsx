@@ -11,7 +11,6 @@ import {
   Sparkles,
   CreditCard
 } from 'lucide-react';
-import { NotificationBell } from '../notifications/NotificationBell';
 
 interface NavbarProps {
   mobileMenuOpen?: boolean;
@@ -146,11 +145,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
           )}
         </nav>
 
-        {/* Zone 3: Notifications, Authentication & Profile Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Notification Bell */}
-          <NotificationBell />
-
+        {/* Zone 3: Authentication & Profile Actions */}
+        <div className="flex items-center gap-2 shrink-0">
           {!currentUser ? (
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Link

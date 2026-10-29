@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletApi } from '../../lib/api';
 import { SalesPartnerProfile, SupportedBank, WalletDetails } from '../../types';
-import { useApp } from '../../context/AppContext';
 import {
   Wallet,
   ArrowDownRight,
@@ -31,7 +30,6 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
   currentAgent,
 }) => {
   const queryClient = useQueryClient();
-  const { sendNotification } = useApp();
 
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>('');
@@ -128,16 +126,6 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
       setPayoutSuccessMsg(
         `Withdrawal requested! Reference: ${res.reference}. ETB ${res.amount} is being transferred to ${res.bankName} (${res.accountNumber}).`
       );
-      sendNotification({
-        recipientRole: 'salesperson',
-        recipientId: currentAgent.id,
-        type: 'wallet',
-        title: 'Payout Initiated',
-        message: `Withdrawal of ETB ${res.amount.toLocaleString()} requested to ${res.bankName} (${res.accountNumber}). Ref: ${res.reference}.`,
-        severity: 'success',
-        link: '/portal/salesperson?tab=payouts',
-        metadata: { amount: res.amount }
-      });
       setIsPayoutModalOpen(false);
       setWithdrawAmount('');
       refetchWallet();

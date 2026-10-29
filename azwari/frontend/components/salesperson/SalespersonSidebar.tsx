@@ -18,12 +18,11 @@ import {
   Sparkles,
   ExternalLink,
   Phone,
-  Send,
-  Bell
+  Send
 } from 'lucide-react';
 import { SalesPartnerProfile } from '../../types';
 
-export type SalespersonTab = 'overview' | 'orders' | 'offers' | 'notifications' | 'ledger' | 'payouts' | 'disputes';
+export type SalespersonTab = 'overview' | 'orders' | 'offers' | 'ledger' | 'payouts' | 'disputes';
 
 interface SalespersonSidebarProps {
   currentAgent: SalesPartnerProfile;
@@ -34,7 +33,6 @@ interface SalespersonSidebarProps {
   ledgerCount: number;
   pendingCommissions: number;
   eligibleCommissions: number;
-  unreadNotificationsCount?: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
   onCreateOrderClick: () => void;
@@ -49,7 +47,6 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
   ledgerCount,
   pendingCommissions,
   eligibleCommissions,
-  unreadNotificationsCount,
   mobileOpen,
   setMobileOpen,
   onCreateOrderClick,
@@ -80,13 +77,6 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
       icon: ShoppingCart,
       badge: ordersCount,
       badgeColor: 'bg-slate-200 text-slate-800',
-    },
-    {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: Bell,
-      badge: unreadNotificationsCount && unreadNotificationsCount > 0 ? `${unreadNotificationsCount} new` : undefined,
-      badgeColor: 'bg-amber-500 text-slate-950 font-bold',
     },
     {
       id: 'offers',

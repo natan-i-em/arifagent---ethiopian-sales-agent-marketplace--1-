@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AdminSidebar, AdminTab } from './AdminSidebar';
-import { PortalNotificationsTab } from '../notifications/PortalNotificationsTab';
 import { 
   ShieldCheck, 
   Building2, 
@@ -68,9 +67,7 @@ export const AdminView: React.FC = () => {
     currentUser,
     inviteWaitlistEntry,
     verifyBusiness,
-    resolveDispute,
-    sendNotification,
-    unreadNotificationsCount
+    resolveDispute
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -78,7 +75,7 @@ export const AdminView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'notifications', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (validTabs.includes(tabParam)) return tabParam;
     }
     return 'analytics';
@@ -99,7 +96,7 @@ export const AdminView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'notifications', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
@@ -332,35 +329,6 @@ export const AdminView: React.FC = () => {
     e.preventDefault();
     if (!selectedDisputeId || !disputeDecision) return;
     resolveDispute(selectedDisputeId, disputeDecision, disputeNote);
-    const disp = disputes.find(d => d.id === selectedDisputeId);
-    const ord = disp ? orders.find(o => o.id === disp.orderId) : null;
-
-    if (ord) {
-      // Notify supplier
-      sendNotification({
-        recipientRole: 'supplier',
-        recipientId: ord.supplierId,
-        type: 'dispute',
-        title: `Dispute Resolved: ${ord.orderNumber}`,
-        message: `Arbitration decision: ${disputeDecision.toUpperCase()}. Note: ${disputeNote || 'Escrow updated.'}`,
-        severity: 'info',
-        link: '/portal/supplier?tab=orders',
-        metadata: { orderNumber: ord.orderNumber }
-      });
-
-      // Notify agent
-      sendNotification({
-        recipientRole: 'salesperson',
-        recipientId: ord.salespersonId,
-        type: 'dispute',
-        title: `Dispute Resolved: ${ord.orderNumber}`,
-        message: `Arbitration concluded: ${disputeDecision.toUpperCase()}. Commission escrow disposition finalized.`,
-        severity: 'info',
-        link: '/portal/salesperson?tab=disputes',
-        metadata: { orderNumber: ord.orderNumber }
-      });
-    }
-
     setSelectedDisputeId(null);
     setDisputeDecision('');
     setDisputeNote('');
@@ -421,7 +389,6 @@ export const AdminView: React.FC = () => {
           usersCount={unifiedUsers.length}
           ordersCount={orders.length}
           totalGMV={totalGMV}
-          unreadNotificationsCount={unreadNotificationsCount}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
         />
@@ -739,11 +706,6 @@ export const AdminView: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* TAB: NOTIFICATIONS & CENTRAL CLEARINGHOUSE ALERTS */}
-          {activeTab === 'notifications' && (
-            <PortalNotificationsTab role="admin" />
           )}
 
           {/* TAB 2: USERS DIRECTORY */}

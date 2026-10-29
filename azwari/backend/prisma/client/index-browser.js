@@ -455,21 +455,6 @@ exports.Prisma.CachedBankScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.NotificationScalarFieldEnum = {
-  id: 'id',
-  recipientRole: 'recipientRole',
-  recipientId: 'recipientId',
-  type: 'type',
-  title: 'title',
-  message: 'message',
-  severity: 'severity',
-  link: 'link',
-  metadata: 'metadata',
-  isRead: 'isRead',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -561,8 +546,7 @@ exports.Prisma.ModelName = {
   WalletTransaction: 'WalletTransaction',
   Deposit: 'Deposit',
   Payout: 'Payout',
-  CachedBank: 'CachedBank',
-  Notification: 'Notification'
+  CachedBank: 'CachedBank'
 };
 
 /**

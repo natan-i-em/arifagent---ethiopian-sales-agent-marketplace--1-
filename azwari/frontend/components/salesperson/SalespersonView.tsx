@@ -8,7 +8,6 @@ import { ProductImage } from '../common/ProductImage';
 import { ProductDetailsModal } from '../common/ProductDetailsModal';
 import { Product } from '../../types';
 import { SalespersonPayoutManager } from './SalespersonPayoutManager';
-import { PortalNotificationsTab } from '../notifications/PortalNotificationsTab';
 import { 
   Plus, 
   ShoppingBag, 
@@ -45,9 +44,7 @@ export const SalespersonView: React.FC = () => {
     setActiveRole, 
     setSelectedCustomerToken,
     setCurrentView,
-    createDispute,
-    sendNotification,
-    unreadNotificationsCount
+    createDispute
   } = useApp();
 
   // Active navigation tab synchronized with URL query ?tab=
@@ -55,7 +52,7 @@ export const SalespersonView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SalespersonTab;
-      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'notifications', 'ledger', 'payouts', 'disputes'];
+      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'ledger', 'payouts', 'disputes'];
       if (validTabs.includes(tabParam)) return tabParam;
     }
     return 'overview';
@@ -76,7 +73,7 @@ export const SalespersonView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SalespersonTab;
-      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'notifications', 'ledger', 'payouts', 'disputes'];
+      const validTabs: SalespersonTab[] = ['overview', 'orders', 'offers', 'ledger', 'payouts', 'disputes'];
       if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
@@ -170,32 +167,6 @@ export const SalespersonView: React.FC = () => {
     e.preventDefault();
     if (!disputeOrderId || !disputeReason) return;
     createDispute(disputeOrderId, disputeCategory, disputeReason, 'salesperson', currentAgent.fullName);
-    const targetOrder = orders.find(o => o.id === disputeOrderId);
-
-    // Notify supplier of dispute
-    if (targetOrder) {
-      sendNotification({
-        recipientRole: 'supplier',
-        recipientId: targetOrder.supplierId,
-        type: 'dispute',
-        title: `Dispute Filed: ${targetOrder.orderNumber}`,
-        message: `Agent ${currentAgent.fullName} raised a dispute: "${disputeReason}". Central Escrow arbitration reviewing.`,
-        severity: 'urgent',
-        link: '/portal/supplier?tab=orders',
-        metadata: { orderNumber: targetOrder.orderNumber }
-      });
-    }
-
-    // Notify admin
-    sendNotification({
-      recipientRole: 'admin',
-      type: 'dispute',
-      title: `New Arbitration Case: ${targetOrder?.orderNumber || disputeOrderId}`,
-      message: `Dispute raised by ${currentAgent.fullName}: "${disputeReason}". Review escrow funds.`,
-      severity: 'urgent',
-      link: '/portal/admin?tab=disputes'
-    });
-
     setDisputeSuccess(true);
     setDisputeReason('');
     setTimeout(() => setDisputeSuccess(false), 3000);
@@ -242,7 +213,6 @@ export const SalespersonView: React.FC = () => {
           ledgerCount={agentLedger.length}
           pendingCommissions={currentAgent.pendingCommissions}
           eligibleCommissions={currentAgent.eligibleCommissions}
-          unreadNotificationsCount={unreadNotificationsCount}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
           onCreateOrderClick={() => {
@@ -518,11 +488,6 @@ export const SalespersonView: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* TAB: NOTIFICATIONS & REAL-TIME ALERTS */}
-          {activeTab === 'notifications' && (
-            <PortalNotificationsTab role="salesperson" recipientId={currentAgent.id} />
           )}
 
           {/* TAB 2: MY ORDERS (STRICTLY READ-ONLY) */}
