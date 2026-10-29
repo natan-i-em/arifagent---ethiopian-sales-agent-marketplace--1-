@@ -25,6 +25,7 @@ import {
   SupplierPaymentAccount,
   WaitlistEntry,
 } from '../types';
+//agian the above should be from backend
 
 export interface AppContextType {
   currentUser: AuthUser | null;
