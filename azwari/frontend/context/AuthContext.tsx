@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { authApi } from '../lib/api';
+import { queryClient } from '../lib/queryClient';
 import { AuthUser, Role, AppView } from '../types';
 
 interface AuthContextType {
@@ -280,11 +281,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut().catch(() => {});
+    try {
+      await supabase.auth.signOut().catch(() => {});
+    } catch {}
+
     setCurrentUser(null);
     setActiveRole('public');
+    setSelectedSupplierId('');
+    setSelectedSalespersonId('');
+    setSelectedCustomerToken('');
     sessionStore.removeItem(STORAGE_KEY);
-    setCurrentView('marketplace');
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.clear();
+        window.localStorage.removeItem(STORAGE_KEY);
+        window.localStorage.removeItem('supabase.auth.token');
+        window.localStorage.removeItem('sb-' + (process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID || 'token') + '-auth-token');
+      } catch {}
+    }
+
+    // Invalidate and clear all TanStack queries to prevent stale data leaking across sessions
+    try {
+      queryClient.clear();
+    } catch {}
+
+    setCurrentView('signin');
   };
 
   const registerSupplier = async (supplierData: any) => {

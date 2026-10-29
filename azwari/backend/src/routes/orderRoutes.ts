@@ -536,7 +536,7 @@ orderRouter.post(
       const payProviderName = primaryAccount?.provider ? primaryAccount.provider.replace('_', ' ') : 'Telebirr';
       const payAccNum = primaryAccount?.accountNumber || product.business.phone;
       const payHolder = primaryAccount?.accountHolderName || product.business.name;
-      const trackingUrl = `https://azwari.et/order/${newOrder.orderNumber}?token=${newOrder.publicAccessToken}`;
+      const trackingUrl = `https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${newOrder.publicAccessToken}`;
 
       const smsText = `Azwari: ${salesPartner.fullName} created order #${newOrder.orderNumber}. Total: ETB ${totalAmount.toLocaleString()}. Pay via ${payProviderName}: ${payAccNum} (${payHolder}). Submit receipt within 15 min: ${trackingUrl}`;
 
@@ -801,7 +801,7 @@ orderRouter.post(
       } else {
         SmsEthiopiaService.sendSms({
           recipientPhone: order.buyerPhone,
-          messageBody: `Azwari: Payment receipt for order #${order.orderNumber} could not be verified: ${rejectionReason || 'Please resubmit valid proof'}. Link: https://azwari.et/order/${order.orderNumber}?token=${order.publicAccessToken}`,
+          messageBody: `Azwari: Payment receipt for order #${order.orderNumber} could not be verified: ${rejectionReason || 'Please resubmit valid proof'}. Link: https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${order.publicAccessToken}`,
           orderNumber: order.orderNumber,
           templateName: 'order_payment_rejected',
         }).catch(() => { });

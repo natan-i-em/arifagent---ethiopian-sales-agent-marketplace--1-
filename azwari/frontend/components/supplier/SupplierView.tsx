@@ -136,11 +136,10 @@ export const SupplierView: React.FC = () => {
   const [settleMethod, setSettleMethod] = useState<'Telebirr B2C' | 'CBE Direct Transfer'>('Telebirr B2C');
   const [payoutReference, setPayoutReference] = useState('');
 
-  // Current Supplier Profile Resolution
-  const currentSupplier = businesses.find(
-    (b) => b.id === (currentUser?.supplierId || selectedSupplierId)
-  ) || businesses[0] || {
-    id: currentUser?.supplierId || 'biz_default',
+  // Current Supplier Profile Resolution - strict user-scoped resolution only
+  const targetSupplierId = currentUser?.supplierId || selectedSupplierId;
+  const currentSupplier = (targetSupplierId ? businesses.find((b) => b.id === targetSupplierId) : null) || {
+    id: targetSupplierId || 'biz_' + (currentUser?.id || 'default'),
     name: currentUser?.name || 'Merchant Supplier Store',
     tradeName: 'Pending Activation',
     tinNumber: 'Pending',

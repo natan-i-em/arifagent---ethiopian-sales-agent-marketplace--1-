@@ -30,9 +30,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   const pathname = usePathname() || '/';
 
-  // Active role-specific models for quick balances
-  const currentAgent = salesPartners.find(sp => sp.id === (currentUser?.salespersonId || selectedSalespersonId)) || salesPartners[0];
-  const currentSupplier = businesses.find(b => b.id === (currentUser?.supplierId || selectedSupplierId)) || businesses[0];
+  // Active role-specific models for quick balances - strict user-scoped resolution
+  const currentAgent = currentUser?.role === 'salesperson'
+    ? salesPartners.find(sp => sp.id === (currentUser.salespersonId || selectedSalespersonId))
+    : null;
+  const currentSupplier = currentUser?.role === 'supplier'
+    ? businesses.find(b => b.id === (currentUser.supplierId || selectedSupplierId))
+    : null;
 
   const brandHref = !currentUser 
     ? '/' 

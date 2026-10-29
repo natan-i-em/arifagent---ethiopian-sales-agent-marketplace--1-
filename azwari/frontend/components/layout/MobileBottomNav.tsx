@@ -94,7 +94,7 @@ export const MobileBottomNav: React.FC = () => {
         aria-label="Mobile Navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"
       >
-        <div className="grid grid-cols-4 items-center gap-1 text-center">
+        <div className="grid grid-cols-3 items-center gap-1 text-center">
           <Link
             href="/"
             className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
@@ -107,20 +107,6 @@ export const MobileBottomNav: React.FC = () => {
               <ShoppingBag className="w-4 h-4" />
             </div>
             <span className="text-[10px] mt-1 tracking-tight">Discover</span>
-          </Link>
-
-          <Link
-            href="/track"
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
-              isTrack
-                ? 'text-slate-950 font-bold'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl ${isTrack ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
-              <Search className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] mt-1 tracking-tight">Track</span>
           </Link>
 
           <Link

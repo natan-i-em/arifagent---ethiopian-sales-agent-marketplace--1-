@@ -97,10 +97,10 @@ export const SalespersonView: React.FC = () => {
   const [disputeCategory, setDisputeCategory] = useState<'commission_discrepancy' | 'delayed_delivery' | 'supplier_unresponsive'>('commission_discrepancy');
   const [disputeSuccess, setDisputeSuccess] = useState(false);
 
-  const currentAgent = salesPartners.find(
-    (sp) => sp.id === (currentUser?.salespersonId || selectedSalespersonId)
-  ) || salesPartners[0] || {
-    id: currentUser?.salespersonId || 'sp_default',
+  // Current Sales Agent Profile Resolution - strict user-scoped resolution only
+  const targetAgentId = currentUser?.salespersonId || selectedSalespersonId;
+  const currentAgent = (targetAgentId ? salesPartners.find((sp) => sp.id === targetAgentId) : null) || {
+    id: targetAgentId || 'sp_' + (currentUser?.id || 'default'),
     fullName: currentUser?.name || 'Independent Sales Agent',
     phone: currentUser?.phone || '',
     idNumber: 'ET-VERIFIED',
@@ -152,7 +152,8 @@ export const SalespersonView: React.FC = () => {
   }, [activeProducts, searchQuery]);
 
   const handleCopyLink = (order: typeof orders[0]) => {
-    const link = `${window.location.origin}/order/${order.orderNumber}?token=${order.publicAccessToken}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://arifagent-ethiopian-sales-agent-mar.vercel.app';
+    const link = `${origin}/track?token=${order.publicAccessToken}`;
     navigator.clipboard.writeText(link);
     setCopiedOrderId(order.id);
     setTimeout(() => setCopiedOrderId(null), 2000);
