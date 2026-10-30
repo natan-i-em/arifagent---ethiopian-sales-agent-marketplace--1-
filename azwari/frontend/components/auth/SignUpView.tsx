@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '../../context/AppContext';
 import { PaymentMethodProvider } from '../../types';
-import { 
-  Layers, 
-  UserCheck, 
-  Building2, 
-  ShieldCheck, 
-  ArrowRight, 
-  CheckCircle2, 
+import {
+  Layers,
+  UserCheck,
+  Building2,
+  ShieldCheck,
+  ArrowRight,
+  CheckCircle2,
   AlertCircle,
   Phone,
   Mail,
@@ -32,9 +32,9 @@ const ADDIS_SUBCITIES = [
 ];
 
 export const SignUpView: React.FC = () => {
-  const { 
-    registerSalesAgent, 
-    registerSupplier, 
+  const {
+    registerSalesAgent,
+    registerSupplier,
     signInWithGoogle,
     setCurrentView,
     authRolePreference,
@@ -139,7 +139,7 @@ export const SignUpView: React.FC = () => {
         }
 
         const res = await registerSupplier({
-          name: bizName.trim(),
+          businessName: bizName.trim(),
           tradeName: tradeName.trim() || bizName.trim(),
           tinNumber: tinNumber.trim(),
           licenseNumber: licenseNumber.trim() || `ETH-LIC-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -187,16 +187,14 @@ export const SignUpView: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedRole('salesperson')}
-            className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
-              selectedRole === 'salesperson'
+            className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${selectedRole === 'salesperson'
                 ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
                 : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between mb-2">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                selectedRole === 'salesperson' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${selectedRole === 'salesperson' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                }`}>
                 <UserCheck className="w-5 h-5" />
               </div>
               {selectedRole === 'salesperson' && (
@@ -218,16 +216,14 @@ export const SignUpView: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedRole('supplier')}
-            className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
-              selectedRole === 'supplier'
+            className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${selectedRole === 'supplier'
                 ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
                 : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between mb-2">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                selectedRole === 'supplier' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${selectedRole === 'supplier' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                }`}>
                 <Building2 className="w-5 h-5" />
               </div>
               {selectedRole === 'supplier' && (

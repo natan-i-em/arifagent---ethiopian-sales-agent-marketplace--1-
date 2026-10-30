@@ -135,7 +135,7 @@ export interface AppContextType {
   resolveDispute: (disputeId: string, decision: string, note: string) => boolean;
   verifyBusiness: (businessId: string, status: VerificationStatus) => boolean;
   registerSupplier: (supplierData: {
-    name: string;
+    businessName: string;
     tradeName: string;
     tinNumber: string;
     licenseNumber: string;
