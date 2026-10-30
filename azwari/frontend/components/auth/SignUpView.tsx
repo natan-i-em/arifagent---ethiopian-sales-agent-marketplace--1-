@@ -140,12 +140,14 @@ export const SignUpView: React.FC = () => {
 
         const res = await registerSupplier({
           businessName: bizName.trim(),
+          name: bizName.trim(),
           tradeName: tradeName.trim() || bizName.trim(),
           tinNumber: tinNumber.trim(),
           licenseNumber: licenseNumber.trim() || `ETH-LIC-${Math.floor(100000 + Math.random() * 900000)}`,
           subcity: bizSubcity,
           specificLocation: bizLocation.trim() || `${bizSubcity}, Addis Ababa`,
           phone: bizPhone.trim(),
+          email: bizEmail.trim(),
           contactEmail: bizEmail.trim(),
           password: bizPassword,
           primaryBank: {
@@ -188,8 +190,8 @@ export const SignUpView: React.FC = () => {
             type="button"
             onClick={() => setSelectedRole('salesperson')}
             className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${selectedRole === 'salesperson'
-                ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
-                : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
+              ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
+              : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
               }`}
           >
             <div className="flex items-start justify-between mb-2">
@@ -217,8 +219,8 @@ export const SignUpView: React.FC = () => {
             type="button"
             onClick={() => setSelectedRole('supplier')}
             className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${selectedRole === 'supplier'
-                ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
-                : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
+              ? 'bg-white border-slate-900 shadow-xs ring-1 ring-slate-900'
+              : 'bg-white/70 border-slate-200 hover:border-slate-400 hover:bg-white'
               }`}
           >
             <div className="flex items-start justify-between mb-2">

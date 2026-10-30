@@ -83,9 +83,31 @@ export const validateSmsRequest = (req: Request, res: Response, next: NextFuncti
  * Middleware: Validates supplier registration fields
  */
 export const validateSupplierRegistration = (req: Request, res: Response, next: NextFunction): void => {
-  const { businessName, email, phone, subcity } = req.body;
+  const businessName = (
+    req.body.businessName ||
+    req.body.name ||
+    req.body.business_name ||
+    req.body.companyName ||
+    req.body.enterpriseName ||
+    req.body.tradeName ||
+    ''
+  ).toString().trim();
 
-  if (!businessName || !businessName.trim()) {
+  const email = (
+    req.body.email ||
+    req.body.contactEmail ||
+    ''
+  ).toString().trim();
+
+  const phone = (
+    req.body.phone ||
+    req.body.phoneNumber ||
+    ''
+  ).toString().trim();
+
+  const subcity = req.body.subcity || req.body.warehouseSubcity || 'Kirkos';
+
+  if (!businessName) {
     res.status(400).json({ success: false, error: 'businessName is required' });
     return;
   }
@@ -109,6 +131,13 @@ export const validateSupplierRegistration = (req: Request, res: Response, next: 
     return;
   }
 
+  // Normalize so downstream handlers always have consistent access to fields
+  req.body.businessName = businessName;
+  req.body.name = businessName;
+  req.body.email = email;
+  req.body.contactEmail = email;
+  req.body.subcity = subcity;
+  req.body.phone = phone;
   req.body.normalizedPhone = phoneResult.normalized;
   next();
 };

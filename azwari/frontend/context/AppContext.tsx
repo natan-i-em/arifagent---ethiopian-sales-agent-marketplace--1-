@@ -135,20 +135,23 @@ export interface AppContextType {
   resolveDispute: (disputeId: string, decision: string, note: string) => boolean;
   verifyBusiness: (businessId: string, status: VerificationStatus) => boolean;
   registerSupplier: (supplierData: {
-    businessName: string;
-    tradeName: string;
-    tinNumber: string;
-    licenseNumber: string;
-    subcity: string;
-    specificLocation: string;
-    phone: string;
-    contactEmail: string;
-    primaryBank: {
+    businessName?: string;
+    name?: string;
+    tradeName?: string;
+    tinNumber?: string;
+    licenseNumber?: string;
+    subcity?: string;
+    specificLocation?: string;
+    phone?: string;
+    email?: string;
+    contactEmail?: string;
+    primaryBank?: {
       provider: PaymentMethodProvider;
       accountNumber: string;
       accountHolderName: string;
     };
     password?: string;
+    [key: string]: any;
   }) => Promise<{ success: boolean; business?: Business; error?: string }>;
   registerSalesAgent: (agentData: {
     fullName: string;

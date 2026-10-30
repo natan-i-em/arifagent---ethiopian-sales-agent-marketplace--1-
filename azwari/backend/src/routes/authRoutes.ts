@@ -57,9 +57,24 @@ authRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Respon
  */
 authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration, async (req: Request, res: Response) => {
   try {
-    const { email, password, businessName, tradeName, tinNumber, licenseNumber, phone, subcity, specificLocation, contactEmail, primaryBank } = req.body;
+    const {
+      email,
+      password,
+      businessName,
+      tradeName,
+      tinNumber,
+      licenseNumber,
+      phone,
+      subcity,
+      specificLocation,
+      contactEmail,
+      primaryBank,
+    } = req.body;
 
-    if (!password || password.length < 6) {
+    const resolvedBusinessName = (businessName || req.body.name || req.body.companyName || 'Merchant Business').toString().trim();
+    const resolvedEmail = (email || contactEmail || `${(phone || '').replace(/[^0-9]/g, '')}@azwari.et`).toString().trim();
+
+    if (password && password.length < 6) {
       res.status(400).json({ success: false, error: 'Password of at least 6 characters is required' });
       return;
     }
@@ -73,11 +88,11 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
     if (password && password.length >= 6) {
       try {
         const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({
-          email,
+          email: resolvedEmail,
           password,
           email_confirm: true,
           user_metadata: {
-            fullName: businessName,
+            fullName: resolvedBusinessName,
             phone: formattedPhone,
             role: 'supplier',
             subcity,
@@ -90,7 +105,7 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
           // If already registered, fetch the user ID
           const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
           const users = (listData?.users ?? []) as Array<{ id: string; email?: string }>;
-          const found = users.find((u) => u.email === email);
+          const found = users.find((u) => u.email === resolvedEmail);
           if (found) authUserId = found.id;
         }
       } catch (authException) {
@@ -100,9 +115,9 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
 
     // 2. Atomic insert/upsert into PostgreSQL User table via Prisma
     const dbUser = await prisma.user.upsert({
-      where: { email },
+      where: { email: resolvedEmail },
       update: {
-        fullName: businessName,
+        fullName: resolvedBusinessName,
         phone: formattedPhone,
         role: 'supplier',
         subcity,
@@ -111,8 +126,8 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
       create: {
         id: authUserId,
         authUserId,
-        email,
-        fullName: businessName,
+        email: resolvedEmail,
+        fullName: resolvedBusinessName,
         phone: formattedPhone,
         role: 'supplier',
         subcity,
@@ -125,19 +140,19 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
     const dbBusiness = await prisma.business.upsert({
       where: { tinNumber: tinNumber || `TIN-${Date.now()}` },
       update: {
-        name: businessName,
-        tradeName: tradeName || businessName,
+        name: resolvedBusinessName,
+        tradeName: tradeName || resolvedBusinessName,
         subcity,
         specificLocation: specificLocation || '',
         phone: formattedPhone,
-        contactEmail: contactEmail || email,
+        contactEmail: contactEmail || resolvedEmail,
         authUserId,
       },
       create: {
         id: bizId,
         authUserId,
-        name: businessName,
-        tradeName: tradeName || businessName,
+        name: resolvedBusinessName,
+        tradeName: tradeName || resolvedBusinessName,
         tinNumber: tinNumber || `TIN-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
         licenseNumber: licenseNumber || `BL-${Math.floor(100000 + Math.random() * 900000)}`,
         verificationStatus: 'PENDING',
@@ -145,7 +160,7 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
         subcity,
         specificLocation: specificLocation || 'Addis Ababa Commercial Zone',
         phone: formattedPhone,
-        contactEmail: contactEmail || email,
+        contactEmail: contactEmail || resolvedEmail,
       },
     });
 
@@ -166,7 +181,7 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
             businessId: dbBusiness.id,
             provider: providerMap[primaryBank.provider] || 'CBE',
             accountNumber: primaryBank.accountNumber,
-            accountHolderName: primaryBank.accountHolderName || businessName,
+            accountHolderName: primaryBank.accountHolderName || resolvedBusinessName,
             isPrimary: true,
             verified: true,
           },
@@ -177,7 +192,7 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
     }
 
     // 5. Automatic Welcome SMS via SMS Ethiopia Gateway
-    const welcomeMsg = `Welcome ${businessName} to Azwari! Your supplier application has been received and is under verification. Login: ${email}`;
+    const welcomeMsg = `Welcome ${resolvedBusinessName} to Azwari! Your supplier application has been received and is under verification. Login: ${resolvedEmail}`;
     await SmsEthiopiaService.sendSms({
       recipientPhone: phone,
       messageBody: welcomeMsg,
@@ -205,7 +220,7 @@ authRouter.post('/register-agent', authLimiter, validateAgentRegistration, async
   try {
     const { email, password, fullName, phone, telegramUsername, subcity, payoutProvider, payoutAccountNumber, payoutAccountName } = req.body;
 
-    if (!password || password.length < 6) {
+    if (password && password.length < 6) {
       res.status(400).json({ success: false, error: 'Password of at least 6 characters is required' });
       return;
     }

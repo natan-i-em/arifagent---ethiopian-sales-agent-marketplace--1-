@@ -311,13 +311,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerSupplier = async (supplierData: any) => {
     try {
-      const res = await authApi.registerSupplier(supplierData);
+      const businessName = (supplierData.businessName || supplierData.name || supplierData.companyName || '').toString().trim();
+      const email = (supplierData.email || supplierData.contactEmail || '').toString().trim();
+      const payload = {
+        ...supplierData,
+        businessName,
+        name: businessName,
+        email,
+        contactEmail: email,
+      };
+
+      const res = await authApi.registerSupplier(payload);
       if (res.success) {
         // Auto-login if password was provided
-        if (supplierData.password && supplierData.contactEmail) {
+        if (payload.password && payload.email) {
           await supabase.auth.signInWithPassword({
-            email: supplierData.contactEmail,
-            password: supplierData.password,
+            email: payload.email,
+            password: payload.password,
           }).catch(() => {});
         }
         return { success: true, business: res.business };

@@ -136,7 +136,10 @@ export const WaitlistModal: React.FC = () => {
       return;
     }
 
+    const emailToUse = supplierEmail.trim() || `contact@${supplierName.toLowerCase().replace(/[^a-z0-9]/g, '')}.et`;
+
     const res = await registerSupplier({
+      businessName: supplierName.trim(),
       name: supplierName.trim(),
       tradeName: supplierTradeName.trim() || supplierName.trim(),
       tinNumber: supplierTin.trim(),
@@ -144,7 +147,8 @@ export const WaitlistModal: React.FC = () => {
       subcity: supplierSubcity,
       specificLocation: supplierLocation.trim() || 'Addis Ababa',
       phone: supplierPhone.trim(),
-      contactEmail: supplierEmail.trim() || `contact@${supplierName.toLowerCase().replace(/[^a-z0-9]/g, '')}.et`,
+      email: emailToUse,
+      contactEmail: emailToUse,
       primaryBank: {
         provider: bankProvider,
         accountNumber: bankAccountNumber.trim(),
