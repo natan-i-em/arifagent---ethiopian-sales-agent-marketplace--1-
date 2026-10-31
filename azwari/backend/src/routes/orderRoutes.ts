@@ -18,7 +18,7 @@ import {
 import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 import { WalletService, InsufficientBalanceError } from '../services/walletService.js';
 import { ChapaService } from '../services/chapaService.js';
-import { etbToCents } from '../config/walletConfig.js';
+import { walletConfig, etbToCents } from '../config/walletConfig.js';
 
 export const orderRouter = Router();
 
@@ -282,8 +282,27 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
     const totalCents = etbToCents(Number(order.totalAmount));
     const txRef = `ORD-CHAPA-${order.orderNumber}-${Date.now().toString().slice(-4)}`;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const returnUrl = `${frontendUrl}/order-status/${token}?chapa=success&tx_ref=${txRef}`;
+    // Dynamically resolve website origin (matches live Vercel domain or current client host)
+    let frontendOrigin = req.get('origin');
+    if (!frontendOrigin && req.get('referer')) {
+      try {
+        frontendOrigin = new URL(req.get('referer')!).origin;
+      } catch {}
+    }
+    if (!frontendOrigin) {
+      if (process.env.FRONTEND_URL) {
+        frontendOrigin = process.env.FRONTEND_URL;
+      } else if (walletConfig.chapaReturnUrl) {
+        try {
+          frontendOrigin = new URL(walletConfig.chapaReturnUrl).origin;
+        } catch {}
+      }
+    }
+    if (!frontendOrigin) {
+      frontendOrigin = 'https://arifagent-ethiopian-sales-agent-mar.vercel.app';
+    }
+
+    const returnUrl = `${frontendOrigin}/track?token=${token}&chapa=success&tx_ref=${txRef}`;
 
     const chapaRes = await ChapaService.initializePayment({
       amountCents: totalCents,
@@ -842,7 +861,7 @@ orderRouter.post(
       const payHolder = primaryAccount?.accountHolderName || product.business.name;
       const trackingUrl = `https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${newOrder.publicAccessToken}`;
 
-      const smsText = `Azwari: ${salesPartner.fullName} created order #${newOrder.orderNumber}. Total: ETB ${totalAmount.toLocaleString()}. Pay via ${payProviderName}: ${payAccNum} (${payHolder}). Submit receipt within 15 min: ${trackingUrl}`;
+      const smsText = `Azwari: ${salesPartner.fullName} created order #${newOrder.orderNumber}. Total: ETB ${totalAmount.toLocaleString()}. Track order and pay online via Chapa (Telebirr/CBE/Card): ${trackingUrl}`;
 
       SmsEthiopiaService.sendSms({
         recipientPhone: body.buyerPhone,
