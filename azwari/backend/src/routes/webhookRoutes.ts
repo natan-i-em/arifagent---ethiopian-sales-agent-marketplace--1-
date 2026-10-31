@@ -88,7 +88,44 @@ webhookRouter.post('/chapa', async (req: Request, res: Response): Promise<void> 
         });
 
         if (!deposit) {
-          console.error(`[CHAPA WEBHOOK DEPOSIT] Deposit not found for txRef: ${txRef}`);
+          // Check if this txRef belongs to a customer order payment
+          const matchingOrder = await prisma.order.findFirst({
+            where: {
+              OR: [
+                { orderNumber: txRef },
+                { deliveryNotes: { contains: txRef } },
+              ],
+            },
+          });
+
+          if (matchingOrder) {
+            if (!['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(matchingOrder.status)) {
+              await prisma.$transaction(async (tx: any) => {
+                await tx.order.update({
+                  where: { id: matchingOrder.id },
+                  data: {
+                    status: 'CONFIRMED',
+                    paymentVerifiedAt: new Date(),
+                  },
+                });
+                await tx.paymentReceipt.create({
+                  data: {
+                    orderId: matchingOrder.id,
+                    receiptNumber: `RCP-CHAPA-${matchingOrder.orderNumber}`,
+                    provider: 'Chapa (Webhook)',
+                    transactionReference: txRef,
+                    amount: matchingOrder.totalAmount,
+                    status: 'verified',
+                    verifiedAt: new Date(),
+                  },
+                });
+              });
+              console.log(`✅ [ORDER CHAPA PAYMENT CONFIRMED] Order ${matchingOrder.orderNumber} verified via Chapa webhook.`);
+            }
+            return;
+          }
+
+          console.error(`[CHAPA WEBHOOK] Neither deposit nor order found for txRef: ${txRef}`);
           return;
         }
 

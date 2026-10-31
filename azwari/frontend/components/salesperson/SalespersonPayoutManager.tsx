@@ -503,18 +503,42 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
                 />
               </div>
 
+              {/* Payout Calculation & Fee Breakdown */}
+              {parseFloat(withdrawAmount) > 0 && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Requested Gross Amount:</span>
+                    <span className="font-mono font-semibold">
+                      ETB {(parseFloat(withdrawAmount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-rose-600">
+                    <span>Platform Commission (20%):</span>
+                    <span className="font-mono font-semibold">
+                      -ETB {((parseFloat(withdrawAmount) || 0) * 0.20).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-900 border-t border-slate-200/80 pt-1.5 font-bold">
+                    <span>Net Disbursed to Bank / Telebirr (80%):</span>
+                    <span className="font-mono text-emerald-700">
+                      ETB {((parseFloat(withdrawAmount) || 0) * 0.80).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Instant Transfer Guarantee */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <p className="text-[11px]">
-                  <strong>Zero Platform Fee:</strong> Funds are sent automatically using Chapa Bulk Transfer API. Bank clearance takes 1-15 minutes for Telebirr/CBE and up to 2 hours for other private commercial banks.
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-950 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  <strong>Transparent 20% Platform Fee:</strong> Azwari retains 20% upon withdrawal to sustain marketplace operations. Your 80% net earnings are sent automatically via Chapa directly to your bank or Telebirr account.
                 </p>
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={withdrawMutation.isPending}
+                  disabled={withdrawMutation.isPending || !withdrawAmount || parseFloat(withdrawAmount) < 10}
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-98 transition-all disabled:opacity-60"
                 >
                   {withdrawMutation.isPending ? (
@@ -524,7 +548,11 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
                     </>
                   ) : (
                     <>
-                      <span>Cash Out via Chapa</span>
+                      <span>
+                        {parseFloat(withdrawAmount) >= 10
+                          ? `Withdraw ETB ${((parseFloat(withdrawAmount) || 0) * 0.80).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Net (80%)`
+                          : 'Enter Amount to Withdraw'}
+                      </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

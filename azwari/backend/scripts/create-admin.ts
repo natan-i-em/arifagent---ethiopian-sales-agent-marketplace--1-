@@ -1,5 +1,5 @@
-import { prisma } from '../src/prisma';
-import { supabaseAdmin } from '../src/supabase';
+import { prisma } from '../src/prisma.js';
+import { supabaseAdmin } from '../src/supabase.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

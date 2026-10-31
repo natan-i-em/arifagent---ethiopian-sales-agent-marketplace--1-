@@ -687,13 +687,10 @@ export const SupplierView: React.FC = () => {
                                     )}
 
                                     {order.orderStatus === 'out_for_delivery' && (
-                                      <button
-                                        onClick={() => markOrderDelivered(order.id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-xs shadow-xs"
-                                      >
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                        <span>Mark Delivered</span>
-                                      </button>
+                                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs font-semibold">
+                                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                        <span>Awaiting Customer Receipt</span>
+                                      </span>
                                     )}
                                   </div>
                                 </td>

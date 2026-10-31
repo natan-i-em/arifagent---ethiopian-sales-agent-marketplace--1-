@@ -17,7 +17,11 @@ import {
   ShieldCheck,
   ChevronRight,
   MessageCircleQuestion,
-  Package
+  Package,
+  CreditCard,
+  ArrowRight,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { ProductImage } from '../common/ProductImage';
 
@@ -79,14 +83,10 @@ export const CustomerOrderView: React.FC = () => {
 
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
-  const [evidenceMethod, setEvidenceMethod] = useState<PaymentMethodProvider>(
-    currentOrder?.selectedPaymentAccount.provider || 'Telebirr'
-  );
-  const [txRef, setTxRef] = useState('');
-  const [amountTransferred, setAmountTransferred] = useState<number>(currentOrder?.totalAmount || 0);
-  const [buyerNotes, setBuyerNotes] = useState('');
-  const [submittedEvidenceSuccess, setSubmittedEvidenceSuccess] = useState(false);
-  const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isConfirmingDelivery, setIsConfirmingDelivery] = useState(false);
+  const [confirmedSuccess, setConfirmedSuccess] = useState(false);
+  const [chapaVerificationMsg, setChapaVerificationMsg] = useState<string | null>(null);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
 
@@ -95,8 +95,6 @@ export const CustomerOrderView: React.FC = () => {
 
   useEffect(() => {
     if (!currentOrder) return;
-    setAmountTransferred(currentOrder.totalAmount);
-    setEvidenceMethod(currentOrder.selectedPaymentAccount.provider);
 
     const updateTimer = () => {
       const expiresAt = new Date(currentOrder.paymentExpiresAt).getTime();
@@ -108,6 +106,78 @@ export const CustomerOrderView: React.FC = () => {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [currentOrder]);
+
+  // Auto-verify Chapa payment on return callback
+  useEffect(() => {
+    if (typeof window !== 'undefined' && activeToken) {
+      const params = new URLSearchParams(window.location.search);
+      const isChapaReturn = params.get('chapa') === 'success';
+      const txRefParam = params.get('tx_ref');
+
+      if (isChapaReturn && currentOrder && currentOrder.paymentStatus !== 'verified') {
+        ordersApi
+          .verifyChapaPayment(activeToken, txRefParam || undefined)
+          .then((res) => {
+            if (res.success) {
+              setChapaVerificationMsg('Payment verified successfully! Your order has been placed into fulfillment.');
+              refetchPublicOrder();
+            }
+          })
+          .catch((err) => {
+            console.warn('[Chapa Verification Notice]', err);
+          });
+      }
+    }
+  }, [activeToken, currentOrder, refetchPublicOrder]);
+
+  const handleChapaPay = async () => {
+    setIsCheckingOut(true);
+    try {
+      const token = activeToken || currentOrder?.publicAccessToken;
+      if (!token) throw new Error('Missing tracking token');
+      const res = await ordersApi.chapaCheckout(token);
+      if (res.checkoutUrl) {
+        window.location.href = res.checkoutUrl;
+      } else {
+        alert('Could not open Chapa checkout. Please try again.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Payment initiation failed. Please try again.');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const handleConfirmReceived = async () => {
+    const isConfirmed = window.confirm(
+      'Are you sure you have received your order items? This will confirm final delivery.'
+    );
+    if (!isConfirmed) return;
+
+    setIsConfirmingDelivery(true);
+    try {
+      const token = activeToken || currentOrder?.publicAccessToken;
+      if (!token) throw new Error('Missing tracking token');
+      await ordersApi.confirmCustomerDelivery(token, 'Customer confirmed delivery receipt via public order link');
+      if (currentOrder) {
+        markOrderDelivered(currentOrder.id, 'Confirmed received by customer via public order page.');
+      }
+      await refetchPublicOrder();
+      setConfirmedSuccess(true);
+    } catch (err: any) {
+      alert(err.message || 'Failed to confirm delivery');
+    } finally {
+      setIsConfirmingDelivery(false);
+    }
+  };
+
+  const handleSubmitDispute = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disputeReason || !currentOrder) return;
+    createDispute(currentOrder.id, 'delayed_delivery', disputeReason, 'customer', currentOrder.buyerName);
+    setShowDisputeModal(false);
+    setDisputeReason('');
+  };
 
   if (isLoadingPublicOrder && !currentOrder) {
     return (
@@ -146,70 +216,6 @@ export const CustomerOrderView: React.FC = () => {
   const minutes = Math.floor(timeLeftSeconds / 60);
   const seconds = timeLeftSeconds % 60;
   const isTimerExpired = timeLeftSeconds === 0 && currentOrder.paymentStatus === 'pending';
-
-  const copyToClipboard = (text: string, type: 'account' | 'amount') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'account') {
-      setCopiedAccount(true);
-      setTimeout(() => setCopiedAccount(false), 2000);
-    } else {
-      setCopiedAmount(true);
-      setTimeout(() => setCopiedAmount(false), 2000);
-    }
-  };
-
-  const handleEvidenceSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!txRef.trim()) {
-      alert('Please enter your transaction reference number (from your bank/Telebirr SMS).');
-      return;
-    }
-
-    setIsSubmittingEvidence(true);
-    const trackingToken = activeToken || currentOrder.publicAccessToken;
-
-    try {
-      // Direct token-authorized public evidence submission
-      await ordersApi.submitEvidence(
-        currentOrder.id,
-        {
-          provider: evidenceMethod,
-          transactionReference: txRef.trim(),
-          amountShown: amountTransferred,
-          receiptNote: buyerNotes.trim() || undefined,
-        },
-        trackingToken
-      );
-
-      // Also notify App context store if active
-      submitPaymentEvidence(currentOrder.id, {
-        provider: evidenceMethod,
-        transactionReference: txRef.trim(),
-        amountShown: amountTransferred,
-        receiptNote: buyerNotes.trim() || undefined,
-      });
-
-      await refetchPublicOrder();
-      setSubmittedEvidenceSuccess(true);
-      setTimeout(() => setSubmittedEvidenceSuccess(false), 5000);
-    } catch (err: any) {
-      alert(err.message || 'Failed to submit payment evidence.');
-    } finally {
-      setIsSubmittingEvidence(false);
-    }
-  };
-
-  const handleConfirmReceived = () => {
-    markOrderDelivered(currentOrder.id, 'Confirmed received by customer via public order page.');
-  };
-
-  const handleSubmitDispute = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!disputeReason) return;
-    createDispute(currentOrder.id, 'delayed_delivery', disputeReason, 'customer', currentOrder.buyerName);
-    setShowDisputeModal(false);
-    setDisputeReason('');
-  };
 
   // State machine steps for timeline
   const getStepStatus = (stepIndex: number) => {
@@ -348,135 +354,94 @@ export const CustomerOrderView: React.FC = () => {
           </div>
         )}
 
-        {/* Payment Instructions Card */}
-        {currentOrder.paymentStatus !== 'verified' && (
+        {/* Chapa Verification Message if returning */}
+        {chapaVerificationMsg && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between text-xs font-semibold">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span>{chapaVerificationMsg}</span>
+            </div>
+            <button onClick={() => setChapaVerificationMsg(null)} className="text-slate-400 hover:text-slate-700">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Chapa Payment Card */}
+        {currentOrder.paymentStatus !== 'verified' ? (
           <div className="glass-card rounded-3xl border border-white/90 p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-slate-700" />
-              <span>Direct Payment Instructions</span>
-            </h2>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Please transfer the exact amount of{' '}
-              <strong className="text-slate-900 font-mono">
-                ETB {currentOrder.totalAmount.toLocaleString()}
-              </strong>{' '}
-              to the merchant's verified account:
-            </p>
-
-            <div className="p-4 glass-card-subtle rounded-2xl border border-slate-200/80 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Bank / Provider:</span>
-                <span className="font-bold text-slate-900">
-                  {currentOrder.selectedPaymentAccount.provider}
-                </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-sm font-bold text-slate-900">Pay Online with Chapa</h2>
               </div>
-
-              <div className="flex items-center justify-between text-xs border-t border-slate-200/70 pt-2">
-                <span className="text-slate-500">Account / Phone:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono-numbers font-bold text-slate-900 text-sm">
-                    {currentOrder.selectedPaymentAccount.accountNumber}
-                  </span>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(
-                        currentOrder.selectedPaymentAccount.accountNumber,
-                        'account'
-                      )
-                    }
-                    className="p-1 text-slate-500 hover:text-slate-800"
-                    title="Copy Account Number"
-                  >
-                    {copiedAccount ? (
-                      <Check className="w-3.5 h-3.5 text-slate-900" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs border-t border-slate-200/70 pt-2">
-                <span className="text-slate-500">Account Holder Name:</span>
-                <span className="font-semibold text-slate-800">
-                  {currentOrder.selectedPaymentAccount.accountHolderName}
-                </span>
-              </div>
-
-              {currentOrder.selectedPaymentAccount.instructions && (
-                <div className="text-[11px] text-slate-500 border-t border-slate-200/70 pt-2">
-                  Tip: {currentOrder.selectedPaymentAccount.instructions}
-                </div>
-              )}
+              <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                Instant Verification
+              </span>
             </div>
 
-            {/* Receipt & Transaction ID Submission Form */}
-            <form onSubmit={handleEvidenceSubmit} className="pt-2 space-y-3">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                Submit Transfer Reference
-              </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Pay securely via <strong className="text-slate-900">Telebirr</strong>, <strong className="text-slate-900">CBE Birr</strong>, or <strong className="text-slate-900">Debit / Credit Card</strong>. Your order is automatically verified upon payment—no need to upload manual receipts or bank slips.
+            </p>
 
-              {submittedEvidenceSuccess && (
-                <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-slate-900" />
-                  <span>Payment reference submitted! The merchant has been notified for confirmation.</span>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] text-slate-500 mb-1">
-                  Payment Method Used *
-                </label>
-                <select
-                  value={evidenceMethod}
-                  onChange={(e) => setEvidenceMethod(e.target.value as PaymentMethodProvider)}
-                  className="w-full text-xs rounded-xl border border-slate-300 bg-white/90 px-3 py-2 text-slate-900"
-                >
-                  <option value="Telebirr">Telebirr</option>
-                  <option value="Commercial Bank of Ethiopia (CBE)">Commercial Bank of Ethiopia (CBE Birr / Mobile)</option>
-                  <option value="Awash Bank">Awash Bank</option>
-                  <option value="Dashen Bank (Amole)">Dashen Bank (Amole)</option>
-                  <option value="Bank of Abyssinia">Bank of Abyssinia</option>
-                </select>
+            {/* Payment Method Badges */}
+            <div className="grid grid-cols-3 gap-2 py-1">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                <span className="text-xs font-bold text-slate-800 block">Telebirr</span>
+                <span className="text-[10px] text-slate-400">Mobile Wallet</span>
               </div>
-
-              <div>
-                <label className="block text-[11px] text-slate-500 mb-1">
-                  Transaction Reference / ID * (From your SMS confirmation)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. FT26102... or TB991048"
-                  value={txRef}
-                  onChange={(e) => setTxRef(e.target.value)}
-                  className="w-full text-xs font-mono rounded-xl border border-slate-300 bg-white/90 px-3 py-2 text-slate-900"
-                />
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                <span className="text-xs font-bold text-slate-800 block">CBE Birr</span>
+                <span className="text-[10px] text-slate-400">Commercial Bank</span>
               </div>
-
-              <div>
-                <label className="block text-[11px] text-slate-500 mb-1">
-                  Optional Note / Sender Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Transferred from Alemayehu's Telebirr account"
-                  value={buyerNotes}
-                  onChange={(e) => setBuyerNotes(e.target.value)}
-                  className="w-full text-xs rounded-xl border border-slate-300 bg-white/90 px-3 py-2 text-slate-900"
-                />
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                <span className="text-xs font-bold text-slate-800 block">Cards</span>
+                <span className="text-[10px] text-slate-400">Visa / Mastercard</span>
               </div>
+            </div>
 
+            <div className="pt-2">
               <button
-                type="submit"
-                disabled={isSubmittingEvidence}
-                className="w-full py-3 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                type="button"
+                onClick={handleChapaPay}
+                disabled={isCheckingOut}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{isSubmittingEvidence ? 'Submitting Reference...' : 'Submit Payment Evidence for Verification'}</span>
+                {isCheckingOut ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Redirecting to Chapa Checkout...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Pay ETB {currentOrder.totalAmount.toLocaleString()} with Chapa</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
-            </form>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>256-bit encrypted checkout powered by Chapa Financial Technologies</span>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-card rounded-3xl border border-emerald-500/30 bg-emerald-50/50 p-4 shadow-xs flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <Check className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-emerald-950">Payment Confirmed</h3>
+                <p className="text-[11px] text-emerald-800">
+                  ETB {currentOrder.totalAmount.toLocaleString()} received via verified checkout
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-xl">
+              Paid
+            </span>
           </div>
         )}
 
@@ -522,10 +487,8 @@ export const CustomerOrderView: React.FC = () => {
                 <div className="font-bold text-slate-900">Payment Verification</div>
                 <div className="text-[11px] text-slate-500">
                   {currentOrder.paymentStatus === 'verified'
-                    ? 'Verified by merchant against bank account'
-                    : currentOrder.paymentStatus === 'submitted'
-                    ? 'Evidence submitted, merchant checking bank records'
-                    : 'Awaiting your transfer and receipt submission'}
+                    ? 'Verified online via Chapa payment gateway'
+                    : 'Awaiting Chapa online checkout'}
                 </div>
               </div>
             </div>
@@ -610,14 +573,36 @@ export const CustomerOrderView: React.FC = () => {
           </div>
 
           {/* Customer confirmation button */}
-          {currentOrder.orderStatus === 'out_for_delivery' && (
-            <div className="pt-3 border-t border-slate-100">
+          {['scheduled', 'out_for_delivery'].includes(currentOrder.orderStatus) && (
+            <div className="pt-4 border-t border-slate-100 space-y-2">
               <button
+                type="button"
                 onClick={handleConfirmReceived}
-                className="w-full py-2.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors"
+                disabled={isConfirmingDelivery}
+                className="w-full py-3.5 px-4 text-xs font-bold rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-lg shadow-emerald-600/25 active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                I Have Received My Order
+                {isConfirmingDelivery ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Confirming Receipt...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirm I Have Received My Order</span>
+                  </>
+                )}
               </button>
+              <p className="text-[11px] text-slate-500 text-center">
+                Clicking confirms delivery of your package and releases commission to your sales agent ({currentOrder.salespersonName}).
+              </p>
+            </div>
+          )}
+
+          {confirmedSuccess && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs rounded-2xl flex items-center gap-2 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Thank you! Your delivery confirmation has been saved and commissions released.</span>
             </div>
           )}
         </div>

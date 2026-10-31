@@ -10,6 +10,6 @@
     "outDir": "./dist",
     "rootDir": "./"
   },
-  "include": ["src/**/*", "scripts/**/*", "tests/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "prisma/client"]
 }

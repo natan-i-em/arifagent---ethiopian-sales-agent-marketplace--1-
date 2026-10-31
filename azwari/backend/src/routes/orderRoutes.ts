@@ -17,6 +17,7 @@ import {
 } from '../middleware/zodValidators.js';
 import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 import { WalletService, InsufficientBalanceError } from '../services/walletService.js';
+import { ChapaService } from '../services/chapaService.js';
 import { etbToCents } from '../config/walletConfig.js';
 
 export const orderRouter = Router();
@@ -245,6 +246,309 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
     res.status(200).json({ success: true, order: formatOrderForFrontend(order) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/orders/public/:token/chapa-checkout
+ * Initialize direct Chapa online checkout for the customer
+ */
+orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const order = await prisma.order.findUnique({
+      where: { publicAccessToken: token },
+      include: {
+        business: true,
+        items: true,
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found or invalid tracking token' });
+      return;
+    }
+
+    if (['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
+      res.status(400).json({ success: false, error: 'This order is already paid and confirmed.' });
+      return;
+    }
+
+    if (order.status === 'CANCELLED') {
+      res.status(400).json({ success: false, error: 'This order has been cancelled and cannot be paid.' });
+      return;
+    }
+
+    const totalCents = etbToCents(Number(order.totalAmount));
+    const txRef = `ORD-CHAPA-${order.orderNumber}-${Date.now().toString().slice(-4)}`;
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const returnUrl = `${frontendUrl}/order-status/${token}?chapa=success&tx_ref=${txRef}`;
+
+    const chapaRes = await ChapaService.initializePayment({
+      amountCents: totalCents,
+      currency: 'ETB',
+      email: `${order.buyerPhone.replace(/\D/g, '')}@azwari.com`,
+      firstName: order.buyerName.split(' ')[0] || 'Customer',
+      lastName: order.buyerName.split(' ').slice(1).join(' ') || 'Azwari',
+      phoneNumber: order.buyerPhone,
+      txRef,
+      returnUrl,
+      customization: {
+        title: `Order ${order.orderNumber}`.slice(0, 16),
+        description: `Pay for order #${order.orderNumber} on Azwari`.slice(0, 50),
+      },
+    });
+
+    // Update order with pending Chapa txRef
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        deliveryNotes: order.deliveryNotes 
+          ? `${order.deliveryNotes} | ChapaTx: ${txRef}`
+          : `ChapaTx: ${txRef}`,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      checkoutUrl: chapaRes.checkoutUrl,
+      txRef,
+    });
+  } catch (error: any) {
+    console.error('[Chapa Order Checkout Error]', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to initialize payment with Chapa' });
+  }
+});
+
+/**
+ * POST /api/orders/public/:token/verify-chapa
+ * Verify payment with Chapa when customer returns to the tracking page
+ */
+orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const { tx_ref } = req.body || {};
+
+    const order = await prisma.order.findUnique({
+      where: { publicAccessToken: token },
+      include: {
+        items: { include: { product: true, variant: true } },
+        paymentReceipts: { orderBy: { createdAt: 'desc' } },
+        commissionEscrow: true,
+        business: { include: { paymentAccounts: true } },
+        salesPartner: true,
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    if (['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
+      res.status(200).json({ success: true, order: formatOrderForFrontend(order) });
+      return;
+    }
+
+    let refToVerify = tx_ref;
+    if (!refToVerify && order.deliveryNotes && order.deliveryNotes.includes('ChapaTx: ')) {
+      const match = order.deliveryNotes.match(/ChapaTx:\s*(ORD-CHAPA-[^\s|]+)/);
+      if (match) refToVerify = match[1];
+    }
+    if (!refToVerify) {
+      refToVerify = `ORD-CHAPA-${order.orderNumber}`;
+    }
+
+    const verification = await ChapaService.verifyTransaction(refToVerify);
+
+    if (verification.status === 'success') {
+      const updatedOrder = await prisma.$transaction(async (tx: any) => {
+        const ord = await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'CONFIRMED',
+            paymentVerifiedAt: new Date(),
+          },
+          include: {
+            items: { include: { product: true, variant: true } },
+            paymentReceipts: { orderBy: { createdAt: 'desc' } },
+            commissionEscrow: true,
+            business: { include: { paymentAccounts: true } },
+            salesPartner: true,
+          },
+        });
+
+        await tx.paymentReceipt.create({
+          data: {
+            orderId: order.id,
+            receiptNumber: `RCP-CHAPA-${order.orderNumber}`,
+            provider: 'Chapa (Online Payment)',
+            transactionReference: refToVerify,
+            amount: order.totalAmount,
+            status: 'verified',
+            verifiedAt: new Date(),
+          },
+        });
+
+        return ord;
+      });
+
+      try {
+        await prisma.auditLog.create({
+          data: {
+            actorRole: 'customer',
+            actorName: order.buyerName,
+            action: 'CHAPA_PAYMENT_VERIFIED',
+            entityType: 'Order',
+            entityId: order.id,
+            businessId: order.businessId,
+            description: `Order #${order.orderNumber} paid and verified via Chapa (Ref: ${refToVerify}). Total: ETB ${order.totalAmount}.`,
+          },
+        });
+      } catch (auditErr) {
+        console.warn('[Audit Log Notice]', auditErr);
+      }
+
+      res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
+      return;
+    }
+
+    res.status(400).json({
+      success: false,
+      error: `Chapa payment verification status: ${verification.status}. If payment was debited, it will confirm shortly.`,
+    });
+  } catch (error: any) {
+    console.error('[Verify Chapa Payment Error]', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to verify Chapa payment' });
+  }
+});
+
+/**
+ * POST /api/orders/public/:token/confirm-delivery
+ * Public customer delivery confirmation
+ * Customer acknowledges receipt of the ordered items, releasing the sales agent's commission
+ */
+orderRouter.post('/public/:token/confirm-delivery', async (req: any, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const { notes } = req.body || {};
+
+    const order = await prisma.order.findUnique({
+      where: { publicAccessToken: token },
+      include: {
+        commissionEscrow: true,
+        business: true,
+        salesPartner: true,
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found or tracking link invalid' });
+      return;
+    }
+
+    if (order.status === 'DELIVERED') {
+      res.status(200).json({
+        success: true,
+        message: 'Order was already confirmed as delivered.',
+        order: formatOrderForFrontend(order),
+      });
+      return;
+    }
+
+    if (order.status !== 'DISPATCHED' && order.status !== 'SCHEDULED') {
+      res.status(409).json({
+        success: false,
+        error: `Order must be out for delivery before confirming receipt. Current status: ${order.status}`,
+      });
+      return;
+    }
+
+    // ATOMIC TRANSACTION: Order -> DELIVERED, Escrow -> ELIGIBLE, SalesPartner -> balances, Settle commission in Wallet
+    const updatedOrder = await prisma.$transaction(async (tx: any) => {
+      // 1. Update Order status
+      const ord = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'DELIVERED',
+          deliveredAt: new Date(),
+          deliveryNotes: notes
+            ? `${order.deliveryNotes || ''} | Customer Confirmed: ${notes}`
+            : `${order.deliveryNotes || ''} | Confirmed delivered by customer`,
+        },
+        include: {
+          items: { include: { product: true, variant: true } },
+          paymentReceipts: { orderBy: { createdAt: 'desc' } },
+          commissionEscrow: true,
+          business: { include: { paymentAccounts: true } },
+          salesPartner: true,
+        },
+      });
+
+      // 2. Commission Escrow unlock
+      if (order.commissionEscrow) {
+        await tx.commissionEscrow.update({
+          where: { id: order.commissionEscrow.id },
+          data: {
+            status: 'ELIGIBLE',
+            eligibleAt: new Date(),
+          },
+        });
+
+        // 3. Update agent balances
+        const commAmount = Number(order.commissionEscrow.amount);
+        await tx.salesPartner.update({
+          where: { id: order.salesPartnerId },
+          data: {
+            totalAttributedSales: { increment: order.subtotalAmount },
+            eligibleCommissions: { increment: commAmount },
+            pendingCommissions: { decrement: commAmount },
+          },
+        });
+      }
+
+      // 4. Secure platform fee ledger
+      await tx.platformFeeLedger.updateMany({
+        where: { orderId: order.id },
+        data: { status: 'secured' },
+      });
+
+      // 5. Wallet Ledger: Move commission from merchant locked balance to salesperson available balance
+      await WalletService.settleCommission(order.id, tx);
+
+      return ord;
+    });
+
+    // Audit Log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorRole: 'customer',
+          actorName: order.buyerName,
+          action: 'CONFIRM_DELIVERY_CUSTOMER',
+          entityType: 'Order',
+          entityId: order.id,
+          businessId: order.businessId,
+          description: `Customer ${order.buyerName} confirmed receipt of Order #${order.orderNumber}. Commission ETB ${order.commissionAmount} released to agent ${order.salesPartner.fullName}.`,
+        },
+      });
+    } catch (auditErr) {
+      console.warn('[Audit Log Notice]', auditErr);
+    }
+
+    // Thank you SMS
+    SmsEthiopiaService.sendSms({
+      recipientPhone: order.buyerPhone,
+      messageBody: `Azwari: Delivery confirmed for Order #${order.orderNumber}. Thank you for confirming! Your sales agent has received their commission.`,
+      orderNumber: order.orderNumber,
+      templateName: 'order_delivered',
+    }).catch(() => {});
+
+    res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
+  } catch (error: any) {
+    console.error('[Customer Confirm Delivery Error]', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to confirm delivery' });
   }
 });
 
@@ -994,7 +1298,7 @@ orderRouter.post(
 orderRouter.post(
   '/:id/deliver',
   requireAuth,
-  requireRole('supplier', 'admin'),
+  requireRole('admin'), // Delivery confirmation is reserved for customer receipt or admin arbitration
   validateBody(DeliverOrderSchema),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {

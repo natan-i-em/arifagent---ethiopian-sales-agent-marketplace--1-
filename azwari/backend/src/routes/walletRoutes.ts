@@ -324,12 +324,17 @@ walletRouter.post(
         return;
       }
 
+      // Calculate 20% platform commission and 80% net payout
+      const platformFeePercent = 20;
+      const platformFeeCents = (amountCents * BigInt(platformFeePercent)) / BigInt(100);
+      const netPayoutCents = amountCents - platformFeeCents;
+
       // 1. Validate bank code against supported banks
       const banks = await ChapaService.getBanks();
       const matchedBank = banks.find((b) => b.code === bank_code || b.id === bank_code);
       const bankName = matchedBank ? matchedBank.name : undefined;
 
-      // 2. Put funds on hold in DB transaction (deducts available balance, records PAYOUT_HOLD)
+      // 2. Put funds on hold in DB transaction (deducts gross available balance, records 20% platform fee)
       const { payout, reference } = await WalletService.holdWithdrawal({
         salesPartnerId,
         amountCents,
@@ -337,14 +342,16 @@ walletRouter.post(
         bankName,
         accountNumber: account_number,
         accountName: account_name,
+        platformFeeCents,
+        netPayoutCents,
       });
 
-      // 3. Call Chapa Transfer API
+      // 3. Call Chapa Transfer API with the 80% NET payout amount
       try {
         const transferRes = await ChapaService.initiateTransfer({
           accountNumber: account_number,
           accountName: account_name,
-          amountCents,
+          amountCents: netPayoutCents,
           bankCode: bank_code,
           reference,
           currency: 'ETB',
@@ -357,14 +364,32 @@ walletRouter.post(
           });
         }
 
+        // Audit Log for Platform Commission
+        try {
+          await prisma.auditLog.create({
+            data: {
+              actorRole: 'system',
+              actorName: 'Azwari Platform Fee',
+              action: 'PLATFORM_COMMISSION_SECURED',
+              entityType: 'Payout',
+              entityId: payout.id,
+              description: `Platform 20% commission (ETB ${centsToEtb(platformFeeCents).toLocaleString()}) secured from agent withdrawal ${reference}. Net disbursed to ${account_name}: ETB ${centsToEtb(netPayoutCents).toLocaleString()}.`,
+            },
+          });
+        } catch (auditErr) {
+          console.warn('[Audit Log Payout Fee Notice]', auditErr);
+        }
+
         res.status(200).json({
           success: true,
           reference,
           status: 'pending',
-          amount: Number(amount),
+          grossAmount: Number(amount),
+          platformFee: centsToEtb(platformFeeCents),
+          netAmount: centsToEtb(netPayoutCents),
           bankName: bankName || bank_code,
           accountNumber: account_number,
-          message: 'Withdrawal requested successfully. Funds will arrive after bank clearance.',
+          message: `Withdrawal initiated! ETB ${centsToEtb(netPayoutCents).toLocaleString()} (80% net) is being transferred to ${bankName || bank_code}. 20% platform commission retained.`,
         });
       } catch (transferErr: any) {
         console.error('[CHAPA TRANSFER INITIATION FAILED]', transferErr);

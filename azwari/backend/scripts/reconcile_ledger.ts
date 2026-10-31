@@ -1,6 +1,6 @@
-import { prisma } from '../src/prisma';
-import { ChapaService } from '../src/services/chapaService';
-import { centsToEtb, formatCentsToEtbString } from '../src/config/walletConfig';
+import { prisma } from '../src/prisma.js';
+import { ChapaService } from '../src/services/chapaService.js';
+import { centsToEtb, formatCentsToEtbString } from '../src/config/walletConfig.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

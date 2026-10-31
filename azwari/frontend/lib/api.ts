@@ -211,6 +211,20 @@ export const ordersApi = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }),
+  chapaCheckout: async (token: string) =>
+    apiRequest<{ success: boolean; checkoutUrl: string; txRef: string }>(`/orders/public/${token}/chapa-checkout`, {
+      method: 'POST',
+    }),
+  verifyChapaPayment: async (token: string, tx_ref?: string) =>
+    apiRequest<{ success: boolean; order: Order }>(`/orders/public/${token}/verify-chapa`, {
+      method: 'POST',
+      body: JSON.stringify({ tx_ref }),
+    }),
+  confirmCustomerDelivery: async (token: string, notes?: string) =>
+    apiRequest<{ success: boolean; order: Order }>(`/orders/public/${token}/confirm-delivery`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
 };
 
 export const businessesApi = {

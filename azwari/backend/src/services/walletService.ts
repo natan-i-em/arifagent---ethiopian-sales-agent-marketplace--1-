@@ -668,6 +668,8 @@ export class WalletService {
     bankName?: string;
     accountNumber: string;
     accountName: string;
+    platformFeeCents?: bigint;
+    netPayoutCents?: bigint;
   }) {
     const minWithdrawalCents = etbToCents(walletConfig.minWithdrawalEtb);
     if (params.amountCents < minWithdrawalCents) {
@@ -675,6 +677,8 @@ export class WalletService {
     }
 
     const reference = `POW-AA-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    const feeCents = params.platformFeeCents ?? (params.amountCents * BigInt(20)) / BigInt(100);
+    const netCents = params.netPayoutCents ?? (params.amountCents - feeCents);
 
     return await prisma.$transaction(async (tx) => {
       const wallet = await this.getOrCreateWallet({ salesPartnerId: params.salesPartnerId }, tx);
@@ -729,6 +733,15 @@ export class WalletService {
           accountName: params.accountName,
           reference,
           status: 'PENDING',
+          rawWebhookPayload: {
+            grossAmountCents: params.amountCents.toString(),
+            platformFeeCents: feeCents.toString(),
+            netPayoutCents: netCents.toString(),
+            grossAmountEtb: centsToEtb(params.amountCents),
+            platformFeeEtb: centsToEtb(feeCents),
+            netPayoutEtb: centsToEtb(netCents),
+            platformCommissionRate: 0.20,
+          },
         },
       });
 
@@ -746,12 +759,15 @@ export class WalletService {
             payoutId: payout.id,
             bankCode: params.bankCode,
             accountNumber: params.accountNumber,
-            amountEtb: centsToEtb(params.amountCents),
+            grossAmountEtb: centsToEtb(params.amountCents),
+            platformFeeEtb: centsToEtb(feeCents),
+            netDisbursedEtb: centsToEtb(netCents),
+            platformFeePercent: 20,
           },
         },
       });
 
-      return { payout, reference };
+      return { payout, reference, platformFeeCents: feeCents, netPayoutCents: netCents };
     }, TX_OPTIONS);
   }
 
@@ -800,7 +816,8 @@ export class WalletService {
           metadata: {
             payoutId: payout.id,
             chapaTransferId,
-            amountEtb: centsToEtb(payout.amount),
+            grossAmountEtb: centsToEtb(payout.amount),
+            ...(typeof payout.rawWebhookPayload === 'object' ? (payout.rawWebhookPayload as any) : {}),
           },
         },
       });
