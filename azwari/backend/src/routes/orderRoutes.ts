@@ -243,6 +243,62 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
       return;
     }
 
+    // Auto-verify with Chapa if unconfirmed and has Chapa transactions recorded or query ref
+    if (!['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
+      const queryTxRef = (req.query.tx_ref || req.query.trx_ref || req.query.reference) as string | undefined;
+      const fromNotes = (order.deliveryNotes || '').match(/ORD-CHAPA-[^\s|]+/g) || [];
+      const candidates: string[] = [];
+      if (queryTxRef) candidates.push(queryTxRef);
+      for (const r of fromNotes.reverse()) {
+        if (!candidates.includes(r)) candidates.push(r);
+      }
+      candidates.push(`ORD-CHAPA-${order.orderNumber}`);
+
+      for (const ref of candidates) {
+        try {
+          const ver = await ChapaService.verifyTransaction(ref);
+          if (ver.status === 'success') {
+            const confirmedOrder = await prisma.$transaction(async (tx) => {
+              const ord = await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  status: 'CONFIRMED',
+                  deliveryNotes: `${order.deliveryNotes || ''} | Verified via Chapa: ${ref}`,
+                },
+                include: {
+                  items: { include: { product: true, variant: true } },
+                  paymentReceipts: { orderBy: { createdAt: 'desc' } },
+                  business: { include: { paymentAccounts: true } },
+                  salesPartner: true,
+                },
+              });
+
+              const existingReceipt = await tx.paymentReceipt.findFirst({
+                where: { orderId: order.id, transactionReference: ref },
+              });
+              if (!existingReceipt) {
+                await tx.paymentReceipt.create({
+                  data: {
+                    orderId: order.id,
+                    provider: PaymentProvider.TELEBIRR,
+                    transactionReference: ref,
+                    amountTransferred: order.totalAmount,
+                    buyerNotes: `Chapa Online Payment: ${ref}`,
+                    verifiedAt: new Date(),
+                    verifiedBy: 'CHAPA_SYSTEM',
+                  },
+                });
+              }
+              return ord;
+            });
+
+            res.status(200).json({ success: true, order: formatOrderForFrontend(confirmedOrder) });
+            return;
+          }
+        } catch {}
+      }
+    }
+
     res.status(200).json({ success: true, order: formatOrderForFrontend(order) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -274,10 +330,8 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
       return;
     }
 
-    if (order.status === 'CANCELLED') {
-      res.status(400).json({ success: false, error: 'This order has been cancelled and cannot be paid.' });
-      return;
-    }
+    // If order was cancelled, allow customer to resurrect it by initiating checkout
+    const isResurrecting = order.status === 'CANCELLED';
 
     const totalCents = etbToCents(Number(order.totalAmount));
     const txRef = `ORD-CHAPA-${order.orderNumber}-${Date.now().toString().slice(-4)}`;
@@ -319,10 +373,12 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
       },
     });
 
-    // Update order with pending Chapa txRef
+    // Update order with pending Chapa txRef and extend payment expiration window by 60 minutes
     await prisma.order.update({
       where: { id: order.id },
       data: {
+        paymentExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        status: order.status === 'CANCELLED' ? 'PENDING_PAYMENT' : order.status,
         deliveryNotes: order.deliveryNotes 
           ? `${order.deliveryNotes} | ChapaTx: ${txRef}`
           : `ChapaTx: ${txRef}`,
@@ -370,24 +426,42 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
       return;
     }
 
-    let refToVerify = tx_ref;
-    if (!refToVerify && order.deliveryNotes && order.deliveryNotes.includes('ChapaTx: ')) {
-      const match = order.deliveryNotes.match(/ChapaTx:\s*(ORD-CHAPA-[^\s|]+)/);
-      if (match) refToVerify = match[1];
+    // Collect all candidate transaction references to verify
+    const candidateRefs: string[] = [];
+    if (tx_ref) candidateRefs.push(tx_ref);
+    if (req.body?.trx_ref) candidateRefs.push(req.body.trx_ref);
+    if (req.query?.tx_ref) candidateRefs.push(req.query.tx_ref as string);
+    if (req.query?.trx_ref) candidateRefs.push(req.query.trx_ref as string);
+
+    const fromNotes = (order.deliveryNotes || '').match(/ORD-CHAPA-[^\s|]+/g) || [];
+    for (const r of fromNotes.reverse()) {
+      if (!candidateRefs.includes(r)) candidateRefs.push(r);
     }
-    if (!refToVerify) {
-      refToVerify = `ORD-CHAPA-${order.orderNumber}`;
+    candidateRefs.push(`ORD-CHAPA-${order.orderNumber}`);
+
+    let successfulRef: string | null = null;
+    let lastStatus = 'pending';
+
+    for (const ref of candidateRefs) {
+      try {
+        const ver = await ChapaService.verifyTransaction(ref);
+        lastStatus = ver.status;
+        if (ver.status === 'success') {
+          successfulRef = ref;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`[Verify Chapa Check Error for ${ref}]`, err.message);
+      }
     }
 
-    const verification = await ChapaService.verifyTransaction(refToVerify);
-
-    if (verification.status === 'success') {
+    if (successfulRef) {
       const updatedOrder = await prisma.$transaction(async (tx: any) => {
         const ord = await tx.order.update({
           where: { id: order.id },
           data: {
             status: 'CONFIRMED',
-            paymentVerifiedAt: new Date(),
+            deliveryNotes: `${order.deliveryNotes || ''} | Verified via Chapa: ${successfulRef}`,
           },
           include: {
             items: { include: { product: true, variant: true } },
@@ -398,17 +472,22 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
           },
         });
 
-        await tx.paymentReceipt.create({
-          data: {
-            orderId: order.id,
-            receiptNumber: `RCP-CHAPA-${order.orderNumber}`,
-            provider: 'Chapa (Online Payment)',
-            transactionReference: refToVerify,
-            amount: order.totalAmount,
-            status: 'verified',
-            verifiedAt: new Date(),
-          },
+        const existingReceipt = await tx.paymentReceipt.findFirst({
+          where: { orderId: order.id, transactionReference: successfulRef! },
         });
+        if (!existingReceipt) {
+          await tx.paymentReceipt.create({
+            data: {
+              orderId: order.id,
+              provider: PaymentProvider.TELEBIRR,
+              transactionReference: successfulRef!,
+              amountTransferred: order.totalAmount,
+              buyerNotes: `Chapa Online Payment: ${successfulRef}`,
+              verifiedAt: new Date(),
+              verifiedBy: 'CHAPA_SYSTEM',
+            },
+          });
+        }
 
         return ord;
       });
@@ -422,7 +501,7 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
             entityType: 'Order',
             entityId: order.id,
             businessId: order.businessId,
-            description: `Order #${order.orderNumber} paid and verified via Chapa (Ref: ${refToVerify}). Total: ETB ${order.totalAmount}.`,
+            description: `Order #${order.orderNumber} paid and verified via Chapa (Ref: ${successfulRef}). Total: ETB ${order.totalAmount}.`,
           },
         });
       } catch (auditErr) {
@@ -435,7 +514,7 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
 
     res.status(400).json({
       success: false,
-      error: `Chapa payment verification status: ${verification.status}. If payment was debited, it will confirm shortly.`,
+      error: `Chapa payment verification status: ${lastStatus}. If payment was debited, it will confirm shortly.`,
     });
   } catch (error: any) {
     console.error('[Verify Chapa Payment Error]', error);

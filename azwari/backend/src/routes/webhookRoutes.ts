@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { ChapaService } from '../services/chapaService.js';
 import { WalletService } from '../services/walletService.js';
-import { prisma } from '../prisma.js';
+import { prisma, PaymentProvider } from '../prisma.js';
 
 export const webhookRouter = Router();
 
@@ -105,20 +105,26 @@ webhookRouter.post('/chapa', async (req: Request, res: Response): Promise<void> 
                   where: { id: matchingOrder.id },
                   data: {
                     status: 'CONFIRMED',
-                    paymentVerifiedAt: new Date(),
+                    deliveryNotes: `${matchingOrder.deliveryNotes || ''} | Verified via Chapa Webhook: ${txRef}`,
                   },
                 });
-                await tx.paymentReceipt.create({
-                  data: {
-                    orderId: matchingOrder.id,
-                    receiptNumber: `RCP-CHAPA-${matchingOrder.orderNumber}`,
-                    provider: 'Chapa (Webhook)',
-                    transactionReference: txRef,
-                    amount: matchingOrder.totalAmount,
-                    status: 'verified',
-                    verifiedAt: new Date(),
-                  },
+
+                const existingReceipt = await tx.paymentReceipt.findFirst({
+                  where: { orderId: matchingOrder.id, transactionReference: txRef },
                 });
+                if (!existingReceipt) {
+                  await tx.paymentReceipt.create({
+                    data: {
+                      orderId: matchingOrder.id,
+                      provider: PaymentProvider.TELEBIRR,
+                      transactionReference: txRef,
+                      amountTransferred: matchingOrder.totalAmount,
+                      buyerNotes: `Chapa Webhook Verified: ${txRef}`,
+                      verifiedAt: new Date(),
+                      verifiedBy: 'CHAPA_WEBHOOK',
+                    },
+                  });
+                }
               });
               console.log(`✅ [ORDER CHAPA PAYMENT CONFIRMED] Order ${matchingOrder.orderNumber} verified via Chapa webhook.`);
             }

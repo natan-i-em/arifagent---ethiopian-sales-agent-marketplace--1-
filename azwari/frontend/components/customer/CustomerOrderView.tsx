@@ -84,6 +84,7 @@ export const CustomerOrderView: React.FC = () => {
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [isConfirmingDelivery, setIsConfirmingDelivery] = useState(false);
   const [confirmedSuccess, setConfirmedSuccess] = useState(false);
   const [chapaVerificationMsg, setChapaVerificationMsg] = useState<string | null>(null);
@@ -107,28 +108,59 @@ export const CustomerOrderView: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentOrder]);
 
+  // Payment status verifier (for both auto return callback and manual "Check status" button)
+  const triggerVerifyPayment = async (silent = false) => {
+    if (!activeToken) return;
+    setIsVerifyingPayment(true);
+    try {
+      let queryRef: string | undefined;
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        queryRef = params.get('trx_ref') || params.get('tx_ref') || params.get('reference') || undefined;
+      }
+
+      const res = await ordersApi.verifyChapaPayment(activeToken, queryRef);
+      if (res.success && (res.order?.paymentStatus === 'verified' || res.order?.orderStatus === 'payment_verified')) {
+        setChapaVerificationMsg('Payment verified successfully! Your order has been placed into fulfillment.');
+        await refetchPublicOrder();
+      } else if (!silent) {
+        alert(
+          (res as any).message ||
+            'Payment is still being confirmed with the bank network. If you completed payment, please wait a few seconds and check again.'
+        );
+        await refetchPublicOrder();
+      }
+    } catch (err: any) {
+      if (!silent) {
+        alert(err.message || 'Unable to verify payment at this time. Please try again in a few moments.');
+      }
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
+
   // Auto-verify Chapa payment on return callback
   useEffect(() => {
     if (typeof window !== 'undefined' && activeToken) {
       const params = new URLSearchParams(window.location.search);
-      const isChapaReturn = params.get('chapa') === 'success';
-      const txRefParam = params.get('tx_ref');
+      const isChapaReturn =
+        params.get('chapa') === 'success' ||
+        params.has('trx_ref') ||
+        params.has('tx_ref') ||
+        params.get('status') === 'success';
 
       if (isChapaReturn && currentOrder && currentOrder.paymentStatus !== 'verified') {
-        ordersApi
-          .verifyChapaPayment(activeToken, txRefParam || undefined)
-          .then((res) => {
-            if (res.success) {
-              setChapaVerificationMsg('Payment verified successfully! Your order has been placed into fulfillment.');
-              refetchPublicOrder();
-            }
-          })
-          .catch((err) => {
-            console.warn('[Chapa Verification Notice]', err);
-          });
+        triggerVerifyPayment(true);
+        // Retry once after 3 seconds in case network settlement took an extra moment
+        const retryTimer = setTimeout(() => {
+          if (currentOrder.paymentStatus !== 'verified') {
+            triggerVerifyPayment(true);
+          }
+        }, 3000);
+        return () => clearTimeout(retryTimer);
       }
     }
-  }, [activeToken, currentOrder, refetchPublicOrder]);
+  }, [activeToken, currentOrder?.paymentStatus]);
 
   const handleChapaPay = async () => {
     setIsCheckingOut(true);
@@ -400,11 +432,11 @@ export const CustomerOrderView: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <button
                 type="button"
                 onClick={handleChapaPay}
-                disabled={isCheckingOut}
+                disabled={isCheckingOut || isVerifyingPayment}
                 className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
               >
                 {isCheckingOut ? (
@@ -418,6 +450,16 @@ export const CustomerOrderView: React.FC = () => {
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => triggerVerifyPayment(false)}
+                disabled={isVerifyingPayment || isCheckingOut}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingPayment ? 'animate-spin text-emerald-600' : 'text-slate-500'}`} />
+                <span>{isVerifyingPayment ? 'Verifying payment with bank...' : 'Already completed payment? Check status'}</span>
               </button>
             </div>
 

@@ -254,11 +254,14 @@ export class ChapaService {
     });
 
     const chapaData = data.data || data;
-    const isSuccess = data.status === 'success' || chapaData.status === 'success';
+    // Chapa's actual payment status is in data.data.status (e.g. "success", "pending", "failed")
+    // Top-level data.status only indicates if the API request itself succeeded.
+    const actualPaymentStatus = (chapaData.status || '').toLowerCase();
+    const isSuccess = actualPaymentStatus === 'success';
     const amountVal = Number(chapaData.amount || 0);
 
     return {
-      status: isSuccess ? 'success' : (chapaData.status || 'failed'),
+      status: isSuccess ? 'success' : (actualPaymentStatus || 'pending'),
       txRef: chapaData.tx_ref || txRef,
       amountCents: etbToCents(amountVal),
       currency: chapaData.currency || 'ETB',

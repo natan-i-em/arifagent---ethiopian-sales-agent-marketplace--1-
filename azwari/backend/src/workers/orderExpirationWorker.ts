@@ -1,6 +1,7 @@
 import cron from 'node-cron';
-import { prisma } from '../prisma.js';
+import { prisma, PaymentProvider } from '../prisma.js';
 import { WalletService } from '../services/walletService.js';
+import { ChapaService } from '../services/chapaService.js';
 
 export function startOrderExpirationWorker() {
   console.log('⏱️  [ORDER EXPIRATION WORKER] Initialized - running every minute');
@@ -35,6 +36,50 @@ export function startOrderExpirationWorker() {
               select: { status: true },
             });
             if (fresh?.status !== 'PENDING_PAYMENT') return;
+
+            // Check if customer paid via Chapa before auto-cancelling
+            const chapaRefs = (order.deliveryNotes || '').match(/ORD-CHAPA-[^\s|]+/g) || [];
+            let verifiedTxRef: string | null = null;
+            for (const ref of chapaRefs.reverse()) {
+              try {
+                const ver = await ChapaService.verifyTransaction(ref);
+                if (ver.status === 'success') {
+                  verifiedTxRef = ref;
+                  break;
+                }
+              } catch {}
+            }
+
+            if (verifiedTxRef) {
+              // The customer actually paid! Mark CONFIRMED!
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  status: 'CONFIRMED',
+                  deliveryNotes: `${order.deliveryNotes || ''} | Verified via Chapa: ${verifiedTxRef}`,
+                },
+              });
+
+              const existingReceipt = await tx.paymentReceipt.findFirst({
+                where: { orderId: order.id, transactionReference: verifiedTxRef },
+              });
+              if (!existingReceipt) {
+                await tx.paymentReceipt.create({
+                  data: {
+                    orderId: order.id,
+                    provider: PaymentProvider.TELEBIRR,
+                    transactionReference: verifiedTxRef,
+                    amountTransferred: order.totalAmount,
+                    buyerNotes: `Chapa Online Payment: ${verifiedTxRef}`,
+                    verifiedAt: new Date(),
+                    verifiedBy: 'CHAPA_SYSTEM',
+                  },
+                });
+              }
+
+              console.log(`✅ [ORDER EXPIRATION WORKER] Order ${order.orderNumber} was paid via Chapa (${verifiedTxRef}). Marked CONFIRMED!`);
+              return;
+            }
 
             // 1. Cancel the order
             await tx.order.update({
