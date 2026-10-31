@@ -258,9 +258,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentView('portal');
         return { success: true, user };
       }
-      return { success: false, error: res.error || 'Login failed' };
+      await supabase.auth.signOut().catch(() => {});
+      return { success: false, pendingApproval: (res as any).status === 'pending_approval', error: res.error || 'Login failed' };
     } catch (err: any) {
-      return { success: false, error: err.message || 'Login failed' };
+      await supabase.auth.signOut().catch(() => {});
+      const errorMsg = err.response?.data?.error || err.message || 'Login failed';
+      return { success: false, pendingApproval: err.response?.data?.status === 'pending_approval', error: errorMsg };
     }
   };
 
@@ -323,14 +326,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const res = await authApi.registerSupplier(payload);
       if (res.success) {
-        // Auto-login if password was provided
-        if (payload.password && payload.email) {
-          await supabase.auth.signInWithPassword({
-            email: payload.email,
-            password: payload.password,
-          }).catch(() => {});
-        }
-        return { success: true, business: res.business };
+        return { success: true, pendingApproval: true, business: res.business, message: res.message };
       }
       return { success: false, error: res.error || 'Registration failed' };
     } catch (err: any) {
@@ -343,13 +339,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const email = agentData.email || `${agentData.phone.replace(/[^0-9]/g, '')}@azwari.et`;
       const res = await authApi.registerSalesAgent({ ...agentData, email });
       if (res.success) {
-        if (agentData.password) {
-          await supabase.auth.signInWithPassword({
-            email,
-            password: agentData.password,
-          }).catch(() => {});
-        }
-        return { success: true, agent: res.salesPartner };
+        return { success: true, pendingApproval: true, agent: res.salesPartner, message: res.message };
       }
       return { success: false, error: res.error || 'Registration failed' };
     } catch (err: any) {

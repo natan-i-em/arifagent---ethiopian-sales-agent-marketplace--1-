@@ -214,6 +214,7 @@ export class WalletService {
       // 1. Idempotency Check: verify deposit record
       const deposit = await tx.deposit.findUnique({
         where: { txRef: params.txRef },
+        include: { business: true },
       });
 
       if (!deposit) {
@@ -283,6 +284,25 @@ export class WalletService {
           verifiedAt: new Date(),
         },
       });
+
+      // 5b. Record persistent AuditLog for merchant top-up
+      if (deposit.businessId) {
+        try {
+          await tx.auditLog.create({
+            data: {
+              actorRole: 'supplier',
+              actorName: deposit.business?.name || 'Merchant',
+              action: 'WALLET_TOPUP',
+              entityType: 'wallet',
+              entityId: params.walletId,
+              businessId: deposit.businessId,
+              description: `Merchant topped up wallet reserve by ETB ${centsToEtb(params.amountCents).toLocaleString()} via Chapa (TxRef: ${params.txRef}${params.chapaReference ? `, ChapaRef: ${params.chapaReference}` : ''}). Updated available balance: ETB ${centsToEtb(newAvailable).toLocaleString()}.`,
+            },
+          });
+        } catch (auditErr) {
+          console.warn('[AuditLog Topup Notice]', auditErr);
+        }
+      }
 
       // 6. Check if any auto-paused products can be unpaused
       if (deposit.businessId) {

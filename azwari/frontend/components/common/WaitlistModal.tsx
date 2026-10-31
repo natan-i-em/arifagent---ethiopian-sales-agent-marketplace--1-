@@ -33,7 +33,8 @@ export const WaitlistModal: React.FC = () => {
     waitlistRolePreference, 
     setWaitlistRolePreference,
     registerSupplier,
-    registerSalesAgent
+    registerSalesAgent,
+    setCurrentView
   } = useApp();
 
   // Mode: 'sales_agent' or 'supplier'
@@ -103,12 +104,12 @@ export const WaitlistModal: React.FC = () => {
       payoutAccountName: agentAccountName.trim() || agentName.trim(),
     });
 
-    if (res.success && res.agent) {
+    if (res.success) {
       setSuccessPayload({
         role: 'sales_agent',
-        title: 'Sales Agent Workspace Activated',
-        details: `Welcome, ${res.agent.fullName}! Your agent profile is live with referral code ${res.agent.referralCode}. Commissions will settle to ${res.agent.payoutDestination.provider}.`,
-        actionText: 'Enter Agent Portal Now',
+        title: 'Application Added to Priority Waitlist',
+        details: `Welcome, ${agentName}! Your registration is on the waitlist pending administrative approval. In accordance with platform governance, an administrator will review your profile before login is enabled. You will receive an SMS confirmation once approved.`,
+        actionText: 'Return to Sign In',
       });
     } else if (res.error) {
       setErrorMsg(res.error);
@@ -156,12 +157,12 @@ export const WaitlistModal: React.FC = () => {
       },
     });
 
-    if (res.success && res.business) {
+    if (res.success) {
       setSuccessPayload({
         role: 'supplier',
-        title: 'Merchant Console Activated',
-        details: `Congratulations, ${res.business.name}! Your verified merchant profile has been provisioned with 10,000 ETB commission reserve safeguards.`,
-        actionText: 'Launch Merchant Console',
+        title: 'Merchant Application Placed on Waitlist',
+        details: `Thank you, ${supplierName}! Your merchant profile has been submitted and added to the review waitlist. Once an administrator approves your verification, you will receive an SMS and can log in immediately.`,
+        actionText: 'Return to Sign In',
       });
     } else if (res.error) {
       setErrorMsg(res.error);
@@ -170,6 +171,9 @@ export const WaitlistModal: React.FC = () => {
 
   const handleClose = () => {
     setShowWaitlistModal(false);
+    if (successPayload) {
+      setCurrentView('signin');
+    }
     setSuccessPayload(null);
     setErrorMsg('');
   };

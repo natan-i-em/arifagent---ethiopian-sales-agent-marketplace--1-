@@ -21,6 +21,9 @@ import {
 } from 'lucide-react';
 import { ProductImage } from '../common/ProductImage';
 
+import { useQuery } from '@tanstack/react-query';
+import { ordersApi } from '../../lib/api';
+
 export const CustomerOrderView: React.FC = () => {
   const { 
     currentUser,
@@ -35,10 +38,42 @@ export const CustomerOrderView: React.FC = () => {
     createDispute
   } = useApp();
 
-  // Strict token or agent resolution: no public fallback to other users' orders!
+  // Resolve tracking token from URL query params or app state
+  const [urlToken, setUrlToken] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (token) {
+        setUrlToken(token);
+        setSelectedCustomerToken(token);
+      }
+    }
+  }, [setSelectedCustomerToken]);
+
+  const activeToken = urlToken || selectedCustomerToken;
+
+  // Public order lookup: anyone with the tracking link / token can view the order without login or role blocks
+  const { 
+    data: publicOrderData, 
+    isLoading: isLoadingPublicOrder,
+    refetch: refetchPublicOrder 
+  } = useQuery({
+    queryKey: ['publicOrder', activeToken],
+    queryFn: () => ordersApi.getByToken(activeToken),
+    enabled: Boolean(activeToken),
+    refetchInterval: 10000,
+  });
+
+  const publicOrder = publicOrderData?.order;
+
+  // Resolve order: public token fetch takes priority, with fallback to in-memory store
   const currentOrder =
+    publicOrder ||
+    orders.find((o) => o.publicAccessToken === activeToken) ||
     orders.find((o) => o.publicAccessToken === selectedCustomerToken) ||
-    (currentUser?.role === 'salesperson'
+    (currentUser?.role === 'salesperson' && currentUser.salespersonId
       ? orders.find((o) => o.salespersonId === currentUser.salespersonId)
       : null);
 
@@ -51,6 +86,7 @@ export const CustomerOrderView: React.FC = () => {
   const [amountTransferred, setAmountTransferred] = useState<number>(currentOrder?.totalAmount || 0);
   const [buyerNotes, setBuyerNotes] = useState('');
   const [submittedEvidenceSuccess, setSubmittedEvidenceSuccess] = useState(false);
+  const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
 
@@ -72,6 +108,18 @@ export const CustomerOrderView: React.FC = () => {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [currentOrder]);
+
+  if (isLoadingPublicOrder && !currentOrder) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 glass-card rounded-3xl border border-slate-200 text-center space-y-4 bg-white/90 shadow-sm">
+          <div className="w-10 h-10 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto" />
+          <h2 className="text-sm font-bold text-slate-800">Loading Order Details...</h2>
+          <p className="text-xs text-slate-500">Retrieving verified order and payment instructions from Azwari.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentOrder) {
     return (
@@ -110,22 +158,45 @@ export const CustomerOrderView: React.FC = () => {
     }
   };
 
-  const handleEvidenceSubmit = (e: React.FormEvent) => {
+  const handleEvidenceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txRef.trim()) {
       alert('Please enter your transaction reference number (from your bank/Telebirr SMS).');
       return;
     }
 
-    submitPaymentEvidence(currentOrder.id, {
-      provider: evidenceMethod,
-      transactionReference: txRef,
-      amountShown: amountTransferred,
-      receiptNote: buyerNotes,
-    });
+    setIsSubmittingEvidence(true);
+    const trackingToken = activeToken || currentOrder.publicAccessToken;
 
-    setSubmittedEvidenceSuccess(true);
-    setTimeout(() => setSubmittedEvidenceSuccess(false), 5000);
+    try {
+      // Direct token-authorized public evidence submission
+      await ordersApi.submitEvidence(
+        currentOrder.id,
+        {
+          provider: evidenceMethod,
+          transactionReference: txRef.trim(),
+          amountShown: amountTransferred,
+          receiptNote: buyerNotes.trim() || undefined,
+        },
+        trackingToken
+      );
+
+      // Also notify App context store if active
+      submitPaymentEvidence(currentOrder.id, {
+        provider: evidenceMethod,
+        transactionReference: txRef.trim(),
+        amountShown: amountTransferred,
+        receiptNote: buyerNotes.trim() || undefined,
+      });
+
+      await refetchPublicOrder();
+      setSubmittedEvidenceSuccess(true);
+      setTimeout(() => setSubmittedEvidenceSuccess(false), 5000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit payment evidence.');
+    } finally {
+      setIsSubmittingEvidence(false);
+    }
   };
 
   const handleConfirmReceived = () => {
@@ -399,10 +470,11 @@ export const CustomerOrderView: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center justify-center gap-2 shadow-xs"
+                disabled={isSubmittingEvidence}
+                className="w-full py-3 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Submit Payment Evidence for Verification</span>
+                <span>{isSubmittingEvidence ? 'Submitting Reference...' : 'Submit Payment Evidence for Verification'}</span>
               </button>
             </form>
           </div>

@@ -164,10 +164,33 @@ waitlistRouter.post('/:id/invite', requireAuth, requireRole('admin'), async (req
       },
     });
 
-    // Send invitation SMS
+    // Automatically verify matching merchant business or sales partner if they registered
+    if (entry.role === 'supplier') {
+      await prisma.business.updateMany({
+        where: {
+          OR: [
+            { phone: entry.phone },
+            { name: entry.fullName },
+          ],
+        },
+        data: { verificationStatus: 'VERIFIED' },
+      });
+    } else {
+      await prisma.salesPartner.updateMany({
+        where: {
+          OR: [
+            { phone: entry.phone },
+            { fullName: entry.fullName },
+          ],
+        },
+        data: { verificationStatus: 'VERIFIED' },
+      });
+    }
+
+    // Send approval SMS
     SmsEthiopiaService.sendSms({
       recipientPhone: entry.phone,
-      messageBody: `Azwari Invitation: Hello ${entry.fullName}! Your spot on the Azwari early-access marketplace is now open. Register your account at https://azwari.et to get started!`,
+      messageBody: `Azwari Approval: Hello ${entry.fullName}! Your registration has been approved by admin. You can now log in at https://azwari.et to access your dashboard!`,
       orderNumber: `INV-${entry.waitlistNumber}`,
       templateName: 'waitlist_invited',
     }).catch(() => { });

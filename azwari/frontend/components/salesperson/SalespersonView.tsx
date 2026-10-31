@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
+import { walletApi } from '../../lib/api';
 import { CreateOrderModal } from './CreateOrderModal';
 import { SalespersonSidebar, SalespersonTab } from './SalespersonSidebar';
 import { ProductImage } from '../common/ProductImage';
@@ -39,7 +41,6 @@ export const SalespersonView: React.FC = () => {
     orders, 
     products, 
     commissionLedger, 
-    settlementBatches,
     enrollSalesperson,
     setActiveRole, 
     setSelectedCustomerToken,
@@ -129,9 +130,16 @@ export const SalespersonView: React.FC = () => {
     return commissionLedger.filter((l) => l.salespersonId === currentAgent.id);
   }, [commissionLedger, currentAgent.id]);
 
-  const agentBatches = useMemo(() => {
-    return settlementBatches.filter((b) => b.recipientId === currentAgent.id);
-  }, [settlementBatches, currentAgent.id]);
+  // Live wallet details so agent balances reflect real Chapa escrow disbursements without duplication
+  const { data: walletData } = useQuery({
+    queryKey: ['salespersonWallet', currentAgent.id],
+    queryFn: () => walletApi.getDetails({ salesPartnerId: currentAgent.id }),
+    refetchInterval: 15000,
+  });
+
+  const liveEligibleCommissions = walletData?.wallet?.balances?.availableEtb ?? currentAgent.eligibleCommissions ?? 0;
+  const livePendingCommissions = walletData?.wallet?.balances?.lockedEtb ?? currentAgent.pendingCommissions ?? 0;
+  const totalAttributedSales = agentOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   // CRITICAL: Filter out paused, draft, and inactive products so sales agents only see live active offers
   const activeProducts = useMemo(() => {
@@ -212,8 +220,8 @@ export const SalespersonView: React.FC = () => {
           ordersCount={agentOrders.length}
           activeOffersCount={activeProducts.length}
           ledgerCount={agentLedger.length}
-          pendingCommissions={currentAgent.pendingCommissions}
-          eligibleCommissions={currentAgent.eligibleCommissions}
+          pendingCommissions={livePendingCommissions}
+          eligibleCommissions={liveEligibleCommissions}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
           onCreateOrderClick={() => {
@@ -266,7 +274,7 @@ export const SalespersonView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <span className="text-xs text-slate-500 block mb-1">Attributed Sales</span>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
-                    ETB {currentAgent.totalAttributedSales.toLocaleString()}
+                    ETB {totalAttributedSales.toLocaleString()}
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">
                     {agentOrders.length} total orders generated
@@ -276,7 +284,7 @@ export const SalespersonView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <span className="text-xs text-slate-500 block mb-1">Pending Commissions</span>
                   <div className="font-mono-numbers font-bold text-xl text-amber-700">
-                    ETB {currentAgent.pendingCommissions.toLocaleString()}
+                    ETB {livePendingCommissions.toLocaleString()}
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">
                     Awaiting customer payment/delivery
@@ -292,7 +300,7 @@ export const SalespersonView: React.FC = () => {
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Chapa</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-emerald-800">
-                    ETB {currentAgent.eligibleCommissions.toLocaleString()}
+                    ETB {liveEligibleCommissions.toLocaleString()}
                   </div>
                   <span className="text-[11px] text-emerald-700 font-bold mt-1 flex items-center gap-1">
                     Cash out now →
@@ -766,7 +774,7 @@ export const SalespersonView: React.FC = () => {
                 <div className="text-right">
                   <span className="text-xs text-slate-500 block">Total Eligible Payout:</span>
                   <span className="font-mono-numbers font-bold text-slate-900 text-sm">
-                    ETB {currentAgent.eligibleCommissions.toLocaleString()}
+                    ETB {liveEligibleCommissions.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -818,7 +826,7 @@ export const SalespersonView: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                            {entry.payoutReference || (entry.status === 'eligible' ? 'Ready for next batch' : '—')}
+                            {entry.payoutReference || (entry.status === 'eligible' ? 'Available in Escrow Wallet' : '—')}
                           </td>
                         </tr>
                       );

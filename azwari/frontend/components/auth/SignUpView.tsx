@@ -15,7 +15,8 @@ import {
   Phone,
   Mail,
   Lock,
-  CreditCard
+  CreditCard,
+  Clock
 } from 'lucide-react';
 
 const ADDIS_SUBCITIES = [
@@ -74,6 +75,7 @@ export const SignUpView: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isSubmittedPending, setIsSubmittedPending] = useState(false);
 
   const handleGoogleSignUp = async () => {
     setErrorMessage(null);
@@ -122,7 +124,9 @@ export const SignUpView: React.FC = () => {
           payoutAccountName: agentPayoutName.trim() || agentName.trim(),
         });
 
-        if (!res.success) {
+        if (res.success) {
+          setIsSubmittedPending(true);
+        } else {
           setErrorMessage(res.error || 'Failed to complete registration.');
         }
       } else {
@@ -157,7 +161,9 @@ export const SignUpView: React.FC = () => {
           },
         });
 
-        if (!res.success) {
+        if (res.success) {
+          setIsSubmittedPending(true);
+        } else {
           setErrorMessage(res.error || 'Failed to complete merchant registration.');
         }
       }
@@ -167,6 +173,63 @@ export const SignUpView: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  if (isSubmittedPending) {
+    return (
+      <div className="min-h-[85vh] bg-light-pattern py-12 px-4 sm:px-6 flex items-center justify-center">
+        <div className="max-w-lg w-full glass-card rounded-3xl p-8 border border-white/90 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
+            <Clock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-3 py-1 rounded-full">
+              Application on Waitlist
+            </span>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              Registration Received!
+            </h2>
+            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+              Thank you for registering. In accordance with platform governance, your account has been placed on the waitlist pending administrative approval.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs space-y-2">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Applicant:</span>
+              <strong className="text-slate-900">{selectedRole === 'supplier' ? bizName : agentName}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Role:</span>
+              <span className="font-semibold text-slate-800 capitalize">
+                {selectedRole === 'supplier' ? 'Merchant Supplier' : 'Independent Sales Agent'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Verification Status:</span>
+              <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                PENDING APPROVAL
+              </span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs text-left flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+            <span>
+              You will not be able to log in until an administrator reviews and verifies your credentials. You will receive an SMS confirmation once your account is activated.
+            </span>
+          </div>
+
+          <button
+            onClick={() => setCurrentView('signin')}
+            className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs shadow-xs transition-colors"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[90vh] bg-light-pattern py-12 px-4 sm:px-6 flex items-center justify-center">

@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../prisma.js';
+import { prisma, VerificationStatus } from '../prisma.js';
+import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { centsToEtb } from '../config/walletConfig.js';
+import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 
 export const salesPartnerRouter = Router();
 
@@ -94,3 +96,56 @@ salesPartnerRouter.patch('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+/**
+ * POST /api/sales-partners/:id/verify
+ * Admin verifies or rejects sales agent registration
+ */
+salesPartnerRouter.post(
+  '/:id/verify',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { status = 'verified' } = req.body;
+
+      const statusMap: Record<string, VerificationStatus> = {
+        verified: VerificationStatus.VERIFIED,
+        pending: VerificationStatus.PENDING,
+        unverified: VerificationStatus.UNVERIFIED,
+        rejected: VerificationStatus.REJECTED,
+      };
+
+      const targetStatus = statusMap[status.toLowerCase()] || VerificationStatus.VERIFIED;
+
+      const updated = await prisma.salesPartner.update({
+        where: { id },
+        data: { verificationStatus: targetStatus },
+        include: { wallet: true },
+      });
+
+      // Also update any matching waitlist entry
+      if (updated.phone) {
+        await prisma.waitlistEntry.updateMany({
+          where: { phone: updated.phone },
+          data: { status: targetStatus === VerificationStatus.VERIFIED ? 'onboarded' : 'waitlisted' },
+        });
+
+        if (targetStatus === VerificationStatus.VERIFIED) {
+          SmsEthiopiaService.sendSms({
+            recipientPhone: updated.phone,
+            messageBody: `Azwari Approval: Congratulations ${updated.fullName}! Your sales agent account has been approved by admin. You can now log in at https://azwari.et to access your catalog and earn commissions!`,
+            orderNumber: updated.id,
+            templateName: 'agent_approved',
+          }).catch(() => {});
+        }
+      }
+
+      res.status(200).json({ success: true, salesPartner: formatPartner(updated) });
+    } catch (error: any) {
+      console.error('[Verify Sales Partner Error]', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);

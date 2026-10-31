@@ -49,7 +49,6 @@ export const SupplierView: React.FC = () => {
     scheduleDelivery, 
     dispatchOrder, 
     markOrderDelivered,
-    settleCommissions,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -65,7 +64,7 @@ export const SupplierView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SupplierTab;
-      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'wallet', 'settlement', 'accounts', 'settings'];
+      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'wallet', 'accounts', 'settings'];
       if (validTabs.includes(tabParam)) return tabParam;
       if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
         return 'wallet';
@@ -131,11 +130,6 @@ export const SupplierView: React.FC = () => {
   const [timeSlot, setTimeSlot] = useState('2:00 PM - 5:00 PM');
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
-  // Settle Commission Modal State
-  const [settlingAgentId, setSettlingAgentId] = useState<string | null>(null);
-  const [settleMethod, setSettleMethod] = useState<'Telebirr B2C' | 'CBE Direct Transfer'>('Telebirr B2C');
-  const [payoutReference, setPayoutReference] = useState('');
-
   // Current Supplier Profile Resolution - strict user-scoped resolution only
   const targetSupplierId = currentUser?.supplierId || selectedSupplierId;
   const currentSupplier = (targetSupplierId ? businesses.find((b) => b.id === targetSupplierId) : null) || {
@@ -172,6 +166,20 @@ export const SupplierView: React.FC = () => {
   const supplierCommissions = commissionLedger.filter((c) => c.supplierId === currentSupplier.id);
   const supplierFees = platformFeeLedger.filter((f) => f.supplierId === currentSupplier.id);
 
+  // Total products counts
+  const totalProductsCount = supplierProducts.length;
+  const activeProductsCount = supplierProducts.filter((p) => p.status === 'active' || p.isActive !== false).length;
+
+  // Money received (verified, fulfillment, or completed orders)
+  const fulfilledOrders = supplierOrders.filter((o) =>
+    ['payment_verified', 'scheduled', 'out_for_delivery', 'delivered', 'completed'].includes(o.orderStatus)
+  );
+  const totalMoneyReceived = fulfilledOrders.reduce(
+    (sum, o) => sum + (o.supplierNetPayout ?? (o.totalAmount - (o.agreedCommissionAmount || 0))),
+    0
+  );
+  const totalGrossReceived = fulfilledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
   // Filtered orders
   const filteredOrders = supplierOrders.filter((o) => {
     if (orderFilter === 'awaiting_payment') return o.orderStatus === 'awaiting_payment';
@@ -183,23 +191,6 @@ export const SupplierView: React.FC = () => {
   });
 
   const ordersNeedingVerification = supplierOrders.filter((o) => o.orderStatus === 'payment_review');
-  const eligibleCommissions = supplierCommissions.filter((c) => c.status === 'eligible');
-  const totalEligibleOwed = eligibleCommissions.reduce((sum, c) => sum + c.amount, 0);
-
-  // Group eligible commissions by salesperson
-  const commissionsByAgent: Record<string, { agentName: string; agentId: string; totalAmount: number; entries: typeof eligibleCommissions }> = {};
-  eligibleCommissions.forEach((entry) => {
-    if (!commissionsByAgent[entry.salespersonId]) {
-      commissionsByAgent[entry.salespersonId] = {
-        agentId: entry.salespersonId,
-        agentName: entry.salespersonName,
-        totalAmount: 0,
-        entries: [],
-      };
-    }
-    commissionsByAgent[entry.salespersonId].totalAmount += entry.amount;
-    commissionsByAgent[entry.salespersonId].entries.push(entry);
-  });
 
   // Success feedback notice for merchant actions
   const [orderActionNotice, setOrderActionNotice] = useState<string | null>(null);
@@ -258,22 +249,6 @@ export const SupplierView: React.FC = () => {
     setDeliveryNotes('');
   };
 
-  const handleExecuteSettlement = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!settlingAgentId || !payoutReference.trim()) {
-      alert('Please provide the transaction reference slip code.');
-      return;
-    }
-
-    const agentGroup = commissionsByAgent[settlingAgentId];
-    if (!agentGroup) return;
-
-    const entryIds = agentGroup.entries.map((e) => e.id);
-    settleCommissions(settlingAgentId, entryIds, settleMethod, payoutReference);
-    setSettlingAgentId(null);
-    setPayoutReference('');
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Mobile Top Header Bar */}
@@ -301,7 +276,6 @@ export const SupplierView: React.FC = () => {
           productsCount={supplierProducts.length}
           ordersCount={supplierOrders.length}
           ordersNeedingVerificationCount={ordersNeedingVerification.length}
-          eligibleSettlementCount={Object.keys(commissionsByAgent).length}
           walletBalance={liveWalletBalance}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
@@ -350,12 +324,28 @@ export const SupplierView: React.FC = () => {
                   onClick={() => setActiveTab('products')}
                   className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
                 >
-                  <span className="text-xs text-slate-500 block mb-1">Active Catalog Items</span>
+                  <span className="text-xs text-slate-500 block mb-1">Total Products</span>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
-                    {supplierProducts.length}
+                    {totalProductsCount}
                   </div>
                   <span className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
-                    Manage Products →
+                    {activeProductsCount} active in catalog →
+                  </span>
+                </div>
+
+                <div 
+                  onClick={() => setActiveTab('orders')}
+                  className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 block">Total Money Received</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Net</span>
+                  </div>
+                  <div className="font-mono-numbers font-bold text-xl text-emerald-700">
+                    ETB {totalMoneyReceived.toLocaleString()}
+                  </div>
+                  <span className="text-[11px] text-slate-500 mt-1 block truncate">
+                    Gross: ETB {totalGrossReceived.toLocaleString()} →
                   </span>
                 </div>
 
@@ -374,19 +364,6 @@ export const SupplierView: React.FC = () => {
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">
                     Review receipts →
-                  </span>
-                </div>
-
-                <div 
-                  onClick={() => setActiveTab('settlement')}
-                  className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
-                >
-                  <span className="text-xs text-slate-500 block mb-1">Commission Owed</span>
-                  <div className="font-mono-numbers font-bold text-xl text-rose-700">
-                    ETB {totalEligibleOwed.toLocaleString()}
-                  </div>
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    {Object.keys(commissionsByAgent).length} agents ready →
                   </span>
                 </div>
 
@@ -472,46 +449,44 @@ export const SupplierView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Settlement Snapshot */}
+                {/* Recent Verified Sales Snapshot */}
                 <div className="glass-card rounded-3xl border border-white/90 p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <WalletCards className="w-4 h-4 text-slate-700" />
-                      Sales Agent Settlements
+                      <ShoppingCart className="w-4 h-4 text-slate-700" />
+                      Recent Verified Sales
                     </h3>
                     <button
-                      onClick={() => setActiveTab('settlement')}
+                      onClick={() => setActiveTab('orders')}
                       className="text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1"
                     >
-                      Settlement Engine <ChevronRight className="w-3.5 h-3.5" />
+                      View All Orders ({supplierOrders.length}) <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  {Object.keys(commissionsByAgent).length === 0 ? (
+                  {fulfilledOrders.length === 0 ? (
                     <div className="p-6 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl">
-                      All completed order commissions have been settled! No pending agent payouts.
+                      No verified customer orders yet. Orders will appear here once customers submit payments.
                     </div>
                   ) : (
                     <div className="space-y-2.5">
-                      {Object.values(commissionsByAgent).slice(0, 3).map((group) => (
-                        <div key={group.agentId} className="p-3 rounded-2xl glass-card-subtle flex items-center justify-between">
+                      {fulfilledOrders.slice(0, 3).map((order) => (
+                        <div key={order.id} className="p-3 rounded-2xl glass-card-subtle flex items-center justify-between">
                           <div>
-                            <div className="font-bold text-xs text-slate-900">{group.agentName}</div>
-                            <div className="text-[11px] text-slate-500">{group.entries.length} completed order(s)</div>
+                            <div className="font-bold text-xs text-slate-900">
+                              Order #{order.orderNumber}
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                              {order.buyerName} · {order.items.length} item(s)
+                            </div>
                           </div>
                           <div className="text-right">
-                            <div className="font-mono-numbers font-bold text-xs text-rose-700">
-                              ETB {group.totalAmount.toLocaleString()}
+                            <div className="font-mono-numbers font-bold text-xs text-emerald-700">
+                              +ETB {(order.supplierNetPayout ?? (order.totalAmount - (order.agreedCommissionAmount || 0))).toLocaleString()}
                             </div>
-                            <button
-                              onClick={() => {
-                                setSettlingAgentId(group.agentId);
-                                setActiveTab('settlement');
-                              }}
-                              className="text-[10px] font-semibold text-slate-800 underline mt-0.5"
-                            >
-                              Settle Payout
-                            </button>
+                            <div className="text-[10px] text-slate-400 capitalize">
+                              {order.orderStatus.replace('_', ' ')}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -737,65 +712,6 @@ export const SupplierView: React.FC = () => {
           {/* TAB 4: COLLATERAL WALLET & CHAPA DEPOSITS */}
           {activeTab === 'wallet' && (
             <SupplierWalletManager currentSupplier={currentSupplier} products={products} />
-          )}
-
-          {/* TAB 5: COMMISSION SETTLEMENT ENGINE */}
-          {activeTab === 'settlement' && (
-            <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Salesperson Commission Settlement Engine
-                </h2>
-                <p className="text-xs text-slate-500">
-                  When an order is successfully verified and delivered, the salesperson's commission enters the "eligible" state. Suppliers settle obligations via Telebirr B2C or bank transfer, inputting the verifiable transaction reference.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                  Eligible Obligations Grouped by Salesperson
-                </h3>
-
-                {Object.keys(commissionsByAgent).length === 0 ? (
-                  <div className="p-8 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl border border-slate-200">
-                    All eligible salesperson commissions have been settled! No outstanding obligations.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {Object.values(commissionsByAgent).map((group) => (
-                      <div
-                        key={group.agentId}
-                        className="p-4 glass-card-subtle rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                      >
-                        <div>
-                          <div className="font-bold text-slate-900 text-sm">{group.agentName}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">
-                            {group.entries.length} completed orders awaiting payout · Orders:{' '}
-                            {group.entries.map((e) => e.orderNumber).join(', ')}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <span className="text-[11px] text-slate-400 block">Total Due:</span>
-                            <span className="font-mono-numbers font-bold text-base text-rose-700">
-                              ETB {group.totalAmount.toLocaleString()}
-                            </span>
-                          </div>
-
-                          <button
-                            onClick={() => setSettlingAgentId(group.agentId)}
-                            className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs"
-                          >
-                            Settle Commission
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           )}
 
           {/* TAB 5: PAYMENT RECEIVING ACCOUNTS */}
@@ -1084,83 +1000,6 @@ export const SupplierView: React.FC = () => {
                 >
                   <Truck className="w-4 h-4 text-amber-400" />
                   <span>Confirm & Dispatch to Driver (Send SMS)</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* MODAL: SETTLE COMMISSION BATCH */}
-      {/* ============================================================ */}
-      {settlingAgentId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/60 backdrop-blur-md">
-              <h3 className="text-sm font-bold text-slate-900">
-                Settle Commission to Agent
-              </h3>
-              <button
-                onClick={() => setSettlingAgentId(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleExecuteSettlement} className="p-6 space-y-4">
-              <div className="p-3.5 glass-card-subtle rounded-2xl text-xs space-y-1">
-                <div>Recipient: <strong className="text-slate-900">{commissionsByAgent[settlingAgentId]?.agentName}</strong></div>
-                <div className="font-mono text-slate-900 font-bold text-sm">
-                  Total Eligible Payout: ETB {commissionsByAgent[settlingAgentId]?.totalAmount.toLocaleString()}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Settlement Channel *
-                </label>
-                <select
-                  value={settleMethod}
-                  onChange={(e) => setSettleMethod(e.target.value as any)}
-                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white text-slate-900"
-                >
-                  <option value="Telebirr B2C">Telebirr B2C (Direct Mobile Wallet)</option>
-                  <option value="CBE Direct Transfer">CBE Direct Bank Transfer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Payout Transaction Reference / Slip ID *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. TB-B2C-992819401 or CBE FT26..."
-                  value={payoutReference}
-                  onChange={(e) => setPayoutReference(e.target.value)}
-                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 font-mono"
-                />
-                <span className="block text-[11px] text-slate-400 mt-1">
-                  Enter the real bank or Telebirr payout confirmation reference. This is permanently audited.
-                </span>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSettlingAgentId(null)}
-                  className="px-3.5 py-2 text-xs text-slate-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
-                >
-                  Record Audited Settlement Batch
                 </button>
               </div>
             </form>

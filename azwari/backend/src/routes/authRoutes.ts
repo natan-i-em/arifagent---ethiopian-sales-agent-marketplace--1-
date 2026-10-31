@@ -191,8 +191,33 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
       }
     }
 
-    // 5. Automatic Welcome SMS via SMS Ethiopia Gateway
-    const welcomeMsg = `Welcome ${resolvedBusinessName} to Azwari! Your supplier application has been received and is under verification. Login: ${resolvedEmail}`;
+    // 5. Add to Waitlist Entry so admin can review and approve
+    try {
+      const existingWl = await prisma.waitlistEntry.findFirst({
+        where: { phone: formattedPhone },
+      });
+      if (!existingWl) {
+        const initials = resolvedBusinessName.split(' ')[0].replace(/[^A-Za-z]/g, '').toUpperCase() || 'BIZ';
+        const referralCode = `${initials}-${Math.floor(100 + Math.random() * 900)}`;
+        await prisma.waitlistEntry.create({
+          data: {
+            fullName: resolvedBusinessName,
+            phone: formattedPhone,
+            role: 'supplier',
+            subcity: subcity || 'Bole',
+            categoryOrChannel: 'Merchant Wholesale / Retail',
+            estimatedScale: '100+ items/mo',
+            referralCode,
+            status: 'waitlisted',
+          },
+        });
+      }
+    } catch (wlErr) {
+      console.warn('[Auth] Supplier waitlist registration notice:', wlErr);
+    }
+
+    // 6. Automatic Welcome SMS via SMS Ethiopia Gateway
+    const welcomeMsg = `Welcome ${resolvedBusinessName} to Azwari! Your merchant application has been received and added to our waitlist pending admin approval. You will receive an SMS once approved.`;
     await SmsEthiopiaService.sendSms({
       recipientPhone: phone,
       messageBody: welcomeMsg,
@@ -202,9 +227,10 @@ authRouter.post('/register-supplier', authLimiter, validateSupplierRegistration,
 
     res.status(201).json({
       success: true,
+      pendingApproval: true,
       user: dbUser,
       business: dbBusiness,
-      message: 'Supplier account registered and submitted for verification.',
+      message: 'Merchant account registered and placed on waitlist pending admin approval.',
     });
   } catch (error: any) {
     console.error('[Register Supplier Error]', error);
@@ -308,23 +334,49 @@ authRouter.post('/register-agent', authLimiter, validateAgentRegistration, async
         payoutAccountNumber: payoutAccountNumber || formattedPhone,
         payoutAccountName: payoutAccountName || fullName,
         referralCode,
+        verificationStatus: 'PENDING',
       },
     });
 
-    // 4. Automatic Activation SMS via SMS Ethiopia Gateway
-    const welcomeMsg = `Congratulations ${fullName}! Your Azwari Sales Partner account is activated. Referral code: ${referralCode}. Share catalog links to earn commissions!`;
+    // 4. Add to Waitlist Entry so admin can review and approve
+    try {
+      const existingWl = await prisma.waitlistEntry.findFirst({
+        where: { phone: formattedPhone },
+      });
+      if (!existingWl) {
+        await prisma.waitlistEntry.create({
+          data: {
+            fullName,
+            phone: formattedPhone,
+            role: 'sales_agent',
+            subcity: subcity || 'Bole',
+            telegramUsername: telegramUsername || null,
+            categoryOrChannel: 'Direct Sales & Social Commerce',
+            estimatedScale: '50+ orders/mo',
+            referralCode: `WL-${referralCode}`,
+            status: 'waitlisted',
+          },
+        });
+      }
+    } catch (wlErr) {
+      console.warn('[Auth] Agent waitlist registration notice:', wlErr);
+    }
+
+    // 5. Automatic Welcome SMS via SMS Ethiopia Gateway
+    const welcomeMsg = `Welcome ${fullName} to Azwari! Your sales agent registration has been received and placed on the waitlist pending admin approval. You will receive an SMS once approved.`;
     await SmsEthiopiaService.sendSms({
       recipientPhone: phone,
       messageBody: welcomeMsg,
       orderNumber: spId,
-      templateName: 'agent_activated',
+      templateName: 'agent_registered',
     });
 
     res.status(201).json({
       success: true,
+      pendingApproval: true,
       user: dbUser,
       salesPartner: dbSalesPartner,
-      message: 'Sales Agent registered and activated successfully.',
+      message: 'Sales Agent registered and placed on waitlist pending admin approval.',
     });
   } catch (error: any) {
     console.error('[Register Agent Error]', error);
@@ -576,6 +628,29 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response) => {
           referralCode: `${initials}-${Math.floor(100 + Math.random() * 900)}`,
         },
       });
+    }
+
+    // Strict Verification & Waitlist check: Do not allow unapproved merchants or sales agents to log in
+    if (activeRole === 'supplier' && business) {
+      if (business.verificationStatus !== 'VERIFIED') {
+        res.status(403).json({
+          success: false,
+          status: 'pending_approval',
+          error: 'Your merchant account is currently on the waitlist pending administrative approval. You will receive an SMS once your account is verified and ready for login.',
+        });
+        return;
+      }
+    }
+
+    if (activeRole === 'salesperson' && salesPartner) {
+      if (salesPartner.verificationStatus !== 'VERIFIED') {
+        res.status(403).json({
+          success: false,
+          status: 'pending_approval',
+          error: 'Your sales agent account is currently on the waitlist pending administrative approval. You will receive an SMS once your account is verified and ready for login.',
+        });
+        return;
+      }
     }
 
     res.status(200).json({

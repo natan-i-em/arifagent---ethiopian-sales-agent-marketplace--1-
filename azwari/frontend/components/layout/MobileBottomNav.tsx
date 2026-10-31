@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Coins,
   CreditCard,
+  WalletCards,
   Users,
   ShieldCheck,
   AlertTriangle,
@@ -271,20 +272,7 @@ export const MobileBottomNav: React.FC = () => {
             <span className="text-[10px] mt-1 truncate max-w-full">Orders</span>
           </button>
 
-          {/* Tab 4: Settlement */}
-          <button
-            onClick={() => handlePortalTab('/portal/supplier', 'settlement')}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all ${
-              isTabActive('settlement') ? 'text-blue-950 font-bold' : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all ${isTabActive('settlement') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
-              <Coins className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Settlement</span>
-          </button>
-
-          {/* Tab 5: Wallet */}
+          {/* Tab 4: Wallet */}
           <button
             onClick={() => handlePortalTab('/portal/supplier', 'wallet')}
             className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all ${
@@ -295,6 +283,19 @@ export const MobileBottomNav: React.FC = () => {
               <CreditCard className="w-4 h-4" />
             </div>
             <span className="text-[10px] mt-1 truncate max-w-full">Wallet</span>
+          </button>
+
+          {/* Tab 5: Accounts */}
+          <button
+            onClick={() => handlePortalTab('/portal/supplier', 'accounts')}
+            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all ${
+              isTabActive('accounts') ? 'text-blue-950 font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-all ${isTabActive('accounts') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
+              <WalletCards className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] mt-1 truncate max-w-full">Accounts</span>
           </button>
         </div>
       </nav>
