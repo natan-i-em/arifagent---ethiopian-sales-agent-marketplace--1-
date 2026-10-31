@@ -624,22 +624,39 @@ export const SupplierView: React.FC = () => {
                                 </td>
                                 <td className="py-3.5 px-4">
                                   {order.evidence ? (
-                                    <div>
-                                      <span className="font-mono text-xs font-semibold text-slate-900 block">
-                                        {order.evidence.transactionReference}
-                                      </span>
-                                      <span className="text-[10px] text-slate-500">
-                                        {order.evidence.provider} · ETB {order.evidence.amountShown.toLocaleString()}
-                                      </span>
-                                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md mt-0.5 border ${
-                                        order.evidence.verifierStatus === 'verified'
-                                          ? 'bg-slate-100 text-slate-900 border-slate-300'
-                                          : order.evidence.verifierStatus === 'rejected'
-                                          ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                          : 'bg-amber-50 text-amber-800 border-amber-200'
-                                      }`}>
-                                        {order.evidence.verifierStatus}
-                                      </span>
+                                    <div className="flex items-start gap-2">
+                                      {order.evidence.receiptMockImage && (
+                                        <a
+                                          href={order.evidence.receiptMockImage}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="shrink-0 w-8 h-8 rounded-lg overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity mt-0.5"
+                                          title="View payment screenshot"
+                                        >
+                                          <img
+                                            src={order.evidence.receiptMockImage}
+                                            alt="Receipt"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </a>
+                                      )}
+                                      <div>
+                                        <span className="font-mono text-xs font-semibold text-slate-900 block">
+                                          {order.evidence.transactionReference}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500">
+                                          {order.evidence.provider} · ETB {order.evidence.amountShown.toLocaleString()}
+                                        </span>
+                                        <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md mt-0.5 border ${
+                                          order.evidence.verifierStatus === 'verified'
+                                            ? 'bg-slate-100 text-slate-900 border-slate-300'
+                                            : order.evidence.verifierStatus === 'rejected'
+                                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                                        }`}>
+                                          {order.evidence.verifierStatus}
+                                        </span>
+                                      </div>
                                     </div>
                                   ) : (
                                     <span className="text-slate-400 text-[11px]">No receipt yet</span>
@@ -818,7 +835,7 @@ export const SupplierView: React.FC = () => {
               </div>
 
               {verifyingOrder.evidence ? (
-                <div className="p-4 glass-card-subtle border border-slate-200/80 rounded-2xl space-y-2">
+                <div className="p-4 glass-card-subtle border border-slate-200/80 rounded-2xl space-y-3">
                   <span className="text-xs font-bold text-slate-900 block">
                     Submitted Evidence Details
                   </span>
@@ -837,6 +854,31 @@ export const SupplierView: React.FC = () => {
                   {verifyingOrder.evidence.receiptNote && (
                     <div className="text-xs text-slate-700 italic pt-1 border-t border-slate-200">
                       Note from buyer: "{verifyingOrder.evidence.receiptNote}"
+                    </div>
+                  )}
+
+                  {verifyingOrder.evidence.receiptMockImage && (
+                    <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-slate-800">Payment Screenshot Receipt:</span>
+                        <a
+                          href={verifyingOrder.evidence.receiptMockImage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-700 font-semibold hover:underline flex items-center gap-1"
+                        >
+                          <span>Open full size</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center max-h-72">
+                        <img
+                          src={verifyingOrder.evidence.receiptMockImage}
+                          alt="Customer payment screenshot"
+                          className="max-h-72 w-full object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                          onClick={() => window.open(verifyingOrder.evidence?.receiptMockImage, '_blank')}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

@@ -225,6 +225,16 @@ export const ordersApi = {
       method: 'POST',
       body: JSON.stringify({ notes }),
     }),
+  submitEvidenceByToken: async (token: string, data: any) =>
+    apiRequest<{ success: boolean; order: Order }>(`/orders/public/${token}/evidence`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  uploadReceiptImage: async (fileData: string, fileName?: string, orderNumber?: string) =>
+    apiRequest<{ success: boolean; imageUrl: string }>(`/upload/receipt-image`, {
+      method: 'POST',
+      body: JSON.stringify({ fileData, fileName, orderNumber }),
+    }),
 };
 
 export const businessesApi = {

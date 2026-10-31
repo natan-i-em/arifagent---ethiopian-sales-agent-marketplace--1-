@@ -124,6 +124,80 @@ uploadRouter.post('/product-image', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/upload/receipt-image
+ * Receives customer payment receipt screenshot (Base64 / Data URL),
+ * uploads to Supabase Storage, and returns public URL (with data URL fallback)
+ */
+uploadRouter.post('/receipt-image', async (req: Request, res: Response) => {
+  try {
+    const { fileData, fileName, orderNumber } = req.body;
+
+    if (!fileData || typeof fileData !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: fileData (must be a base64 encoded string or Data URL)',
+      });
+    }
+
+    const { buffer, mimeType, extension } = parseBase64Data(fileData, fileName);
+
+    if (buffer.length > 15 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: 'File size exceeds maximum allowable limit of 15MB',
+      });
+    }
+
+    const timestamp = Date.now();
+    const randomHex = crypto.randomBytes(4).toString('hex');
+    const safePrefix = orderNumber ? orderNumber.replace(/[^a-zA-Z0-9_-]/g, '') : 'receipt';
+    const storagePath = `receipts/${safePrefix}_${timestamp}_${randomHex}.${extension}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .upload(storagePath, buffer, {
+        contentType: mimeType,
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.warn('[RECEIPT UPLOAD NOTICE] Supabase upload failed, using Data URL fallback:', uploadError.message);
+      const fallbackUrl = fileData.startsWith('data:') ? fileData : `data:${mimeType};base64,${buffer.toString('base64')}`;
+      return res.status(200).json({
+        success: true,
+        imageUrl: fallbackUrl,
+        fallback: true,
+      });
+    }
+
+    const { data: urlData } = supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(storagePath);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Receipt image successfully uploaded',
+      imageUrl: urlData.publicUrl,
+      path: storagePath,
+    });
+  } catch (err: any) {
+    console.error('[RECEIPT UPLOAD ERROR]', err);
+    if (req.body?.fileData && typeof req.body.fileData === 'string' && req.body.fileData.length < 5 * 1024 * 1024) {
+      return res.status(200).json({
+        success: true,
+        imageUrl: req.body.fileData,
+        fallback: true,
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'An unexpected error occurred during receipt upload',
+    });
+  }
+});
+
+/**
  * GET /api/upload/bucket-info
  * Returns the status and health of the 'Azwari_Product_Images' Supabase storage bucket
  */

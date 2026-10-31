@@ -127,6 +127,27 @@ export const formatOrderForFrontend = (o: any) => {
       verified: primaryBank.verified,
       instructions: primaryBank.instructions || 'Pay with your mobile banking app and upload screenshot receipt.',
     },
+    availablePaymentAccounts: (o.business?.paymentAccounts && o.business.paymentAccounts.length > 0)
+      ? o.business.paymentAccounts.map((acc: any) => ({
+          id: acc.id,
+          provider: providerDisplayMap[acc.provider] || acc.provider,
+          accountNumber: acc.accountNumber,
+          accountHolderName: acc.accountHolderName,
+          isPrimary: acc.isPrimary,
+          verified: acc.verified,
+          instructions: acc.instructions || 'Transfer and upload payment screenshot.',
+        }))
+      : [
+          {
+            id: 'acc_default',
+            provider: 'Telebirr',
+            accountNumber: o.business?.phone || '0911000000',
+            accountHolderName: o.business?.name || 'Azwari Merchant',
+            isPrimary: true,
+            verified: true,
+            instructions: 'Transfer to Telebirr and upload payment screenshot.',
+          },
+        ],
     delivery: {
       recipientName: o.buyerName,
       recipientPhone: o.buyerPhone,
@@ -649,6 +670,96 @@ orderRouter.post('/public/:token/confirm-delivery', async (req: any, res: Respon
     res.status(500).json({ success: false, error: error.message || 'Failed to confirm delivery' });
   }
 });
+
+/**
+ * POST /api/orders/public/:token/evidence
+ * Public customer endpoint to submit payment screenshot and reference
+ */
+orderRouter.post(
+  '/public/:token/evidence',
+  validateBody(PaymentEvidenceSchema),
+  async (req: any, res: Response): Promise<void> => {
+    try {
+      const { token } = req.params;
+      const body = req.body;
+
+      const order = await prisma.order.findUnique({
+        where: { publicAccessToken: token },
+        include: {
+          items: { include: { product: true, variant: true } },
+          business: { include: { paymentAccounts: true } },
+          salesPartner: true,
+        },
+      });
+
+      if (!order) {
+        res.status(404).json({ success: false, error: 'Order not found or tracking link invalid' });
+        return;
+      }
+
+      if (order.status !== 'PENDING_PAYMENT' && order.status !== 'PAYMENT_SUBMITTED') {
+        res.status(409).json({
+          success: false,
+          error: `Cannot submit payment evidence for an order currently in status '${order.status}'`,
+        });
+        return;
+      }
+
+      const receiptImage = body.receiptImageUrl || body.receiptMockImage || null;
+
+      const updatedOrder = await prisma.$transaction(async (tx: any) => {
+        await tx.paymentReceipt.create({
+          data: {
+            orderId: order.id,
+            provider: mapToPrismaProvider(body.provider),
+            transactionReference: body.transactionReference,
+            amountTransferred: body.amountShown,
+            receiptImageUrl: receiptImage,
+            buyerNotes: body.receiptNote || null,
+          },
+        });
+
+        return await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'PAYMENT_SUBMITTED',
+            deliveryNotes: order.deliveryNotes
+              ? `${order.deliveryNotes} | Payment receipt submitted: ${body.transactionReference}`
+              : `Payment receipt submitted: ${body.transactionReference}`,
+          },
+          include: {
+            items: { include: { product: true, variant: true } },
+            paymentReceipts: { orderBy: { createdAt: 'desc' } },
+            commissionEscrow: true,
+            business: { include: { paymentAccounts: true } },
+            salesPartner: true,
+          },
+        });
+      });
+
+      try {
+        await prisma.auditLog.create({
+          data: {
+            actorRole: 'customer',
+            actorName: order.buyerName,
+            action: 'SUBMIT_PAYMENT_EVIDENCE',
+            entityType: 'Order',
+            entityId: order.id,
+            businessId: order.businessId,
+            description: `Payment screenshot submitted for order #${order.orderNumber}. Ref: ${body.transactionReference}, Amount: ETB ${body.amountShown}.`,
+          },
+        });
+      } catch (auditErr) {
+        console.warn('[Audit Log Notice]', auditErr);
+      }
+
+      res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
+    } catch (error: any) {
+      console.error('[Public Submit Evidence Error]', error);
+      res.status(500).json({ success: false, error: error.message || 'Failed to submit payment evidence' });
+    }
+  }
+);
 
 /**
  * GET /api/orders/:id

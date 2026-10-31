@@ -218,6 +218,7 @@ export interface Order {
   paymentStatus: PaymentAttemptStatus;
   paymentExpiresAt: string; // ISO
   selectedPaymentAccount: SupplierPaymentAccount;
+  availablePaymentAccounts?: SupplierPaymentAccount[];
   delivery: DeliveryDetails;
   consent: OrderConsent;
   evidence?: PaymentEvidence;
