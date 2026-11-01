@@ -156,7 +156,7 @@ export const SupplierView: React.FC = () => {
   const { data: walletData } = useQuery({
     queryKey: ['supplierWallet', currentSupplier.id],
     queryFn: () => walletApi.getDetails({ businessId: currentSupplier.id }),
-    refetchInterval: 10000,
+    refetchInterval: 60000, // Realtime push updates instantly; 60s soft heartbeat
   });
 
   const liveWalletBalance = walletData?.wallet?.balances?.availableEtb ?? currentSupplier.commissionReserveBalance ?? 0;

@@ -58,7 +58,7 @@ export const SupplierWalletManager: React.FC<SupplierWalletManagerProps> = ({
   } = useQuery({
     queryKey: ['supplierWallet', currentSupplier.id],
     queryFn: () => walletApi.getDetails({ businessId: currentSupplier.id }),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   const wallet = walletData?.wallet;

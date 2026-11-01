@@ -51,7 +51,7 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
   } = useQuery({
     queryKey: ['salespersonWallet', currentAgent.id],
     queryFn: () => walletApi.getDetails({ salesPartnerId: currentAgent.id }),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // 2. Fetch supported Ethiopian banks from Chapa

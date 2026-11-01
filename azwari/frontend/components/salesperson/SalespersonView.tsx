@@ -134,7 +134,7 @@ export const SalespersonView: React.FC = () => {
   const { data: walletData } = useQuery({
     queryKey: ['salespersonWallet', currentAgent.id],
     queryFn: () => walletApi.getDetails({ salesPartnerId: currentAgent.id }),
-    refetchInterval: 15000,
+    refetchInterval: 60000, // Realtime push updates instantly; 60s soft heartbeat
   });
 
   const liveEligibleCommissions = walletData?.wallet?.balances?.availableEtb ?? currentAgent.eligibleCommissions ?? 0;

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { RealtimeProvider } from '@/context/RealtimeContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Navbar } from './Navbar';
@@ -198,7 +199,9 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <QueryClientProvider client={qc}>
       <AppProvider>
-        <LayoutContent>{children}</LayoutContent>
+        <RealtimeProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </RealtimeProvider>
       </AppProvider>
     </QueryClientProvider>
   );
