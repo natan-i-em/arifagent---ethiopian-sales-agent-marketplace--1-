@@ -91,8 +91,19 @@ commissionRouter.get('/batches', requireAuth, async (req: AuthenticatedRequest, 
       }
       whereClause = { salesPartnerId: user.salesPartnerId };
     } else if (user.role === 'supplier') {
-      res.status(200).json({ success: true, count: 0, batches: [] });
-      return;
+      if (!user.businessId) {
+        res.status(403).json({ success: false, error: 'No business profile found' });
+        return;
+      }
+      whereClause = {
+        commissions: {
+          some: {
+            order: {
+              businessId: user.businessId,
+            },
+          },
+        },
+      };
     } else {
       res.status(403).json({ success: false, error: 'Unauthorized role' });
       return;
@@ -126,17 +137,23 @@ commissionRouter.get('/batches', requireAuth, async (req: AuthenticatedRequest, 
 
 /**
  * POST /api/commissions/settle
- * Admin-only idempotent execution of commission payouts in an atomic transaction
+ * Supplier or Admin execution of commission payouts in an atomic transaction
+ * Calculates 80% net payout to the sales agent and 20% platform marketplace fee
  */
 commissionRouter.post(
   '/settle',
   requireAuth,
-  requireRole('admin'),
+  requireRole('admin', 'supplier'),
   validateBody(SettleCommissionsSchema),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const user = req.user!;
       const { salespersonId, payoutMethod, transactionReference, entryIds } = req.body;
+
+      if (user.role === 'supplier' && !user.businessId) {
+        res.status(403).json({ success: false, error: 'No business profile found' });
+        return;
+      }
 
       // Idempotency check on transactionReference
       if (transactionReference) {
@@ -179,12 +196,16 @@ commissionRouter.post(
         salesPartnerId: partner.id,
         status: 'ELIGIBLE',
       };
+      if (user.role === 'supplier') {
+        escrowWhere.order = { businessId: user.businessId };
+      }
       if (entryIds && entryIds.length > 0) {
         escrowWhere.id = { in: entryIds };
       }
 
       const eligibleEscrows = await prisma.commissionEscrow.findMany({
         where: escrowWhere,
+        include: { order: true },
       });
 
       if (eligibleEscrows.length === 0) {
@@ -195,8 +216,12 @@ commissionRouter.post(
         return;
       }
 
-      const totalAmount = eligibleEscrows.reduce((sum: any, e: any) => sum + Number(e.amount), 0);
+      const totalGross = eligibleEscrows.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+      // Net payout to sales agent (80%), Platform marketplace cut (20%)
+      const netPayout = Math.round(totalGross * 0.8 * 100) / 100;
+      const platformFee = Math.round((totalGross - netPayout) * 100) / 100;
       const batchNumber = `SETTLE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const destinationAccount = partner.payoutAccountNumber || partner.phone || 'N/A';
 
       // ATOMIC TRANSACTION: Create batch, update escrows to PAID, decrement eligible balance, increment paid balance
       const batch = await prisma.$transaction(async (tx: any) => {
@@ -204,9 +229,9 @@ commissionRouter.post(
           data: {
             batchNumber,
             salesPartnerId: partner.id,
-            totalAmount,
+            totalAmount: netPayout,
             payoutMethod,
-            destinationAccount: partner.payoutAccountNumber,
+            destinationAccount,
             transactionReference,
             status: 'settled',
             settledAt: new Date(),
@@ -226,21 +251,36 @@ commissionRouter.post(
         await tx.salesPartner.update({
           where: { id: partner.id },
           data: {
-            eligibleCommissions: { decrement: totalAmount },
-            paidCommissions: { increment: totalAmount },
+            eligibleCommissions: { decrement: totalGross },
+            paidCommissions: { increment: netPayout },
           },
         });
 
+        // Audit Log
         await tx.auditLog.create({
           data: {
-            actorRole: 'admin',
-            actorName: user.fullName || 'Admin Finance',
+            actorRole: user.role,
+            actorName: user.fullName || (user.role === 'supplier' ? 'Merchant Supplier' : 'Admin Finance'),
             action: 'SETTLE_COMMISSIONS',
             entityType: 'SettlementBatch',
             entityId: createdBatch.id,
-            description: `Settled batch #${createdBatch.batchNumber} of ETB ${totalAmount.toLocaleString()} to ${partner.fullName} via ${payoutMethod} (${partner.payoutAccountNumber}). Ref: ${transactionReference}.`,
+            businessId: user.businessId || undefined,
+            description: `Settled batch #${createdBatch.batchNumber}: Gross ETB ${totalGross.toLocaleString()}, Net Payout (80%) ETB ${netPayout.toLocaleString()} to ${partner.fullName} via ${payoutMethod} (${destinationAccount}), Platform share (20%) ETB ${platformFee.toLocaleString()}. Slip ref: ${transactionReference}.`,
           },
         });
+
+        // SMS notification to the sales agent
+        try {
+          await tx.smsLog.create({
+            data: {
+              orderId: eligibleEscrows[0]?.orderId,
+              recipientPhone: partner.phone,
+              messageBody: `Azwari: Commission batch #${batchNumber} (Net ETB ${netPayout.toLocaleString()}) has been settled to your ${payoutMethod} account (${destinationAccount}). Ref: ${transactionReference}. Thank you!`,
+              templateName: 'commission_settled',
+              deliveryStatus: 'QUEUED',
+            },
+          });
+        } catch {}
 
         return createdBatch;
       });
@@ -251,9 +291,11 @@ commissionRouter.post(
           id: batch.id,
           batchNumber: batch.batchNumber,
           recipientName: partner.fullName,
-          totalAmount,
+          grossAmount: totalGross,
+          totalAmount: netPayout,
+          platformFee,
           payoutMethod,
-          destinationAccount: partner.payoutAccountNumber,
+          destinationAccount,
           transactionReference: batch.transactionReference,
           status: 'settled',
           settledAt: batch.settledAt?.toISOString(),

@@ -94,7 +94,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
     },
     {
       id: 'payouts',
-      label: 'Payouts & Banking',
+      label: 'Commission Settlements',
       icon: CreditCard,
       badge: eligibleCommissions > 0 ? `ETB ${eligibleCommissions.toLocaleString()}` : undefined,
       badgeColor: 'bg-emerald-600 text-white font-bold',

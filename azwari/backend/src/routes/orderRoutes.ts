@@ -633,9 +633,6 @@ orderRouter.post('/public/:token/confirm-delivery', async (req: any, res: Respon
         data: { status: 'secured' },
       });
 
-      // 5. Wallet Ledger: Move commission from merchant locked balance to salesperson available balance
-      await WalletService.settleCommission(order.id, tx);
-
       return ord;
     });
 
@@ -850,6 +847,7 @@ orderRouter.post(
           id: true,
           name: true,
           businessId: true,
+          description: true,
           unitPrice: true,
           costPrice: true,
           stock: true,
@@ -899,11 +897,25 @@ orderRouter.post(
       const deliveryFee = Number(product.standardDeliveryFee || 120);
       const totalAmount = subtotal + deliveryFee;
 
-      // Default 12% commission or custom product commission
-      const commissionRate = 0.12;
-      const commissionAmount = Math.round(subtotal * commissionRate);
-      const platformFee = Math.round(subtotal * 0.02); // 2% platform fee
-      const supplierNetPayout = totalAmount - commissionAmount - platformFee;
+      // Custom product commission from metadata or default 12%
+      let commissionAmount = Math.round(subtotal * 0.12);
+      const commMatch = product.description?.match(/<!--COMM:(\{.*?\})-->/);
+      if (commMatch) {
+        try {
+          const parsed = JSON.parse(commMatch[1]);
+          if (parsed.type === 'fixed_per_unit') {
+            commissionAmount = Math.round(Number(parsed.rate) * requestedQty);
+          } else if (parsed.type === 'percentage') {
+            commissionAmount = Math.round(subtotal * (Number(parsed.rate) / 100));
+          }
+        } catch {
+          commissionAmount = Math.round(subtotal * 0.12);
+        }
+      }
+
+      // Platform commission: 20% of sales agent commission
+      const platformFee = Math.round(commissionAmount * 0.20);
+      const supplierNetPayout = totalAmount - commissionAmount;
 
       // Fetch PostgreSQL Sequence for order number
       const seqRes: Array<{ nextval: bigint }> = await prisma.$queryRaw`SELECT nextval('order_number_seq');`;
@@ -985,7 +997,7 @@ orderRouter.post(
                 orderNumber,
                 businessId: product.businessId,
                 amount: platformFee,
-                rate: 0.02,
+                rate: 0.20,
                 status: 'accrued',
               },
             },
@@ -1012,14 +1024,6 @@ orderRouter.post(
             pendingCommissions: { increment: commissionAmount },
           },
         });
-
-        // Rule 2 & Ledger: Move commission from merchant available balance to locked balance
-        await WalletService.lockCommission(
-          createdOrder.id,
-          product.businessId,
-          etbToCents(commissionAmount),
-          tx
-        );
 
         return createdOrder;
       }, {
@@ -1588,9 +1592,6 @@ orderRouter.post(
           data: { status: 'secured' },
         });
 
-        // 5. Wallet Ledger: Move commission from merchant locked balance to salesperson available balance
-        await WalletService.settleCommission(order.id, tx);
-
         return ord;
       });
 
@@ -1813,9 +1814,6 @@ orderRouter.post(
           where: { orderId: order.id },
           data: { status: 'reversed' },
         });
-
-        // 5. Wallet Ledger: Release locked commission back to merchant available balance
-        await WalletService.releaseCommission(order.id, tx);
 
         return cancelled;
       });

@@ -45,6 +45,9 @@ export const SupplierView: React.FC = () => {
     products, 
     commissionLedger, 
     platformFeeLedger,
+    settlementBatches,
+    salesPartners,
+    settleCommissions,
     verifyPayment, 
     scheduleDelivery, 
     dispatchOrder, 
@@ -64,7 +67,7 @@ export const SupplierView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SupplierTab;
-      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'wallet', 'accounts', 'settings'];
+      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'settlement', 'wallet', 'accounts', 'settings'];
       if (validTabs.includes(tabParam)) return tabParam;
       if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
         return 'wallet';
@@ -130,6 +133,12 @@ export const SupplierView: React.FC = () => {
   const [timeSlot, setTimeSlot] = useState('2:00 PM - 5:00 PM');
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
+  // Settle Commission Modal State
+  const [settlingAgentId, setSettlingAgentId] = useState<string | null>(null);
+  const [settleMethod, setSettleMethod] = useState<'Telebirr B2C' | 'CBE Direct Transfer' | 'Awash Bank Transfer'>('Telebirr B2C');
+  const [payoutReference, setPayoutReference] = useState('');
+  const [settleSubmitting, setSettleSubmitting] = useState(false);
+
   // Current Supplier Profile Resolution - strict user-scoped resolution only
   const targetSupplierId = currentUser?.supplierId || selectedSupplierId;
   const currentSupplier = (targetSupplierId ? businesses.find((b) => b.id === targetSupplierId) : null) || {
@@ -191,6 +200,47 @@ export const SupplierView: React.FC = () => {
   });
 
   const ordersNeedingVerification = supplierOrders.filter((o) => o.orderStatus === 'payment_review');
+  const eligibleCommissions = supplierCommissions.filter((c) => c.status === 'eligible');
+  const totalEligibleOwed = eligibleCommissions.reduce((sum, c) => sum + c.amount, 0);
+
+  // Group eligible commissions by salesperson
+  const commissionsByAgent: Record<
+    string,
+    {
+      agentId: string;
+      agentName: string;
+      phone?: string;
+      payoutProvider: string;
+      payoutAccount: string;
+      payoutAccountName: string;
+      totalGrossAmount: number;
+      netPayoutAmount: number;
+      platformFeeAmount: number;
+      entries: typeof eligibleCommissions;
+    }
+  > = {};
+
+  eligibleCommissions.forEach((entry) => {
+    if (!commissionsByAgent[entry.salespersonId]) {
+      const partner = salesPartners.find((sp) => sp.id === entry.salespersonId);
+      commissionsByAgent[entry.salespersonId] = {
+        agentId: entry.salespersonId,
+        agentName: entry.salespersonName,
+        phone: partner?.phone,
+        payoutProvider: partner?.payoutDestination?.provider || 'Telebirr',
+        payoutAccount: partner?.payoutDestination?.accountNumber || partner?.phone || 'N/A',
+        payoutAccountName: partner?.payoutDestination?.accountHolderName || partner?.fullName || entry.salespersonName,
+        totalGrossAmount: 0,
+        netPayoutAmount: 0,
+        platformFeeAmount: 0,
+        entries: [],
+      };
+    }
+    commissionsByAgent[entry.salespersonId].totalGrossAmount += entry.amount;
+    commissionsByAgent[entry.salespersonId].netPayoutAmount += Math.round(entry.amount * 0.8 * 100) / 100;
+    commissionsByAgent[entry.salespersonId].platformFeeAmount += Math.round(entry.amount * 0.2 * 100) / 100;
+    commissionsByAgent[entry.salespersonId].entries.push(entry);
+  });
 
   // Success feedback notice for merchant actions
   const [orderActionNotice, setOrderActionNotice] = useState<string | null>(null);
@@ -249,6 +299,33 @@ export const SupplierView: React.FC = () => {
     setDeliveryNotes('');
   };
 
+  const handleExecuteSettlement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settlingAgentId || !payoutReference.trim()) {
+      alert('Please provide the transaction reference slip code.');
+      return;
+    }
+
+    const agentGroup = commissionsByAgent[settlingAgentId];
+    if (!agentGroup) return;
+
+    const entryIds = agentGroup.entries.map((e) => e.id);
+    setSettleSubmitting(true);
+    try {
+      await settleCommissions(settlingAgentId, entryIds, settleMethod, payoutReference.trim());
+      setSettlingAgentId(null);
+      setPayoutReference('');
+      setOrderActionNotice(
+        `Audited Settlement Batch recorded successfully! ETB ${agentGroup.netPayoutAmount.toLocaleString()} paid to ${agentGroup.agentName} (Ref: ${payoutReference.trim()}).`
+      );
+      setTimeout(() => setOrderActionNotice(null), 8000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to record settlement batch.');
+    } finally {
+      setSettleSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Mobile Top Header Bar */}
@@ -276,6 +353,7 @@ export const SupplierView: React.FC = () => {
           productsCount={supplierProducts.length}
           ordersCount={supplierOrders.length}
           ordersNeedingVerificationCount={ordersNeedingVerification.length}
+          settlementDueCount={Object.keys(commissionsByAgent).length}
           walletBalance={liveWalletBalance}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
@@ -723,6 +801,205 @@ export const SupplierView: React.FC = () => {
             </div>
           )}
 
+          {/* TAB 4: COMMISSION SETTLEMENT ENGINE */}
+          {activeTab === 'settlement' && (
+            <div className="space-y-6">
+              {/* Header Card */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <WalletCards className="w-5 h-5 text-indigo-600" />
+                      Sales Agent Commission Settlement Engine
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                      When orders are delivered and verified by customers, agent commissions unlock into "eligible" status. Merchants transfer the 80% net payout directly to the agent's Telebirr or CBE account, with 20% platform marketplace fee accounted for.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-200">
+                      80% Agent Net
+                    </span>
+                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">
+                      20% Platform Fee
+                    </span>
+                  </div>
+                </div>
+
+                {/* Summary Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                    <span className="text-[11px] font-semibold text-slate-500 block uppercase tracking-wider">Total Eligible Commissions</span>
+                    <span className="text-xl font-bold font-mono text-slate-900">
+                      ETB {totalEligibleOwed.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Across all completed orders</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200/80 shadow-2xs">
+                    <span className="text-[11px] font-semibold text-rose-700 block uppercase tracking-wider">Net Owed to Agents (80%)</span>
+                    <span className="text-xl font-bold font-mono text-rose-700">
+                      ETB {(Math.round(totalEligibleOwed * 0.8)).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-rose-500 block mt-0.5">Direct Telebirr / CBE transfers</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 shadow-2xs">
+                    <span className="text-[11px] font-semibold text-indigo-700 block uppercase tracking-wider">Agents Awaiting Settlement</span>
+                    <span className="text-xl font-bold font-mono text-indigo-900">
+                      {Object.keys(commissionsByAgent).length}
+                    </span>
+                    <span className="text-[10px] text-indigo-500 block mt-0.5">Partners with pending payouts</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Outstanding Obligations */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Eligible Obligations Grouped by Sales Agent
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {Object.keys(commissionsByAgent).length} active batches
+                  </span>
+                </div>
+
+                {Object.keys(commissionsByAgent).length === 0 ? (
+                  <div className="p-10 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl border border-slate-200">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                    <p className="font-semibold text-slate-800 text-sm">All commissions are fully settled!</p>
+                    <p className="text-slate-500 mt-1">There are no outstanding commission obligations for your delivered orders.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.values(commissionsByAgent).map((group) => (
+                      <div
+                        key={group.agentId}
+                        className="p-5 glass-card-subtle rounded-2xl border border-slate-200 hover:border-slate-300 transition-all shadow-2xs space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-sm">{group.agentName}</span>
+                              {group.phone && (
+                                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                  {group.phone}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                              <span>{group.entries.length} completed order(s):</span>
+                              <span className="font-mono text-slate-700">
+                                {group.entries.map((e) => e.orderNumber).join(', ')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 block uppercase font-medium">80% Net Payout</span>
+                              <span className="font-mono font-bold text-base text-rose-700">
+                                ETB {group.netPayoutAmount.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] text-slate-400 block">
+                                Gross: ETB {group.totalGrossAmount.toLocaleString()} (20% fee: ETB {group.platformFeeAmount.toLocaleString()})
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                setSettlingAgentId(group.agentId);
+                                setPayoutReference('');
+                              }}
+                              className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs flex items-center gap-1.5"
+                            >
+                              <span>Settle 80% Payout</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Agent Destination Account Pill */}
+                        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-400">Payout Account:</span>
+                            <span className="font-semibold text-slate-800">{group.payoutProvider}:</span>
+                            <span className="font-mono font-bold text-indigo-900">{group.payoutAccount}</span>
+                            {group.payoutAccountName && (
+                              <span className="text-slate-400">({group.payoutAccountName})</span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            Transfer directly then input slip ID
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Settlement History / Audit Trail */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <FileCheck className="w-4 h-4 text-emerald-600" />
+                    Settlement History & Audit Trail
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    {settlementBatches.length} batch(es) recorded
+                  </span>
+                </div>
+
+                {settlementBatches.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-xs glass-card-subtle rounded-2xl">
+                    No historical settlement batches yet. Settled batches will be permanently recorded here with their transaction slips.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
+                        <tr>
+                          <th className="py-2.5 px-3">Batch Number</th>
+                          <th className="py-2.5 px-3">Sales Agent</th>
+                          <th className="py-2.5 px-3 text-right">Net Paid (80%)</th>
+                          <th className="py-2.5 px-3">Payment Channel</th>
+                          <th className="py-2.5 px-3">Reference Slip ID</th>
+                          <th className="py-2.5 px-3">Settled Date</th>
+                          <th className="py-2.5 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white/50">
+                        {settlementBatches.map((batch) => (
+                          <tr key={batch.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{batch.batchNumber}</td>
+                            <td className="py-2.5 px-3 font-medium text-slate-800">{batch.recipientName}</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                              ETB {batch.totalAmount.toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">{batch.payoutMethod}</td>
+                            <td className="py-2.5 px-3">
+                              <span className="font-mono bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[11px]">
+                                {batch.transactionReference || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500">
+                              {new Date(batch.settledAt || batch.id).toLocaleDateString()}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Settled
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TAB 4: COLLATERAL WALLET & CHAPA DEPOSITS */}
           {activeTab === 'wallet' && (
             <SupplierWalletManager currentSupplier={currentSupplier} products={products} />
@@ -1039,6 +1316,118 @@ export const SupplierView: React.FC = () => {
                 >
                   <Truck className="w-4 h-4 text-amber-400" />
                   <span>Confirm & Dispatch to Driver (Send SMS)</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: SETTLE COMMISSION BATCH */}
+      {/* ============================================================ */}
+      {settlingAgentId && commissionsByAgent[settlingAgentId] && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/70 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <WalletCards className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Settle Commission to Sales Agent
+                </h3>
+              </div>
+              <button
+                onClick={() => setSettlingAgentId(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteSettlement} className="p-6 space-y-4">
+              {/* Agent Recipient Details */}
+              <div className="p-4 glass-card-subtle rounded-2xl text-xs space-y-2 border border-slate-200/80">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Recipient Agent:</span>
+                  <span className="font-bold text-slate-900">{commissionsByAgent[settlingAgentId].agentName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Payment Account:</span>
+                  <span className="font-mono font-bold text-indigo-900">
+                    {commissionsByAgent[settlingAgentId].payoutProvider} - {commissionsByAgent[settlingAgentId].payoutAccount}
+                  </span>
+                </div>
+                {commissionsByAgent[settlingAgentId].payoutAccountName && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Account Holder:</span>
+                    <span className="font-medium text-slate-700">{commissionsByAgent[settlingAgentId].payoutAccountName}</span>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <span className="text-slate-500">Gross Commission ({commissionsByAgent[settlingAgentId].entries.length} orders):</span>
+                  <span className="font-mono text-slate-700">ETB {commissionsByAgent[settlingAgentId].totalGrossAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Platform Marketplace Cut (20%):</span>
+                  <span className="font-mono text-indigo-700 font-medium">ETB {commissionsByAgent[settlingAgentId].platformFeeAmount.toLocaleString()}</span>
+                </div>
+                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between font-bold text-sm">
+                  <span className="text-emerald-900">Net To Transfer to Agent (80%):</span>
+                  <span className="font-mono text-emerald-700 text-base">
+                    ETB {commissionsByAgent[settlingAgentId].netPayoutAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payout Channel Selector */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Settlement Channel *
+                </label>
+                <select
+                  value={settleMethod}
+                  onChange={(e) => setSettleMethod(e.target.value as any)}
+                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-slate-900"
+                >
+                  <option value="Telebirr B2C">Telebirr B2C / Direct Mobile Transfer</option>
+                  <option value="CBE Direct Transfer">Commercial Bank of Ethiopia (CBE)</option>
+                  <option value="Awash Bank Transfer">Awash Bank Direct Transfer</option>
+                </select>
+              </div>
+
+              {/* Transaction Slip Code Input */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Bank / Telebirr Transaction Slip / Reference ID *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TB-B2C-992819401 or CBE FT263910..."
+                  value={payoutReference}
+                  onChange={(e) => setPayoutReference(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 font-mono focus:ring-2 focus:ring-slate-900"
+                />
+                <span className="block text-[11px] text-slate-400 mt-1">
+                  Transfer ETB {commissionsByAgent[settlingAgentId].netPayoutAmount.toLocaleString()} directly to the agent, then paste the official receipt or transaction reference code here. This permanently audits the payout.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSettlingAgentId(null)}
+                  className="px-4 py-2 text-xs text-slate-600 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={settleSubmitting}
+                  className="px-5 py-2.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50 transition-colors shadow-2xs flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{settleSubmitting ? 'Recording Batch...' : 'Record Audited Settlement Batch'}</span>
                 </button>
               </div>
             </form>

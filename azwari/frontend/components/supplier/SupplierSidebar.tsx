@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Business, Order, Product } from '../../types';
 
-export type SupplierTab = 'overview' | 'products' | 'orders' | 'wallet' | 'accounts' | 'settings';
+export type SupplierTab = 'overview' | 'products' | 'orders' | 'settlement' | 'wallet' | 'accounts' | 'settings';
 
 interface SupplierSidebarProps {
   currentSupplier: Business;
@@ -30,6 +30,7 @@ interface SupplierSidebarProps {
   productsCount: number;
   ordersCount: number;
   ordersNeedingVerificationCount: number;
+  settlementDueCount?: number;
   walletBalance?: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
@@ -42,6 +43,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
   productsCount,
   ordersCount,
   ordersNeedingVerificationCount,
+  settlementDueCount,
   walletBalance,
   mobileOpen,
   setMobileOpen,
@@ -72,6 +74,13 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
       icon: ShoppingCart,
       badge: ordersNeedingVerificationCount > 0 ? `${ordersNeedingVerificationCount} pending` : ordersCount,
       badgeColor: ordersNeedingVerificationCount > 0 ? 'bg-amber-500 text-white font-bold' : 'bg-slate-200 text-slate-800',
+    },
+    {
+      id: 'settlement',
+      label: 'Commission Settlement',
+      icon: WalletCards,
+      badge: settlementDueCount && settlementDueCount > 0 ? `${settlementDueCount} due` : undefined,
+      badgeColor: 'bg-rose-500 text-white font-bold',
     },
     {
       id: 'wallet',

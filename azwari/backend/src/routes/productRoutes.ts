@@ -228,24 +228,6 @@ productRouter.post(
           ? commRate
           : Math.round(unitPrice * (commRate / 100));
 
-      try {
-        await WalletService.validateListingCollateral({
-          businessId,
-          stock: body.stock || 1,
-          commissionPerUnit,
-        });
-      } catch (collateralErr: any) {
-        if (collateralErr instanceof InsufficientCollateralError) {
-          res.status(402).json({
-            success: false,
-            error: collateralErr.message,
-            details: collateralErr.details,
-          });
-          return;
-        }
-        throw collateralErr;
-      }
-
       const product = await prisma.$transaction(async (tx: any) => {
         const created = await tx.product.create({
           data: {

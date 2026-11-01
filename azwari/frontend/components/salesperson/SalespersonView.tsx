@@ -296,14 +296,14 @@ export const SalespersonView: React.FC = () => {
                   className="glass-card-hover p-5 rounded-3xl border border-emerald-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-emerald-50/40"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block">Eligible for Payout</span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Chapa</span>
+                    <span className="text-xs text-slate-500 block">Eligible for Settlement</span>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">80% Net</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-emerald-800">
                     ETB {liveEligibleCommissions.toLocaleString()}
                   </div>
                   <span className="text-[11px] text-emerald-700 font-bold mt-1 flex items-center gap-1">
-                    Cash out now →
+                    View settlements →
                   </span>
                 </div>
 
