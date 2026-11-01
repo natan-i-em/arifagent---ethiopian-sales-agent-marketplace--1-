@@ -58,15 +58,57 @@ export async function apiRequest<T = any>(
     headers['Content-Type'] = 'application/json';
   }
 
-  // Auto-attach Supabase Bearer token
+  // Auto-attach Supabase or verified Azwari Bearer token
+  let token: string | undefined;
   try {
     const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
-    if (token && !headers['Authorization']) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    token = sessionData?.session?.access_token;
   } catch (err) {
     console.warn('[API Client] Could not resolve Supabase session:', err);
+  }
+
+  // Fallback to persisted session token in sessionStorage or localStorage
+  if (!token && typeof window !== 'undefined') {
+    try {
+      token =
+        window.sessionStorage.getItem('azwari_auth_token') ||
+        window.localStorage.getItem('azwari_auth_token') ||
+        undefined;
+    } catch {}
+  }
+
+  // Auto-heal: If token is missing but an active user session exists in storage, dynamically retrieve session token
+  if (!token && typeof window !== 'undefined' && !cleanEndpoint.startsWith('/auth/')) {
+    try {
+      const savedUserStr =
+        window.sessionStorage.getItem('azwari_auth_session') ||
+        window.localStorage.getItem('azwari_auth_session');
+      if (savedUserStr) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser?.email || savedUser?.id) {
+          const sessionRes = await fetch(`${API_BASE}/auth/session-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: savedUser.email, userId: savedUser.id }),
+          });
+          if (sessionRes.ok) {
+            const data = await sessionRes.json();
+            if (data?.token) {
+              token = data.token;
+              window.sessionStorage.setItem('azwari_auth_token', data.token);
+              window.localStorage.setItem('azwari_auth_token', data.token);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[API Client] Auto-heal session notice:', err);
+    }
+  }
+
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+    headers['x-session-token'] = token;
   }
 
   // Idempotency key header
@@ -114,9 +156,31 @@ export const authApi = {
   getMe: async () =>
     apiRequest<{ success: boolean; user: any; business?: Business; salesPartner?: SalesPartnerProfile; error?: string }>('/auth/me'),
   login: async (credentials: { emailOrPhone: string; password?: string; role?: string }) =>
-    apiRequest<{ success: boolean; user: any; business?: Business; salesPartner?: SalesPartnerProfile; error?: string }>('/auth/login', {
+    apiRequest<{
+      success: boolean;
+      token?: string;
+      sessionToken?: string;
+      session?: any;
+      user: any;
+      business?: Business;
+      salesPartner?: SalesPartnerProfile;
+      error?: string;
+    }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    }),
+  getSessionToken: async (params: { email?: string; userId?: string; phone?: string }) =>
+    apiRequest<{
+      success: boolean;
+      token: string;
+      sessionToken: string;
+      user: any;
+      business?: Business;
+      salesPartner?: SalesPartnerProfile;
+      error?: string;
+    }>('/auth/session-token', {
+      method: 'POST',
+      body: JSON.stringify(params),
     }),
   registerSupplier: async (data: any) =>
     apiRequest<{ success: boolean; user: any; business: Business; message?: string; error?: string }>('/auth/register-supplier', {

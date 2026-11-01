@@ -157,6 +157,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ initialProdu
         specialInstructions,
         paymentAccountId: paymentAccountId || supplier.paymentAccounts[0]?.id || '',
         consentMethod,
+        salesPartnerId: salesperson?.id || selectedSalespersonId,
       });
 
       if (result.success && result.order) {

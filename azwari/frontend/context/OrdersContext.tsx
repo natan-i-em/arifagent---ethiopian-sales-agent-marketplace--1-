@@ -21,6 +21,7 @@ interface OrdersContextType {
     specialInstructions?: string;
     paymentAccountId: string;
     consentMethod: 'phone_call' | 'telegram_chat' | 'in_person_verbal';
+    salesPartnerId?: string;
   }) => Promise<{ success: boolean; order?: Order; error?: string }>;
   submitPaymentEvidence: (
     orderId: string,

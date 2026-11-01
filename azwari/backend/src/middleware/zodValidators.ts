@@ -17,6 +17,7 @@ export const CreateOrderSchema = z.object({
   preferredTimeSlot: z.string().optional(),
   specialInstructions: z.string().optional(),
   consentMethod: z.enum(['phone_call', 'telegram_chat', 'in_person_verbal']).default('phone_call'),
+  salesPartnerId: z.string().optional(),
 });
 
 export const PaymentEvidenceSchema = z.object({

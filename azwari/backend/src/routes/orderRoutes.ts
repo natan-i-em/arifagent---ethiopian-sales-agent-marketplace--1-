@@ -816,7 +816,7 @@ orderRouter.post(
       const body = req.body;
 
       // Identify the salesperson profile
-      let salesPartnerId = user.salesPartnerId;
+      let salesPartnerId = body.salesPartnerId || user.salesPartnerId;
       if (!salesPartnerId) {
         // Fallback for admin or linked agent
         const sp = await prisma.salesPartner.findFirst({

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../supabase.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 import { validateSupplierRegistration, validateAgentRegistration, normalizeEthiopianPhone } from '../middleware/validator.js';
 import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
-import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { requireAuth, signToken, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 
 export const authRouter = Router();
 
@@ -423,8 +423,17 @@ authRouter.post('/sync-user', async (req: Request, res: Response) => {
       prisma.salesPartner.findFirst({ where: { OR: [{ authUserId: user.authUserId || '' }, { email }] } }),
     ]);
 
+    const signedToken = signToken({
+      userId: user.id,
+      authUserId: user.authUserId || user.id,
+      email: user.email,
+      role: (user.role as any) || 'salesperson',
+    });
+
     res.status(200).json({
       success: true,
+      token: signedToken,
+      sessionToken: signedToken,
       user,
       business,
       salesPartner,
@@ -439,6 +448,85 @@ authRouter.post('/sync-user', async (req: Request, res: Response) => {
  * GET /api/auth/profile/:email
  * Retrieves user profile + linked business / sales partner
  */
+/**
+ * POST /api/auth/session-token
+ * Generates/refreshes a verified signed session token for authenticated user sessions
+ */
+authRouter.post('/session-token', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, userId, phone } = req.body;
+    if (!email && !userId && !phone) {
+      res.status(400).json({ success: false, error: 'Email, userId, or phone is required' });
+      return;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(email ? [{ email }] : []),
+          ...(userId ? [{ id: userId }, { authUserId: userId }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, error: 'User profile not found' });
+      return;
+    }
+
+    const [business, salesPartner] = await Promise.all([
+      prisma.business.findFirst({
+        where: {
+          OR: [
+            ...(user.authUserId ? [{ authUserId: user.authUserId }] : []),
+            { contactEmail: user.email },
+          ],
+        },
+      }),
+      prisma.salesPartner.findFirst({
+        where: {
+          OR: [
+            ...(user.authUserId ? [{ authUserId: user.authUserId }] : []),
+            ...(user.phone ? [{ phone: user.phone }] : []),
+            { email: user.email },
+          ],
+        },
+      }),
+    ]);
+
+    const activeRole = (user.role || 'salesperson') as 'salesperson' | 'supplier' | 'admin';
+    const token = signToken({
+      userId: user.id,
+      authUserId: user.authUserId || user.id,
+      email: user.email,
+      role: activeRole,
+    });
+
+    res.status(200).json({
+      success: true,
+      token,
+      sessionToken: token,
+      user: {
+        id: user.id,
+        authUserId: user.authUserId || user.id,
+        email: user.email,
+        name: user.fullName || user.email.split('@')[0],
+        role: activeRole,
+        entityId: activeRole === 'supplier' ? business?.id : activeRole === 'salesperson' ? salesPartner?.id : undefined,
+        supplierId: business?.id,
+        salespersonId: salesPartner?.id,
+        phone: user.phone || '',
+        subcity: user.subcity || '',
+      },
+      business,
+      salesPartner,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Error generating session token' });
+  }
+});
+
 authRouter.get('/profile/:email', async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
@@ -507,6 +595,7 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response) => {
 
     let authUserId: string | null = null;
     let authUserMetadata: any = null;
+    let authSession: any = null;
 
     // If password provided, authenticate against Supabase Auth
     if (password) {
@@ -523,6 +612,7 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response) => {
       if (authData?.user) {
         authUserId = authData.user.id;
         authUserMetadata = authData.user.user_metadata;
+        authSession = authData.session;
       }
     }
 
@@ -653,8 +743,19 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response) => {
       }
     }
 
+    const signedToken = signToken({
+      userId: user.id,
+      authUserId: user.authUserId || user.id,
+      email: user.email,
+      role: activeRole,
+    });
+    const tokenToReturn = authSession?.access_token || signedToken;
+
     res.status(200).json({
       success: true,
+      token: tokenToReturn,
+      sessionToken: signedToken,
+      session: authSession || null,
       user: {
         id: user.id,
         authUserId: user.authUserId || user.id,

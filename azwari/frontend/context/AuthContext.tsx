@@ -201,6 +201,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchSessionUser();
 
+    // Auto-heal session token if user is signed in but token is not in storage
+    if (currentUser?.email) {
+      const existingToken = sessionStore.getItem('azwari_auth_token');
+      if (!existingToken) {
+        authApi.getSessionToken({ email: currentUser.email, userId: currentUser.id })
+          .then((res) => {
+            if (res?.token) {
+              sessionStore.setItem('azwari_auth_token', res.token);
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('azwari_auth_token', res.token);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         fetchSessionUser();
@@ -239,6 +256,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. Fetch full verified profile from backend
       const res = await authApi.login(credentials);
       if (res.success && res.user) {
+        if (res.token) {
+          sessionStore.setItem('azwari_auth_token', res.token);
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('azwari_auth_token', res.token);
+            } catch {}
+          }
+        }
+        if (res.session?.access_token && res.session?.refresh_token) {
+          await supabase.auth.setSession({
+            access_token: res.session.access_token,
+            refresh_token: res.session.refresh_token,
+          }).catch(() => {});
+        }
         const user: AuthUser = {
           id: res.user.id,
           email: res.user.email,
@@ -294,6 +325,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSelectedSalespersonId('');
     setSelectedCustomerToken('');
     sessionStore.removeItem(STORAGE_KEY);
+    sessionStore.removeItem('azwari_auth_token');
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem('azwari_auth_token');
+      } catch {}
+    }
 
     if (typeof window !== 'undefined') {
       try {
