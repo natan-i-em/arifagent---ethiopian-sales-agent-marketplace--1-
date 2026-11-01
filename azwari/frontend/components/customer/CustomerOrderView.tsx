@@ -32,7 +32,6 @@ import { ProductImage } from '../common/ProductImage';
 
 import { useQuery } from '@tanstack/react-query';
 import { ordersApi } from '../../lib/api';
-import { supabase } from '../../lib/supabase';
 
 export const CustomerOrderView: React.FC = () => {
   const { 
@@ -73,7 +72,7 @@ export const CustomerOrderView: React.FC = () => {
     queryKey: ['publicOrder', activeToken],
     queryFn: () => ordersApi.getByToken(activeToken),
     enabled: Boolean(activeToken),
-    refetchInterval: 60000,
+    refetchInterval: 10000,
   });
 
   const publicOrder = publicOrderData?.order;
@@ -86,43 +85,6 @@ export const CustomerOrderView: React.FC = () => {
     (currentUser?.role === 'salesperson' && currentUser.salespersonId
       ? orders.find((o) => o.salespersonId === currentUser.salespersonId)
       : null);
-
-  // Instant Realtime live push listener for this customer order
-  useEffect(() => {
-    if (!currentOrder?.id) return;
-
-    const orderChannel = supabase
-      .channel(`public:customer:order:${currentOrder.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'Order',
-          filter: `id=eq.${currentOrder.id}`,
-        },
-        () => {
-          refetchPublicOrder();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'PaymentReceipt',
-          filter: `orderId=eq.${currentOrder.id}`,
-        },
-        () => {
-          refetchPublicOrder();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(orderChannel);
-    };
-  }, [currentOrder?.id, refetchPublicOrder]);
 
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
