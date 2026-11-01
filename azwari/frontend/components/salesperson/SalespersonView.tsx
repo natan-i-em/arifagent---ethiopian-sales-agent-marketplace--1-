@@ -128,8 +128,38 @@ export const SalespersonView: React.FC = () => {
   const agentLedger = useMemo(() => {
     return commissionLedger.filter((l) => l.salespersonId === currentAgent.id);
   }, [commissionLedger, currentAgent.id]);
-  const liveEligibleCommissions = Number(currentAgent.eligibleCommissions || 0);
-  const livePendingCommissions = Number(currentAgent.pendingCommissions || 0);
+  const inFulfillmentOrders = useMemo(() => {
+    return agentOrders.filter(
+      (o) =>
+        o.orderStatus !== 'cancelled' &&
+        o.orderStatus !== 'disputed' &&
+        o.orderStatus !== 'delivered' &&
+        o.orderStatus !== 'completed'
+    );
+  }, [agentOrders]);
+
+  const deliveredOrders = useMemo(() => {
+    return agentOrders.filter(
+      (o) => o.orderStatus === 'delivered' || o.orderStatus === 'completed'
+    );
+  }, [agentOrders]);
+
+  const computedPendingGross = inFulfillmentOrders.reduce(
+    (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
+    0
+  );
+  const livePendingCommissions = computedPendingGross > 0
+    ? Math.round((computedPendingGross * 0.8) * 100) / 100
+    : (Number(currentAgent.pendingCommissions || 0) > 0 ? Math.round(Number(currentAgent.pendingCommissions) * 0.8 * 100) / 100 : 0);
+
+  const computedDeliveredGross = deliveredOrders.reduce(
+    (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
+    0
+  );
+  const liveEligibleCommissions = computedDeliveredGross > 0
+    ? Math.round((computedDeliveredGross * 0.8) * 100) / 100
+    : (Number(currentAgent.eligibleCommissions || 0) > 0 ? Math.round(Number(currentAgent.eligibleCommissions) * 0.8 * 100) / 100 : 0);
+
   const totalAttributedSales = agentOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   // CRITICAL: Filter out paused, draft, and inactive products so sales agents only see live active offers
@@ -261,50 +291,40 @@ export const SalespersonView: React.FC = () => {
               </div>
 
               {/* Financial KPI Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="glass-card p-5 rounded-3xl border border-white/90">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="glass-card p-6 rounded-3xl border border-white/90 shadow-2xs">
                   <span className="text-xs text-slate-500 block mb-1">Attributed Sales</span>
-                  <div className="font-mono-numbers font-bold text-xl text-slate-900">
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     ETB {totalAttributedSales.toLocaleString()}
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">
-                    {agentOrders.length} total orders generated
-                  </span>
-                </div>
-
-                <div className="glass-card p-5 rounded-3xl border border-white/90">
-                  <span className="text-xs text-slate-500 block mb-1">Pending Commissions</span>
-                  <div className="font-mono-numbers font-bold text-xl text-amber-700">
-                    ETB {livePendingCommissions.toLocaleString()}
-                  </div>
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Awaiting customer payment/delivery
+                    {agentOrders.length} customer order{agentOrders.length !== 1 ? 's' : ''} generated
                   </span>
                 </div>
 
                 <div 
                   onClick={() => setActiveTab('payouts')}
-                  className="glass-card-hover p-5 rounded-3xl border border-emerald-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-emerald-50/40"
+                  className="glass-card-hover p-6 rounded-3xl border border-amber-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-amber-50/40 shadow-2xs"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block">Eligible for Settlement</span>
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">80% Net</span>
+                    <span className="text-xs text-slate-500 block font-medium">Pending Commission (Earned)</span>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Active Orders</span>
                   </div>
-                  <div className="font-mono-numbers font-bold text-xl text-emerald-800">
-                    ETB {liveEligibleCommissions.toLocaleString()}
+                  <div className="font-mono-numbers font-bold text-2xl text-amber-800">
+                    ETB {livePendingCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[11px] text-emerald-700 font-bold mt-1 flex items-center gap-1">
-                    View settlements →
+                  <span className="text-[11px] text-amber-700 font-bold mt-1 flex items-center gap-1">
+                    View commission settlements →
                   </span>
                 </div>
 
-                <div className="glass-card p-5 rounded-3xl border border-white/90">
-                  <span className="text-xs text-slate-500 block mb-1">Total Paid Out</span>
-                  <div className="font-mono-numbers font-bold text-xl text-slate-600">
-                    ETB {currentAgent.paidCommissions.toLocaleString()}
+                <div className="glass-card p-6 rounded-3xl border border-white/90 shadow-2xs">
+                  <span className="text-xs text-slate-500 block mb-1">Total Settled Earnings</span>
+                  <div className="font-mono-numbers font-bold text-2xl text-emerald-800">
+                    ETB {currentAgent.paidCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">
-                    Settled to {currentAgent.payoutDestination.provider}
+                    Settled to {currentAgent.payoutDestination?.provider || 'Telebirr/CBE'}
                   </span>
                 </div>
               </div>
@@ -830,7 +850,7 @@ export const SalespersonView: React.FC = () => {
 
           {/* TAB 5: PAYOUTS & BANKING (CHAPA DIRECT TRANSFER) */}
           {activeTab === 'payouts' && (
-            <SalespersonPayoutManager currentAgent={currentAgent} />
+            <SalespersonPayoutManager currentAgent={currentAgent} orders={agentOrders} eligibleAmount={liveEligibleCommissions} pendingAmount={livePendingCommissions} />
           )}
 
           {/* TAB 6: DISPUTES & SUPPORT */}

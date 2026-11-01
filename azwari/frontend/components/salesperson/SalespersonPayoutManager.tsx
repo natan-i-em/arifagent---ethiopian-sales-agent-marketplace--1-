@@ -22,12 +22,20 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+import { Order } from '../../types';
+
 interface SalespersonPayoutManagerProps {
   currentAgent: SalesPartnerProfile;
+  orders?: Order[];
+  eligibleAmount?: number;
+  pendingAmount?: number;
 }
 
 export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> = ({
   currentAgent,
+  orders = [],
+  eligibleAmount,
+  pendingAmount,
 }) => {
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
@@ -44,10 +52,42 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
 
   const batches: SettlementBatch[] = batchesData?.batches || [];
 
-  // Balances
-  const eligibleEtb = Number(currentAgent.eligibleCommissions || 0);
-  const pendingEtb = Number(currentAgent.pendingCommissions || 0);
-  const paidEtb = Number(currentAgent.paidCommissions || 0);
+  // Total amount already settled by merchants in historical batches
+  const settledBatchTotal = batches.reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
+
+  // 1. Delivered & customer-verified orders waiting for payout (80% net to agent after 20% platform cut)
+  const deliveredOrders = orders.filter(
+    (o) => o.orderStatus === 'delivered' || o.orderStatus === 'completed'
+  );
+  const dynamicDeliveredGross = deliveredOrders.reduce(
+    (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
+    0
+  );
+  const computedEligibleNet = dynamicDeliveredGross > 0
+    ? Math.max(0, Math.round((dynamicDeliveredGross * 0.8) * 100) / 100 - settledBatchTotal)
+    : (Number(currentAgent.eligibleCommissions || 0) > 0 ? Math.round(Number(currentAgent.eligibleCommissions) * 0.8 * 100) / 100 : 0);
+
+  const eligibleEtb = eligibleAmount !== undefined ? eligibleAmount : computedEligibleNet;
+
+  // 2. Placed & active fulfillment orders (earned commission pending customer delivery)
+  const inFulfillmentOrders = orders.filter(
+    (o) =>
+      o.orderStatus !== 'cancelled' &&
+      o.orderStatus !== 'disputed' &&
+      o.orderStatus !== 'delivered' &&
+      o.orderStatus !== 'completed'
+  );
+  const dynamicPendingGross = inFulfillmentOrders.reduce(
+    (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
+    0
+  );
+  const computedPendingNet = dynamicPendingGross > 0
+    ? Math.round((dynamicPendingGross * 0.8) * 100) / 100
+    : (Number(currentAgent.pendingCommissions || 0) > 0 ? Math.round(Number(currentAgent.pendingCommissions) * 0.8 * 100) / 100 : 0);
+
+  const pendingEtb = pendingAmount !== undefined ? pendingAmount : computedPendingNet;
+
+  const paidEtb = settledBatchTotal > 0 ? settledBatchTotal : Number(currentAgent.paidCommissions || 0);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -69,7 +109,7 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
                 Eligible for Settlement
               </span>
               <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-bold border border-indigo-400/20">
-                Awaiting Merchant Payout
+                Awaiting Merchant Direct Transfer
               </span>
             </div>
 
@@ -93,17 +133,17 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-amber-500" />
-                In Fulfillment / In Transit
+                Pending Commission Balance (Earned)
               </span>
               <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">
-                Pending Delivery
+                Earned on Active Orders
               </span>
             </div>
             <div className="text-2xl font-bold font-mono text-slate-900 mb-1">
               ETB {pendingEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Commissions for active customer orders in transit. Automatically shifts to your Eligible balance the instant the buyer confirms receipt.
+              Commission you earned from customer orders currently placed or in delivery. The merchant transfers this to you once the buyer confirms delivery.
             </p>
           </div>
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">

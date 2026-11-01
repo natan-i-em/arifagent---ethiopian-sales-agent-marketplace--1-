@@ -19,6 +19,7 @@ import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 import { WalletService, InsufficientBalanceError } from '../services/walletService.js';
 import { ChapaService } from '../services/chapaService.js';
 import { walletConfig, etbToCents } from '../config/walletConfig.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const orderRouter = Router();
 
@@ -529,6 +530,7 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
         console.warn('[Audit Log Notice]', auditErr);
       }
 
+      realtimeEmitter.emit('change', { type: 'EVIDENCE_SUBMITTED', orderId: updatedOrder.id });
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
       return;
     }

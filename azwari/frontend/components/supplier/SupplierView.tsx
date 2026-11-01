@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
+import { ordersApi } from '../../lib/api';
 import { Order, Product, PaymentMethodProvider } from '../../types';
 import { 
   Building2, 
@@ -27,7 +28,8 @@ import {
   TrendingUp,
   LayoutDashboard,
   Store,
-  ArrowRight
+  ArrowRight,
+  Layers
 } from 'lucide-react';
 import { SupplierSidebar, SupplierTab } from './SupplierSidebar';
 import { SupplierProductManager } from './SupplierProductManager';
@@ -46,6 +48,7 @@ export const SupplierView: React.FC = () => {
     settlementBatches,
     salesPartners,
     settleCommissions,
+    settlePlatformFee,
     verifyPayment, 
     scheduleDelivery, 
     dispatchOrder, 
@@ -128,6 +131,49 @@ export const SupplierView: React.FC = () => {
   const [settleMethod, setSettleMethod] = useState<'Telebirr B2C' | 'CBE Direct Transfer' | 'Awash Bank Transfer'>('Telebirr B2C');
   const [payoutReference, setPayoutReference] = useState('');
   const [settleSubmitting, setSettleSubmitting] = useState(false);
+  // Payout Screenshot for Agent Settlement
+  const [payoutScreenshotUrl, setPayoutScreenshotUrl] = useState('');
+  const [uploadingPayoutScreenshot, setUploadingPayoutScreenshot] = useState(false);
+
+  // Settle Platform Fee (20%) Modal State
+  const [showPlatformFeeModal, setShowPlatformFeeModal] = useState(false);
+  const [platformFeeMethod, setPlatformFeeMethod] = useState<'Telebirr SuperApp Till' | 'Commercial Bank of Ethiopia (CBE)'>('Telebirr SuperApp Till');
+  const [platformFeeReference, setPlatformFeeReference] = useState('');
+  const [platformFeeScreenshotUrl, setPlatformFeeScreenshotUrl] = useState('');
+  const [uploadingPlatformFeeScreenshot, setUploadingPlatformFeeScreenshot] = useState(false);
+  const [settlingPlatformFee, setSettlingPlatformFee] = useState(false);
+
+  // File upload helper for settlement screenshots
+  const handleScreenshotFile = (
+    file: File,
+    setter: (url: string) => void,
+    loadingSetter: (loading: boolean) => void
+  ) => {
+    if (!file) return;
+    loadingSetter(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        try {
+          const res = await ordersApi.uploadReceiptImage(base64, file.name, 'SETTLEMENT');
+          if (res.success && res.imageUrl) {
+            setter(res.imageUrl);
+          } else {
+            setter(base64);
+          }
+        } catch {
+          setter(base64);
+        } finally {
+          loadingSetter(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      loadingSetter(false);
+    }
+  };
+
 
   // Current Supplier Profile Resolution - strict user-scoped resolution only
   const targetSupplierId = currentUser?.supplierId || selectedSupplierId;
@@ -183,6 +229,11 @@ export const SupplierView: React.FC = () => {
   const ordersNeedingVerification = supplierOrders.filter((o) => o.orderStatus === 'payment_review');
   const eligibleCommissions = supplierCommissions.filter((c) => c.status === 'eligible');
   const totalEligibleOwed = eligibleCommissions.reduce((sum, c) => sum + c.amount, 0);
+  // Calculate 20% platform cut for all delivered orders
+  const deliveredOrdersForPlatformFee = supplierOrders.filter((o) => ['delivered', 'completed'].includes(o.orderStatus));
+  const totalDeliveredGrossCommissions = deliveredOrdersForPlatformFee.reduce((sum, o) => sum + (Number(o.agreedCommissionAmount) || 0), 0);
+  const totalPlatformCutDue = Math.round(totalDeliveredGrossCommissions * 0.20 * 100) / 100;
+
 
   // Group eligible commissions by salesperson
   const commissionsByAgent: Record<
@@ -280,6 +331,32 @@ export const SupplierView: React.FC = () => {
     setDeliveryNotes('');
   };
 
+  const handleExecutePlatformFeeSettlement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!platformFeeReference.trim()) {
+      alert('Please enter your transaction reference slip code.');
+      return;
+    }
+
+    setSettlingPlatformFee(true);
+    try {
+      if (settlePlatformFee) {
+        await settlePlatformFee(platformFeeMethod, platformFeeReference.trim(), platformFeeScreenshotUrl || undefined, totalPlatformCutDue);
+      }
+      setShowPlatformFeeModal(false);
+      setPlatformFeeReference('');
+      setPlatformFeeScreenshotUrl('');
+      setOrderActionNotice(
+        `Platform fee settlement recorded successfully! ETB ${totalPlatformCutDue.toLocaleString()} paid to Azwari (Ref: ${platformFeeReference.trim()}).`
+      );
+      setTimeout(() => setOrderActionNotice(null), 8000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to record platform fee settlement.');
+    } finally {
+      setSettlingPlatformFee(false);
+    }
+  };
+
   const handleExecuteSettlement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settlingAgentId || !payoutReference.trim()) {
@@ -293,9 +370,10 @@ export const SupplierView: React.FC = () => {
     const entryIds = agentGroup.entries.map((e) => e.id);
     setSettleSubmitting(true);
     try {
-      await settleCommissions(settlingAgentId, entryIds, settleMethod, payoutReference.trim());
+      await settleCommissions(settlingAgentId, entryIds, settleMethod, payoutReference.trim(), payoutScreenshotUrl || undefined);
       setSettlingAgentId(null);
       setPayoutReference('');
+      setPayoutScreenshotUrl('');
       setOrderActionNotice(
         `Audited Settlement Batch recorded successfully! ETB ${agentGroup.netPayoutAmount.toLocaleString()} paid to ${agentGroup.agentName} (Ref: ${payoutReference.trim()}).`
       );
@@ -807,27 +885,62 @@ export const SupplierView: React.FC = () => {
                 </div>
 
                 {/* Summary Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                  <div className="p-5 rounded-2xl bg-white/80 border border-slate-200 shadow-2xs">
-                    <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Total Eligible Commissions</span>
-                    <span className="text-2xl font-bold font-mono text-slate-900 block mt-1">
-                      ETB {totalEligibleOwed.toLocaleString()}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2">
+                  {/* Card 1: 80% Net Owed to Sales Agents */}
+                  <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Net Owed to Agents (80%)</span>
+                      <span className="text-2xl font-extrabold font-mono text-slate-900 block mt-1">
+                        ETB {(Math.round(totalEligibleOwed * 0.8)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-xs text-slate-400 block mt-1">
+                        Gross completed: ETB {totalEligibleOwed.toLocaleString()} · {Object.keys(commissionsByAgent).length} agent(s) due
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 mt-3 inline-block self-start">
+                      Direct CBE / Telebirr Transfers
                     </span>
-                    <span className="text-[11px] text-slate-400 block mt-1">Gross completed orders value</span>
                   </div>
-                  <div className="p-5 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-2xs">
-                    <span className="text-xs font-semibold text-rose-700 block uppercase tracking-wider">Net Owed to Agents (80%)</span>
-                    <span className="text-2xl font-bold font-mono text-rose-700 block mt-1">
-                      ETB {(Math.round(totalEligibleOwed * 0.8)).toLocaleString()}
-                    </span>
-                    <span className="text-[11px] text-rose-600 block mt-1">Direct Telebirr / CBE transfers</span>
+
+                  {/* Card 2: Unpaid Platform Fee (20%) */}
+                  <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 via-white to-white border border-indigo-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Unpaid Platform Fee (20%)</span>
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">Azwari Cut</span>
+                      </div>
+                      <span className="text-2xl font-extrabold font-mono text-indigo-950 block mt-1">
+                        ETB {totalPlatformCutDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-xs text-slate-500 block mt-1">
+                        Retained marketplace share on delivered orders
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPlatformFeeModal(true)}
+                      disabled={totalPlatformCutDue <= 0}
+                      className="mt-3 px-3.5 py-2 text-xs font-bold rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white disabled:opacity-40 transition-colors shadow-2xs flex items-center justify-between cursor-pointer"
+                    >
+                      <span>Settle Platform Fee (20%)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <div className="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200 shadow-2xs">
-                    <span className="text-xs font-semibold text-indigo-700 block uppercase tracking-wider">Agents Awaiting Settlement</span>
-                    <span className="text-2xl font-bold font-mono text-indigo-900 block mt-1">
-                      {Object.keys(commissionsByAgent).length}
+
+                  {/* Card 3: Historical Audited Batches */}
+                  <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-500 block uppercase tracking-wider">Settlement Batches Audited</span>
+                      <span className="text-2xl font-extrabold font-mono text-emerald-800 block mt-1">
+                        {settlementBatches.length} batch(es)
+                      </span>
+                      <span className="text-xs text-slate-400 block mt-1">
+                        Total settled: ETB {settlementBatches.reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 mt-3 inline-block self-start">
+                      Permanent Slip Audit Trail
                     </span>
-                    <span className="text-[11px] text-indigo-600 block mt-1">Partners with ready payouts</span>
                   </div>
                 </div>
               </div>
@@ -976,9 +1089,30 @@ export const SupplierView: React.FC = () => {
                               </span>
                             </td>
                             <td className="py-4 px-6">
-                              <span className="font-mono bg-slate-100 text-slate-900 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
-                                {batch.transactionReference || 'N/A'}
-                              </span>
+                              {(() => {
+                                const raw = batch.transactionReference || '';
+                                const parts = raw.split(' | ');
+                                const code = parts[0] || 'N/A';
+                                const slipUrl = parts[1];
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono bg-slate-100 text-slate-900 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
+                                      {code}
+                                    </span>
+                                    {slipUrl && (
+                                      <a
+                                        href={slipUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1 shrink-0"
+                                      >
+                                        <span>Slip</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
                               {new Date(batch.settledAt || batch.id).toLocaleDateString(undefined, {
@@ -1068,9 +1202,9 @@ export const SupplierView: React.FC = () => {
       {/* MODAL: VERIFY CUSTOMER PAYMENT EVIDENCE */}
       {/* ============================================================ */}
       {verifyingOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="glass-modal w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-white/90 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md shrink-0">
               <h3 className="text-sm font-bold text-slate-900">
                 Verify Customer Payment Evidence
               </h3>
@@ -1082,7 +1216,7 @@ export const SupplierView: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="p-4 glass-card rounded-2xl border border-slate-200/80 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Order Ref:</span>
@@ -1178,7 +1312,8 @@ export const SupplierView: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              </div>
+            <div className="sticky bottom-0 p-4 bg-white/95 border-t border-slate-200 backdrop-blur-md flex items-center justify-end gap-3 shrink-0 shadow-xs">
                 {!showRejectInput ? (
                   <>
                     <button
@@ -1217,8 +1352,7 @@ export const SupplierView: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* ============================================================ */}
       {/* MODAL: SCHEDULE DELIVERY */}
@@ -1407,6 +1541,42 @@ export const SupplierView: React.FC = () => {
                   Transfer ETB {commissionsByAgent[settlingAgentId].netPayoutAmount.toLocaleString()} directly to the agent, then paste the official receipt or transaction reference code here. This permanently audits the payout.
                 </span>
               </div>
+              {/* Transfer Receipt Screenshot (Optional) */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-700">
+                  Payment Transfer Screenshot (Optional)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingPayoutScreenshot}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleScreenshotFile(file, setPayoutScreenshotUrl, setUploadingPayoutScreenshot);
+                    }}
+                    className="text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  />
+                  {uploadingPayoutScreenshot && (
+                    <span className="text-xs text-indigo-600 font-semibold animate-pulse">Uploading slip...</span>
+                  )}
+                </div>
+                {payoutScreenshotUrl && (
+                  <div className="flex items-center gap-2 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 mt-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-medium truncate">Transfer screenshot attached</span>
+                    <a
+                      href={payoutScreenshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto underline text-emerald-700 font-bold shrink-0 flex items-center gap-1"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
@@ -1429,6 +1599,137 @@ export const SupplierView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Settle Platform Fee (20%) Modal */}
+      {showPlatformFeeModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-700">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Settle 20% Platform Fee to Azwari
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowPlatformFeeModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecutePlatformFeeSettlement} className="p-6 space-y-4">
+              {/* Azwari Official Bank Account Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-indigo-200 font-semibold">Official Platform Account</span>
+                  <span className="bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-indigo-400/20">
+                    Azwari Technology
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs text-indigo-200">Telebirr SuperApp Till: <span className="font-mono font-bold text-white">0931418513</span></div>
+                  <div className="text-xs text-indigo-200">CBE Commercial Bank: <span className="font-mono font-bold text-white">1000481928471</span></div>
+                  <div className="text-[11px] text-indigo-300">Account Name: <span className="font-semibold text-white">Azwari Digital Marketplace</span></div>
+                </div>
+                <div className="pt-2 border-t border-indigo-700/60 flex items-center justify-between font-bold text-sm">
+                  <span className="text-indigo-200 text-xs">Platform Fee Due:</span>
+                  <span className="font-mono text-emerald-400 text-base">ETB {totalPlatformCutDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              {/* Settlement Channel */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Transfer Channel *
+                </label>
+                <select
+                  value={platformFeeMethod}
+                  onChange={(e) => setPlatformFeeMethod(e.target.value as any)}
+                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-slate-900"
+                >
+                  <option value="Telebirr SuperApp Till">Telebirr SuperApp / Till (0931418513)</option>
+                  <option value="Commercial Bank of Ethiopia (CBE)">Commercial Bank of Ethiopia (1000481928471)</option>
+                </select>
+              </div>
+
+              {/* Transaction Slip Code Input */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Bank / Telebirr Transaction Reference ID *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TB-PF-928192 or CBE FT28194..."
+                  value={platformFeeReference}
+                  onChange={(e) => setPlatformFeeReference(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 font-mono focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+
+              {/* Platform Fee Screenshot Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-700">
+                  Transfer Receipt Screenshot (Recommended)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingPlatformFeeScreenshot}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleScreenshotFile(file, setPlatformFeeScreenshotUrl, setUploadingPlatformFeeScreenshot);
+                    }}
+                    className="text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  />
+                  {uploadingPlatformFeeScreenshot && (
+                    <span className="text-xs text-indigo-600 font-semibold animate-pulse">Uploading slip...</span>
+                  )}
+                </div>
+                {platformFeeScreenshotUrl && (
+                  <div className="flex items-center gap-2 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 mt-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-medium truncate">Payment screenshot attached</span>
+                    <a
+                      href={platformFeeScreenshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto underline text-emerald-700 font-bold shrink-0 flex items-center gap-1"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPlatformFeeModal(false)}
+                  className="px-4 py-2 text-xs text-slate-600 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={settlingPlatformFee}
+                  className="px-5 py-2.5 text-xs font-semibold rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white disabled:opacity-50 transition-colors shadow-2xs flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{settlingPlatformFee ? 'Recording Settlement...' : 'Submit Platform Fee Settlement'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

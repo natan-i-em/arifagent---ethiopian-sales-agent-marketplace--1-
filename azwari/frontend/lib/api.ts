@@ -18,7 +18,7 @@ import {
   PayoutResponse,
 } from '../types';
 
-const getApiBase = () => {
+export const getApiBase = () => {
   if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
@@ -29,7 +29,7 @@ const getApiBase = () => {
   return `${backend.replace(/\/$/, '')}/api`;
 };
 
-const API_BASE = getApiBase().replace(/\/$/, '');
+export const API_BASE = getApiBase().replace(/\/$/, '');
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -338,8 +338,24 @@ export const salesPartnersApi = {
 export const commissionsApi = {
   getAll: async () => apiRequest<{ success: boolean; count: number; commissions: CommissionLedgerEntry[] }>('/commissions'),
   getBatches: async () => apiRequest<{ success: boolean; count: number; batches: SettlementBatch[] }>('/commissions/batches'),
-  settle: async (data: { salespersonId: string; payoutMethod: string; transactionReference: string; entryIds?: string[] }) =>
+  settle: async (data: {
+    salespersonId: string;
+    payoutMethod: string;
+    transactionReference: string;
+    entryIds?: string[];
+    receiptImageUrl?: string;
+  }) =>
     apiRequest<{ success: boolean; batch: SettlementBatch }>('/commissions/settle', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  settlePlatformFee: async (data: {
+    payoutMethod: string;
+    transactionReference: string;
+    receiptImageUrl?: string;
+    amount?: number;
+  }) =>
+    apiRequest<{ success: boolean; message: string; batch?: any }>('/commissions/settle-platform-fee', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

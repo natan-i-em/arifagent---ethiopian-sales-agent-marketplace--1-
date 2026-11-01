@@ -24,8 +24,15 @@ interface FinanceContextType {
     salespersonId: string,
     commissionEntryIds: string[],
     payoutMethod: 'Telebirr B2C' | 'CBE Direct Transfer' | 'Awash Bank Transfer',
-    transactionReference: string
-  ) => boolean;
+    transactionReference: string,
+    receiptImageUrl?: string
+  ) => Promise<boolean>;
+  settlePlatformFee?: (
+    payoutMethod: string,
+    transactionReference: string,
+    receiptImageUrl?: string,
+    amount?: number
+  ) => Promise<boolean>;
   createDispute: (
     orderId: string,
     category: Dispute['category'],
@@ -108,12 +115,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       payoutMethod: string;
       transactionReference: string;
       entryIds?: string[];
+      receiptImageUrl?: string;
     }) => commissionsApi.settle(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['settlementBatches'] });
       queryClient.invalidateQueries({ queryKey: ['salesPartners'] });
       queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+
+  const settlePlatformFeeMutation = useMutation({
+    mutationFn: (data: {
+      payoutMethod: string;
+      transactionReference: string;
+      receiptImageUrl?: string;
+      amount?: number;
+    }) => commissionsApi.settlePlatformFee(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['settlementBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 
@@ -138,17 +162,34 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
   });
 
-  const settleCommissions = (
+  const settleCommissions = async (
     salespersonId: string,
     commissionEntryIds: string[],
     payoutMethod: 'Telebirr B2C' | 'CBE Direct Transfer' | 'Awash Bank Transfer',
-    transactionReference: string
-  ): boolean => {
-    settleMutation.mutate({
+    transactionReference: string,
+    receiptImageUrl?: string
+  ): Promise<boolean> => {
+    await settleMutation.mutateAsync({
       salespersonId,
       payoutMethod,
       transactionReference,
       entryIds: commissionEntryIds,
+      receiptImageUrl,
+    });
+    return true;
+  };
+
+  const settlePlatformFee = async (
+    payoutMethod: string,
+    transactionReference: string,
+    receiptImageUrl?: string,
+    amount?: number
+  ): Promise<boolean> => {
+    await settlePlatformFeeMutation.mutateAsync({
+      payoutMethod,
+      transactionReference,
+      receiptImageUrl,
+      amount,
     });
     return true;
   };
@@ -183,6 +224,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         smsOutbox,
         isLoadingFinance: loadingCommissions || loadingBatches || loadingDisputes || loadingAudit || loadingSms,
         settleCommissions,
+        settlePlatformFee,
         createDispute,
         resolveDispute,
       }}

@@ -31,7 +31,6 @@ interface AuthContextType {
     role?: 'salesperson' | 'supplier' | 'admin';
     entityId?: string;
   }) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
-  signInWithGoogle: (rolePreference?: 'salesperson' | 'supplier') => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   registerSupplier: (supplierData: any) => Promise<{ success: boolean; business?: any; error?: string }>;
   registerSalesAgent: (agentData: any) => Promise<{ success: boolean; agent?: any; error?: string }>;
@@ -167,12 +166,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const dismissPermissionError = () => setPermissionError(null);
 
-  // Sync Supabase Auth state with backend
+  // Sync Auth state with backend
   useEffect(() => {
     const fetchSessionUser = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.access_token) {
+        const token = sessionStore.getItem('azwari_auth_token') || (typeof window !== 'undefined' ? window.localStorage.getItem('azwari_auth_token') : null);
+        const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        if (sessionData?.session?.access_token || token) {
           const res = await authApi.getMe();
           if (res?.success && res.user) {
             const formattedUser: AuthUser = {
@@ -242,18 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     entityId?: string;
   }) => {
     try {
-      // 1. If password provided, sign in via Supabase Auth client to acquire token
-      if (credentials.password && credentials.emailOrPhone.includes('@')) {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email: credentials.emailOrPhone,
-          password: credentials.password,
-        });
-        if (signInErr) {
-          return { success: false, error: signInErr.message };
-        }
-      }
-
-      // 2. Fetch full verified profile from backend
+      // All authentication is routed directly to the Express backend (centralized auth)
       const res = await authApi.login(credentials);
       if (res.success && res.user) {
         if (res.token) {
@@ -289,30 +278,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentView('portal');
         return { success: true, user };
       }
-      await supabase.auth.signOut().catch(() => {});
       return { success: false, pendingApproval: (res as any).status === 'pending_approval', error: res.error || 'Login failed' };
     } catch (err: any) {
-      await supabase.auth.signOut().catch(() => {});
       const errorMsg = err.response?.data?.error || err.message || 'Login failed';
       return { success: false, pendingApproval: err.response?.data?.status === 'pending_approval', error: errorMsg };
     }
   };
 
-  const signInWithGoogle = async (rolePreference?: 'salesperson' | 'supplier') => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: rolePreference ? { role: rolePreference } : undefined,
-        },
-      });
-      if (error) return { success: false, error: error.message };
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
-  };
+
 
   const logout = async () => {
     try {
@@ -404,7 +377,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedCustomerToken,
         setSelectedCustomerToken,
         login,
-        signInWithGoogle,
         logout,
         registerSupplier,
         registerSalesAgent,

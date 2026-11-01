@@ -74,6 +74,14 @@ export const SettleCommissionsSchema = z.object({
   payoutMethod: z.string().min(2, 'Payout method is required'),
   transactionReference: z.string().min(3, 'Payout transaction reference is required'),
   entryIds: z.array(z.string()).optional(),
+  receiptImageUrl: z.string().optional(),
+});
+
+export const SettlePlatformFeeSchema = z.object({
+  payoutMethod: z.string().min(2, 'Payment method is required'),
+  transactionReference: z.string().min(3, 'Transaction reference slip is required'),
+  receiptImageUrl: z.string().optional(),
+  amount: z.number().positive('Amount must be positive').optional(),
 });
 
 export const CreateProductSchema = z.object({

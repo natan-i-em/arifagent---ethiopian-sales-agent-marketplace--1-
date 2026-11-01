@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { validateBody, SettleCommissionsSchema } from '../middleware/zodValidators.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const commissionRouter = Router();
 
@@ -148,7 +149,7 @@ commissionRouter.post(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const user = req.user!;
-      const { salespersonId, payoutMethod, transactionReference, entryIds } = req.body;
+      const { salespersonId, payoutMethod, transactionReference, entryIds, receiptImageUrl } = req.body;
 
       if (user.role === 'supplier' && !user.businessId) {
         res.status(403).json({ success: false, error: 'No business profile found' });
@@ -304,6 +305,80 @@ commissionRouter.post(
     } catch (error: any) {
       console.error('[Settle Commissions Error]', error);
       res.status(500).json({ success: false, error: error.message || 'Failed to execute settlement' });
+    }
+  }
+);
+
+/**
+ * POST /api/commissions/settle-platform-fee
+ * Allows merchant/supplier to settle accrued 20% platform marketplace fee with reference slip and screenshot
+ */
+commissionRouter.post(
+  '/settle-platform-fee',
+  requireAuth,
+  requireRole('admin', 'supplier'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const user = req.user!;
+      const { payoutMethod, transactionReference, receiptImageUrl, amount } = req.body;
+
+      if (user.role === 'supplier' && !user.businessId) {
+        res.status(403).json({ success: false, error: 'No business profile found' });
+        return;
+      }
+
+      if (!transactionReference || transactionReference.trim().length < 3) {
+        res.status(400).json({ success: false, error: 'Transaction reference is required' });
+        return;
+      }
+
+      const businessId = user.businessId;
+      const finalReference = receiptImageUrl
+        ? `${transactionReference.trim()} | ${receiptImageUrl.trim()}`
+        : transactionReference.trim();
+
+      // Find accrued platform fee ledgers for this business
+      const accruedFees = await prisma.platformFeeLedger.findMany({
+        where: {
+          businessId,
+          status: 'accrued',
+        },
+      });
+
+      const totalAccrued = accruedFees.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
+      const feeAmount = amount || totalAccrued;
+
+      await prisma.$transaction(async (tx: any) => {
+        if (accruedFees.length > 0) {
+          await tx.platformFeeLedger.updateMany({
+            where: { id: { in: accruedFees.map((f: any) => f.id) } },
+            data: { status: 'PAID' },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorRole: user.role,
+            actorName: user.fullName || 'Merchant Supplier',
+            action: 'SETTLE_PLATFORM_FEE',
+            entityType: 'PlatformFeeLedger',
+            entityId: businessId || 'platform_fee',
+            businessId,
+            description: `Supplier settled 20% platform marketplace fee of ETB ${feeAmount.toLocaleString()} via ${payoutMethod}. Slip ref: ${finalReference}.`,
+          },
+        });
+      });
+
+      realtimeEmitter.emit('change', { type: 'PLATFORM_FEE_SETTLED' });
+      res.status(200).json({
+        success: true,
+        message: 'Platform fee settlement submitted and audited successfully.',
+        settledAmount: feeAmount,
+        transactionReference: finalReference,
+      });
+    } catch (err: any) {
+      console.error('[Settle Platform Fee Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to settle platform fee' });
     }
   }
 );

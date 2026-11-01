@@ -6,6 +6,7 @@ import { CatalogProvider, useCatalog } from './CatalogContext';
 import { OrdersProvider, useOrders } from './OrdersContext';
 import { FinanceProvider, useFinance } from './FinanceContext';
 import { WaitlistProvider, useWaitlist } from './WaitlistContext';
+import { useRealtimeSync } from '../lib/useRealtimeSync';
 import {
   Role,
   AppView,
@@ -124,8 +125,15 @@ export interface AppContextType {
     salespersonId: string,
     commissionEntryIds: string[],
     payoutMethod: 'Telebirr B2C' | 'CBE Direct Transfer' | 'Awash Bank Transfer',
-    transactionReference: string
-  ) => boolean;
+    transactionReference: string,
+    receiptImageUrl?: string
+  ) => Promise<boolean>;
+  settlePlatformFee?: (
+    channel: string,
+    transactionReference: string,
+    receiptImageUrl?: string,
+    amount?: number
+  ) => Promise<boolean>;
   createDispute: (
     orderId: string,
     category: Dispute['category'],
@@ -179,7 +187,6 @@ export interface AppContextType {
     role?: 'salesperson' | 'supplier' | 'admin';
     entityId?: string;
   }) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
-  signInWithGoogle: (rolePreference?: 'salesperson' | 'supplier') => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 
   resetToDemoData: () => void;
@@ -193,6 +200,9 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const orders = useOrders();
   const finance = useFinance();
   const waitlist = useWaitlist();
+
+  // Listen for real-time live events to invalidate and update queries with <200ms latency
+  useRealtimeSync();
 
   const resetToDemoData = () => {
     window.location.reload();
@@ -217,7 +227,6 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
     selectedCustomerToken: auth.selectedCustomerToken,
     setSelectedCustomerToken: auth.setSelectedCustomerToken,
     login: auth.login,
-    signInWithGoogle: auth.signInWithGoogle,
     logout: auth.logout,
     registerSupplier: auth.registerSupplier,
     registerSalesAgent: auth.registerSalesAgent,
@@ -254,6 +263,7 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
     auditLogs: finance.auditLogs,
     smsOutbox: finance.smsOutbox,
     settleCommissions: finance.settleCommissions,
+    settlePlatformFee: finance.settlePlatformFee,
     createDispute: finance.createDispute,
     resolveDispute: finance.resolveDispute,
 
