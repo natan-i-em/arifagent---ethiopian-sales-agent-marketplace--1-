@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
-import { walletApi } from '../../lib/api';
 import { Order, Product, PaymentMethodProvider } from '../../types';
 import { 
   Building2, 
@@ -33,7 +32,6 @@ import {
 import { SupplierSidebar, SupplierTab } from './SupplierSidebar';
 import { SupplierProductManager } from './SupplierProductManager';
 import { SupplierProfileSettings } from './SupplierProfileSettings';
-import { SupplierWalletManager } from './SupplierWalletManager';
 
 export const SupplierView: React.FC = () => {
   const { 
@@ -67,11 +65,8 @@ export const SupplierView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as SupplierTab;
-      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'settlement', 'wallet', 'accounts', 'settings'];
+      const validTabs: SupplierTab[] = ['overview', 'products', 'orders', 'settlement', 'accounts', 'settings'];
       if (validTabs.includes(tabParam)) return tabParam;
-      if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
-        return 'wallet';
-      }
     }
     return 'overview';
   });
@@ -93,18 +88,13 @@ export const SupplierView: React.FC = () => {
       const tabParam = params.get('tab') as SupplierTab;
       if (tabParam) {
         setActiveTabState(tabParam);
-      } else if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
-        setActiveTabState('wallet');
       }
+      
     };
     window.addEventListener('popstate', handleTabPop);
     window.addEventListener('portal-tab-change', handleTabPop);
 
-    // Initial check for deposit return parameter
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('deposit') === 'return' || params.get('tx_ref') || params.get('trx_ref')) {
-      setActiveTabState('wallet');
-    }
+    
 
     return () => {
       window.removeEventListener('popstate', handleTabPop);
@@ -161,16 +151,7 @@ export const SupplierView: React.FC = () => {
     paymentAccounts: [],
   };
 
-  // Live wallet details so dashboard and sidebar reflect real Chapa deposits
-  const { data: walletData } = useQuery({
-    queryKey: ['supplierWallet', currentSupplier.id],
-    queryFn: () => walletApi.getDetails({ businessId: currentSupplier.id }),
-    refetchInterval: 10000,
-  });
-
-  const liveWalletBalance = walletData?.wallet?.balances?.availableEtb ?? currentSupplier.commissionReserveBalance ?? 0;
-
-  const supplierOrders = orders.filter((o) => o.supplierId === currentSupplier.id);
+      const supplierOrders = orders.filter((o) => o.supplierId === currentSupplier.id);
   const supplierProducts = products.filter((p) => p.supplierId === currentSupplier.id);
   const supplierCommissions = commissionLedger.filter((c) => c.supplierId === currentSupplier.id);
   const supplierFees = platformFeeLedger.filter((f) => f.supplierId === currentSupplier.id);
@@ -354,7 +335,6 @@ export const SupplierView: React.FC = () => {
           ordersCount={supplierOrders.length}
           ordersNeedingVerificationCount={ordersNeedingVerification.length}
           settlementDueCount={Object.keys(commissionsByAgent).length}
-          walletBalance={liveWalletBalance}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
         />
@@ -446,18 +426,18 @@ export const SupplierView: React.FC = () => {
                 </div>
 
                 <div 
-                  onClick={() => setActiveTab('wallet')}
-                  className="glass-card-hover p-5 rounded-3xl border border-emerald-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-emerald-50/40"
+                  onClick={() => setActiveTab('settlement')}
+                  className="glass-card-hover p-5 rounded-3xl border border-indigo-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-indigo-50/40"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block">Collateral Wallet</span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Chapa</span>
+                    <span className="text-xs text-slate-500 block">Agent Settlements</span>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">80% Net</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
-                    ETB {Number(liveWalletBalance || 0).toLocaleString()}
+                    ETB {Math.round(totalEligibleOwed * 0.8).toLocaleString()}
                   </div>
-                  <span className="text-[11px] text-emerald-700 font-bold mt-1 flex items-center gap-1">
-                    Top-Up via Chapa →
+                  <span className="text-[11px] text-indigo-700 font-bold mt-1 flex items-center gap-1">
+                    {Object.keys(commissionsByAgent).length > 0 ? `${Object.keys(commissionsByAgent).length} payouts ready →` : 'All settled →'}
                   </span>
                 </div>
               </div>
@@ -803,191 +783,213 @@ export const SupplierView: React.FC = () => {
 
           {/* TAB 4: COMMISSION SETTLEMENT ENGINE */}
           {activeTab === 'settlement' && (
-            <div className="space-y-6">
+            <div className="space-y-7">
               {/* Header Card */}
-              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="glass-card rounded-3xl border border-white/90 p-7 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <WalletCards className="w-5 h-5 text-indigo-600" />
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
+                      <WalletCards className="w-6 h-6 text-indigo-600" />
                       Sales Agent Commission Settlement Engine
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-                      When orders are delivered and verified by customers, agent commissions unlock into "eligible" status. Merchants transfer the 80% net payout directly to the agent's Telebirr or CBE account, with 20% platform marketplace fee accounted for.
+                    <p className="text-xs text-slate-500 mt-1.5 max-w-2xl leading-relaxed">
+                      When orders are delivered and verified by customers, agent commissions unlock into &quot;eligible&quot; status. Merchants transfer the 80% net payout directly to the agent&apos;s Telebirr or CBE account, with 20% platform marketplace fee accounted for.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-200">
-                      80% Agent Net
+                  <div className="flex items-center gap-2.5 text-xs shrink-0">
+                    <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 font-bold rounded-xl border border-emerald-200 shadow-2xs">
+                      80% Agent Net Payout
                     </span>
-                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">
+                    <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-200 shadow-2xs">
                       20% Platform Fee
                     </span>
                   </div>
                 </div>
 
                 {/* Summary Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-2xs">
-                    <span className="text-[11px] font-semibold text-slate-500 block uppercase tracking-wider">Total Eligible Commissions</span>
-                    <span className="text-xl font-bold font-mono text-slate-900">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div className="p-5 rounded-2xl bg-white/80 border border-slate-200 shadow-2xs">
+                    <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Total Eligible Commissions</span>
+                    <span className="text-2xl font-bold font-mono text-slate-900 block mt-1">
                       ETB {totalEligibleOwed.toLocaleString()}
                     </span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Across all completed orders</span>
+                    <span className="text-[11px] text-slate-400 block mt-1">Gross completed orders value</span>
                   </div>
-                  <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200/80 shadow-2xs">
-                    <span className="text-[11px] font-semibold text-rose-700 block uppercase tracking-wider">Net Owed to Agents (80%)</span>
-                    <span className="text-xl font-bold font-mono text-rose-700">
+                  <div className="p-5 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-2xs">
+                    <span className="text-xs font-semibold text-rose-700 block uppercase tracking-wider">Net Owed to Agents (80%)</span>
+                    <span className="text-2xl font-bold font-mono text-rose-700 block mt-1">
                       ETB {(Math.round(totalEligibleOwed * 0.8)).toLocaleString()}
                     </span>
-                    <span className="text-[10px] text-rose-500 block mt-0.5">Direct Telebirr / CBE transfers</span>
+                    <span className="text-[11px] text-rose-600 block mt-1">Direct Telebirr / CBE transfers</span>
                   </div>
-                  <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 shadow-2xs">
-                    <span className="text-[11px] font-semibold text-indigo-700 block uppercase tracking-wider">Agents Awaiting Settlement</span>
-                    <span className="text-xl font-bold font-mono text-indigo-900">
+                  <div className="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200 shadow-2xs">
+                    <span className="text-xs font-semibold text-indigo-700 block uppercase tracking-wider">Agents Awaiting Settlement</span>
+                    <span className="text-2xl font-bold font-mono text-indigo-900 block mt-1">
                       {Object.keys(commissionsByAgent).length}
                     </span>
-                    <span className="text-[10px] text-indigo-500 block mt-0.5">Partners with pending payouts</span>
+                    <span className="text-[11px] text-indigo-600 block mt-1">Partners with ready payouts</span>
                   </div>
                 </div>
               </div>
 
-              {/* Outstanding Obligations */}
-              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+              {/* Outstanding Obligations - Spacious Table */}
+              <div className="glass-card rounded-3xl border border-white/90 p-7 space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                    Eligible Obligations Grouped by Sales Agent
-                  </h3>
-                  <span className="text-xs text-slate-400 font-mono">
-                    {Object.keys(commissionsByAgent).length} active batches
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                      Eligible Obligations Grouped by Sales Agent
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Completed customer deliveries awaiting your direct commission settlement.
+                    </p>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1 rounded-full font-bold">
+                    {Object.keys(commissionsByAgent).length} agent(s) due
                   </span>
                 </div>
 
                 {Object.keys(commissionsByAgent).length === 0 ? (
-                  <div className="p-10 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl border border-slate-200">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-                    <p className="font-semibold text-slate-800 text-sm">All commissions are fully settled!</p>
-                    <p className="text-slate-500 mt-1">There are no outstanding commission obligations for your delivered orders.</p>
+                  <div className="p-12 text-center text-slate-500 text-xs glass-card-subtle rounded-3xl border border-slate-200">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3 opacity-90" />
+                    <p className="font-bold text-slate-900 text-base">All commissions are fully settled!</p>
+                    <p className="text-slate-500 text-xs mt-1 max-w-md mx-auto">
+                      There are no outstanding commission obligations for your delivered orders. Excellent job keeping up with partner settlements!
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {Object.values(commissionsByAgent).map((group) => (
-                      <div
-                        key={group.agentId}
-                        className="p-5 glass-card-subtle rounded-2xl border border-slate-200 hover:border-slate-300 transition-all shadow-2xs space-y-3"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-900 text-sm">{group.agentName}</span>
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white/70 shadow-xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200/90 uppercase tracking-wider text-[11px]">
+                        <tr>
+                          <th className="py-4 px-6 min-w-[200px]">Sales Agent</th>
+                          <th className="py-4 px-6 min-w-[220px]">Payout Account</th>
+                          <th className="py-4 px-6 min-w-[170px]">Delivered Orders</th>
+                          <th className="py-4 px-6 min-w-[140px] text-right">Gross Commission</th>
+                          <th className="py-4 px-6 min-w-[160px] text-right">Net To Pay (80%)</th>
+                          <th className="py-4 px-6 min-w-[140px] text-right">Platform Fee (20%)</th>
+                          <th className="py-4 px-6 min-w-[160px] text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {Object.values(commissionsByAgent).map((group) => (
+                          <tr key={group.agentId} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-4 px-6">
+                              <div className="font-bold text-slate-900 text-sm">{group.agentName}</div>
                               {group.phone && (
-                                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                                  {group.phone}
-                                </span>
+                                <div className="text-xs font-mono text-slate-500 mt-1">{group.phone}</div>
                               )}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                              <span>{group.entries.length} completed order(s):</span>
-                              <span className="font-mono text-slate-700">
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="font-semibold text-slate-800 flex items-center gap-2">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-200">
+                                  {group.payoutProvider}
+                                </span>
+                                <span className="font-mono text-slate-900 font-bold">{group.payoutAccount}</span>
+                              </div>
+                              {group.payoutAccountName && (
+                                <div className="text-[11px] text-slate-400 mt-1">{group.payoutAccountName}</div>
+                              )}
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="font-semibold text-slate-800">{group.entries.length} completed order(s)</span>
+                              <div className="font-mono text-[11px] text-slate-500 mt-1 truncate max-w-[160px]" title={group.entries.map((e) => e.orderNumber).join(', ')}>
                                 {group.entries.map((e) => e.orderNumber).join(', ')}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <span className="text-[10px] text-slate-400 block uppercase font-medium">80% Net Payout</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-right font-mono text-slate-600 font-semibold text-xs">
+                              ETB {group.totalGrossAmount.toLocaleString()}
+                            </td>
+                            <td className="py-4 px-6 text-right">
                               <span className="font-mono font-bold text-base text-rose-700">
                                 ETB {group.netPayoutAmount.toLocaleString()}
                               </span>
-                              <span className="text-[10px] text-slate-400 block">
-                                Gross: ETB {group.totalGrossAmount.toLocaleString()} (20% fee: ETB {group.platformFeeAmount.toLocaleString()})
-                              </span>
-                            </div>
-
-                            <button
-                              onClick={() => {
-                                setSettlingAgentId(group.agentId);
-                                setPayoutReference('');
-                              }}
-                              className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs flex items-center gap-1.5"
-                            >
-                              <span>Settle 80% Payout</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Agent Destination Account Pill */}
-                        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600">
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-400">Payout Account:</span>
-                            <span className="font-semibold text-slate-800">{group.payoutProvider}:</span>
-                            <span className="font-mono font-bold text-indigo-900">{group.payoutAccount}</span>
-                            {group.payoutAccountName && (
-                              <span className="text-slate-400">({group.payoutAccountName})</span>
-                            )}
-                          </div>
-                          <span className="text-[11px] text-slate-400">
-                            Transfer directly then input slip ID
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+                            <td className="py-4 px-6 text-right font-mono text-slate-500 text-xs">
+                              ETB {group.platformFeeAmount.toLocaleString()}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                onClick={() => {
+                                  setSettlingAgentId(group.agentId);
+                                  setPayoutReference('');
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs inline-flex items-center justify-center gap-1.5"
+                              >
+                                <span>Settle 80%</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
 
-              {/* Settlement History / Audit Trail */}
-              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+              {/* Settlement History / Audit Trail - Spacious Table */}
+              <div className="glass-card rounded-3xl border border-white/90 p-7 space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                    <FileCheck className="w-4 h-4 text-emerald-600" />
-                    Settlement History & Audit Trail
-                  </h3>
-                  <span className="text-xs text-slate-400">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-emerald-600" />
+                      Settlement History & Audit Trail
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Immutable transaction logs and bank slip records for all executed commission payouts.
+                    </p>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1 rounded-full font-bold">
                     {settlementBatches.length} batch(es) recorded
                   </span>
                 </div>
 
                 {settlementBatches.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs glass-card-subtle rounded-2xl">
-                    No historical settlement batches yet. Settled batches will be permanently recorded here with their transaction slips.
+                  <div className="p-8 text-center text-slate-400 text-xs glass-card-subtle rounded-3xl border border-slate-200">
+                    No historical settlement batches yet. Settled batches will appear here with permanent reference slips.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white/70 shadow-xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200/90 uppercase tracking-wider text-[11px]">
                         <tr>
-                          <th className="py-2.5 px-3">Batch Number</th>
-                          <th className="py-2.5 px-3">Sales Agent</th>
-                          <th className="py-2.5 px-3 text-right">Net Paid (80%)</th>
-                          <th className="py-2.5 px-3">Payment Channel</th>
-                          <th className="py-2.5 px-3">Reference Slip ID</th>
-                          <th className="py-2.5 px-3">Settled Date</th>
-                          <th className="py-2.5 px-3">Status</th>
+                          <th className="py-4 px-6 min-w-[170px]">Batch Number</th>
+                          <th className="py-4 px-6 min-w-[180px]">Sales Agent</th>
+                          <th className="py-4 px-6 min-w-[160px] text-right">Net Paid (80%)</th>
+                          <th className="py-4 px-6 min-w-[170px]">Payment Channel</th>
+                          <th className="py-4 px-6 min-w-[220px]">Reference Slip ID</th>
+                          <th className="py-4 px-6 min-w-[140px]">Settled Date</th>
+                          <th className="py-4 px-6 min-w-[120px]">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white/50">
+                      <tbody className="divide-y divide-slate-100 bg-white">
                         {settlementBatches.map((batch) => (
-                          <tr key={batch.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{batch.batchNumber}</td>
-                            <td className="py-2.5 px-3 font-medium text-slate-800">{batch.recipientName}</td>
-                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
-                              ETB {batch.totalAmount.toLocaleString()}
+                          <tr key={batch.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-4 px-6 font-mono font-bold text-slate-900">{batch.batchNumber}</td>
+                            <td className="py-4 px-6 font-semibold text-slate-800">{batch.recipientName}</td>
+                            <td className="py-4 px-6 text-right font-mono font-bold text-emerald-700 text-sm">
+                              ETB {batch.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
-                            <td className="py-2.5 px-3 text-slate-600">{batch.payoutMethod}</td>
-                            <td className="py-2.5 px-3">
-                              <span className="font-mono bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[11px]">
+                            <td className="py-4 px-6 text-slate-700 font-medium">
+                              <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-[11px] font-semibold border border-slate-200">
+                                {batch.payoutMethod}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="font-mono bg-slate-100 text-slate-900 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
                                 {batch.transactionReference || 'N/A'}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 text-slate-500">
-                              {new Date(batch.settledAt || batch.id).toLocaleDateString()}
+                            <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                              {new Date(batch.settledAt || batch.id).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
                             </td>
-                            <td className="py-2.5 px-3">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Settled
+                            <td className="py-4 px-6">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Settled
                               </span>
                             </td>
                           </tr>
@@ -998,11 +1000,6 @@ export const SupplierView: React.FC = () => {
                 )}
               </div>
             </div>
-          )}
-
-          {/* TAB 4: COLLATERAL WALLET & CHAPA DEPOSITS */}
-          {activeTab === 'wallet' && (
-            <SupplierWalletManager currentSupplier={currentSupplier} products={products} />
           )}
 
           {/* TAB 5: PAYMENT RECEIVING ACCOUNTS */}
@@ -1059,8 +1056,6 @@ export const SupplierView: React.FC = () => {
           {activeTab === 'settings' && (
             <SupplierProfileSettings
               currentSupplier={currentSupplier}
-              walletBalance={liveWalletBalance}
-              onNavigateToWallet={() => setActiveTab('wallet')}
               onUpdateProfile={updateBusinessProfile}
               onAddPaymentAccount={addPaymentAccount}
               onDeletePaymentAccount={deletePaymentAccount}

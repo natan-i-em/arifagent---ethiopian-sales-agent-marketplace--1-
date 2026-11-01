@@ -25,8 +25,6 @@ import { Business, PaymentMethodProvider, SupplierPaymentAccount } from '../../t
 
 interface SupplierProfileSettingsProps {
   currentSupplier: Business;
-  walletBalance?: number;
-  onNavigateToWallet?: () => void;
   onUpdateProfile: (businessId: string, updates: Partial<Business>) => Promise<boolean>;
   onAddPaymentAccount: (businessId: string, account: Omit<SupplierPaymentAccount, 'id' | 'verified'>) => Promise<boolean>;
   onDeletePaymentAccount: (businessId: string, accountId: string) => Promise<boolean>;
@@ -47,8 +45,6 @@ const ADDIS_SUBCITIES = [
 
 export const SupplierProfileSettings: React.FC<SupplierProfileSettingsProps> = ({
   currentSupplier,
-  walletBalance,
-  onNavigateToWallet,
   onUpdateProfile,
   onAddPaymentAccount,
   onDeletePaymentAccount,
@@ -138,20 +134,11 @@ export const SupplierProfileSettings: React.FC<SupplierProfileSettingsProps> = (
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Maintain your official business identity, tax credentials, verified payout accounts, and escrow protection reserves.
+            Maintain your official business identity, tax credentials, and verified payout accounts.
           </p>
         </div>
 
-        {onNavigateToWallet && (
-          <button
-            onClick={onNavigateToWallet}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0"
-          >
-            <Lock className="w-4 h-4 text-emerald-200" />
-            <span>Open Collateral Wallet</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-200" />
-          </button>
-        )}
+        
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -371,39 +358,29 @@ export const SupplierProfileSettings: React.FC<SupplierProfileSettingsProps> = (
           </div>
         </div>
 
-        {/* Right Col: Escrow & Subscription Status Card */}
+        {/* Right Col: Settlement & Subscription Status Card */}
         <div className="space-y-6">
-          {/* Escrow Guarantee Status */}
+          {/* Direct Commission Settlement Status */}
           <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4 bg-gradient-to-br from-white to-slate-50/80">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-emerald-600" />
-                Escrow Guarantee
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Commission Settlements
               </span>
               <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                Active
+                Direct Transfer
               </span>
             </div>
 
             <div>
-              <span className="text-[11px] text-slate-500 block">Commission Reserve Balance</span>
-              <div className="font-mono-numbers text-2xl font-bold text-slate-900 mt-0.5">
-                ETB {Number(walletBalance !== undefined ? walletBalance : (currentSupplier.commissionReserveBalance || 0)).toLocaleString()}
+              <span className="text-[11px] text-slate-500 block">Settlement Model</span>
+              <div className="text-base font-bold text-slate-900 mt-0.5">
+                80% Net Peer-to-Peer
               </div>
               <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                Pre-funded reserve funds guarantee that sales agents will receive immediate commission settlements once deliveries are marked completed.
+                Customers pay your store directly. Once orders are delivered, you transfer the 80% net commission directly to the sales agent's registered CBE or Telebirr account and record the transaction slip reference.
               </p>
             </div>
-
-            {onNavigateToWallet && (
-              <button
-                onClick={onNavigateToWallet}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
-              >
-                <span>Manage in Collateral Wallet</span>
-                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-              </button>
-            )}
           </div>
 
           {/* Subscription Tier Details */}

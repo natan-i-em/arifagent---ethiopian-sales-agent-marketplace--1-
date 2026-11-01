@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
-import { walletApi } from '../../lib/api';
 import { CreateOrderModal } from './CreateOrderModal';
 import { SalespersonSidebar, SalespersonTab } from './SalespersonSidebar';
 import { ProductImage } from '../common/ProductImage';
@@ -129,16 +128,8 @@ export const SalespersonView: React.FC = () => {
   const agentLedger = useMemo(() => {
     return commissionLedger.filter((l) => l.salespersonId === currentAgent.id);
   }, [commissionLedger, currentAgent.id]);
-
-  // Live wallet details so agent balances reflect real Chapa escrow disbursements without duplication
-  const { data: walletData } = useQuery({
-    queryKey: ['salespersonWallet', currentAgent.id],
-    queryFn: () => walletApi.getDetails({ salesPartnerId: currentAgent.id }),
-    refetchInterval: 15000,
-  });
-
-  const liveEligibleCommissions = walletData?.wallet?.balances?.availableEtb ?? currentAgent.eligibleCommissions ?? 0;
-  const livePendingCommissions = walletData?.wallet?.balances?.lockedEtb ?? currentAgent.pendingCommissions ?? 0;
+  const liveEligibleCommissions = Number(currentAgent.eligibleCommissions || 0);
+  const livePendingCommissions = Number(currentAgent.pendingCommissions || 0);
   const totalAttributedSales = agentOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   // CRITICAL: Filter out paused, draft, and inactive products so sales agents only see live active offers
@@ -826,7 +817,7 @@ export const SalespersonView: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                            {entry.payoutReference || (entry.status === 'eligible' ? 'Available in Escrow Wallet' : '—')}
+                            {entry.payoutReference || (entry.status === 'eligible' ? 'Eligible for Transfer' : '—')}
                           </td>
                         </tr>
                       );

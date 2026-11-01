@@ -17,11 +17,11 @@ import {
   Store,
   Layers,
   Sparkles,
-  Wallet
+  ArrowRight
 } from 'lucide-react';
 import { Business, Order, Product } from '../../types';
 
-export type SupplierTab = 'overview' | 'products' | 'orders' | 'settlement' | 'wallet' | 'accounts' | 'settings';
+export type SupplierTab = 'overview' | 'products' | 'orders' | 'settlement' | 'accounts' | 'settings';
 
 interface SupplierSidebarProps {
   currentSupplier: Business;
@@ -31,7 +31,6 @@ interface SupplierSidebarProps {
   ordersCount: number;
   ordersNeedingVerificationCount: number;
   settlementDueCount?: number;
-  walletBalance?: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
 }
@@ -43,12 +42,10 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
   productsCount,
   ordersCount,
   ordersNeedingVerificationCount,
-  settlementDueCount,
-  walletBalance,
+  settlementDueCount = 0,
   mobileOpen,
   setMobileOpen,
 }) => {
-  const displayBalance = walletBalance !== undefined ? walletBalance : (currentSupplier.commissionReserveBalance || 0);
   const navItems: {
     id: SupplierTab;
     label: string;
@@ -79,15 +76,8 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
       id: 'settlement',
       label: 'Commission Settlement',
       icon: WalletCards,
-      badge: settlementDueCount && settlementDueCount > 0 ? `${settlementDueCount} due` : undefined,
+      badge: settlementDueCount > 0 ? `${settlementDueCount} due` : undefined,
       badgeColor: 'bg-rose-500 text-white font-bold',
-    },
-    {
-      id: 'wallet',
-      label: 'Collateral Wallet',
-      icon: Wallet,
-      badge: displayBalance > 0 ? `ETB ${displayBalance.toLocaleString()}` : undefined,
-      badgeColor: 'bg-emerald-100 text-emerald-800 font-bold',
     },
     {
       id: 'accounts',
@@ -132,7 +122,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
               </p>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified TIN
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Merchant
                 </span>
               </div>
             </div>
@@ -176,35 +166,35 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom Escrow Security Balance Card */}
+      {/* Bottom Settlement Status Card */}
       <div className="pt-4 border-t border-slate-200/80 space-y-3">
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-2 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
-              Escrow Reserve
+              Agent Settlements
             </span>
             <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-md">
-              Active Protected
+              Direct Transfer
             </span>
           </div>
           <div>
-            <div className="font-mono-numbers text-lg font-bold text-white">
-              ETB {Number(displayBalance || 0).toLocaleString()}
+            <div className="font-mono-numbers text-base font-bold text-white">
+              {settlementDueCount > 0 ? `${settlementDueCount} Agent Payouts Due` : 'All Settled'}
             </div>
             <div className="text-[10px] text-slate-400 mt-0.5">
-              Guarantees independent agent commissions
+              80% net direct to agent Telebirr / CBE
             </div>
           </div>
           <button
-            onClick={() => handleSelectTab('wallet')}
+            onClick={() => handleSelectTab('settlement')}
             className="w-full text-center text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 underline pt-1 block"
           >
-            Manage Collateral Wallet →
+            Open Commission Settlements →
           </button>
         </div>
 
         <div className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1">
-          <span>Azwari Merchant Engine v2.4</span>
+          <span>Azwari Merchant Platform</span>
         </div>
       </div>
     </div>
