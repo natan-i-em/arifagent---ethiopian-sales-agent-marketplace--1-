@@ -107,7 +107,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl ${isMarketplace ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
               <ShoppingBag className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 tracking-tight">Discover</span>
+            <span className="text-[10px] mt-1 tracking-tight">Products</span>
           </Link>
 
           <Link

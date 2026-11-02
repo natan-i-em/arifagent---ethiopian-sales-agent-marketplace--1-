@@ -76,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 )}
               </div>
               <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium tracking-wide hidden xs:inline truncate">
-                Commerce & Escrow Ethiopia
+                Addis Ababa, Ethiopia
               </span>
             </div>
           </Link>
@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
                 }`}
               >
-                Marketplace Discovery
+                Products
               </Link>
             </div>
           )}
@@ -143,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-purple-800 hover:bg-white/60'
                 }`}
               >
-                Escrow Clearinghouse & Central Arbitration
+                Admin Console
               </Link>
             </div>
           )}

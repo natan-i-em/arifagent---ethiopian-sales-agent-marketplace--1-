@@ -105,19 +105,17 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-xs">
                   <Layers className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-bold text-slate-900 text-sm">Azwari Ethiopia</span>
+                <span className="font-bold text-slate-900 text-sm">Azwari</span>
               </div>
               <p className="text-slate-500 leading-relaxed">
-                Role-authorized multi-party commerce and escrow clearinghouse connecting verified Ethiopian product owners with independent sales agents across Addis Ababa.
+                Azwari connects Ethiopian product owners with independent sales agents. Operating in Addis Ababa.
               </p>
-              <div className="text-[11px] text-slate-400">
-                Operating in Bole, Kirkos, Yeka, Arada, Lideta, Merkato & Greater Addis.
-              </div>
             </div>
 
+            {/* Column 1: For agents */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                Platform Workspaces (RBAC)
+                For agents
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
@@ -125,64 +123,93 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     onClick={() => handleFooterRoleClick('salesperson')} 
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
-                    <span>Independent Sales Agent Portal</span>
+                    <span>Agent portal</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
+                <li>
+                  <Link href="/#how-it-works" className="hover:text-slate-900 transition-colors block">
+                    How it works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/#calculator" className="hover:text-slate-900 transition-colors block">
+                    Commission calculator
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 2: For merchants */}
+            <div className="space-y-2">
+              <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
+                For merchants
+              </span>
+              <ul className="space-y-1.5 text-slate-600">
                 <li>
                   <button 
                     onClick={() => handleFooterRoleClick('supplier')} 
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
-                    <span>Merchant & Supplier Console</span>
+                    <span>Merchant console</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => handleFooterRoleClick('admin')} 
-                    className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
+                  <Link 
+                    href="/signup" 
+                    onClick={() => setAuthRolePreference('supplier')}
+                    className="hover:text-slate-900 transition-colors block"
                   >
-                    <span>Central Escrow Clearinghouse</span>
-                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
+                    List a product
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/#why-trust" className="hover:text-slate-900 transition-colors block">
+                    How the deposit works
+                  </Link>
                 </li>
               </ul>
             </div>
 
+            {/* Column 3: Payments */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                Payment & Settlements
+                Payments
               </span>
               <ul className="space-y-1.5 text-slate-600">
-                <li>Telebirr SuperApp & USSD (*127#)</li>
-                <li>Commercial Bank of Ethiopia (CBE Birr)</li>
-                <li>Awash Bank & Bank of Abyssinia</li>
-                <li>Audited B2C Commission Settlements via Chapa</li>
+                <li>Telebirr</li>
+                <li>CBE</li>
+                <li>Chapa</li>
               </ul>
             </div>
 
+            {/* Column 4: Help */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                Compliance & Rules
+                Help
               </span>
               <ul className="space-y-1.5 text-slate-600">
-                <li>TIN & Business License Verification</li>
-                <li>Mandatory Customer Consent Check</li>
-                <li>15-Minute Payment Lock Protocol</li>
-                <li>Pre-Funded Commission Reserve Safeguards</li>
+                <li>
+                  <a href="mailto:support@azwari.et" className="hover:text-slate-900 transition-colors">
+                    Contact us
+                  </a>
+                </li>
+                <li>
+                  <Link href="/#why-trust" className="hover:text-slate-900 transition-colors">
+                    FAQ
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
             <div>
-              © 2026 Azwari Multi-Party Commerce & Escrow PLC. All rights reserved. Addis Ababa, Ethiopia.
+              © 2026 Azwari PLC. All rights reserved. Addis Ababa, Ethiopia.
             </div>
             <div className="flex items-center gap-4 text-slate-500">
               <span className="hover:text-slate-900 cursor-pointer">Terms of Service</span>
-              <span>·</span>
-              <span className="hover:text-slate-900 cursor-pointer">Commission Settlement Agreement</span>
               <span>·</span>
               <span className="hover:text-slate-900 cursor-pointer">Privacy Policy</span>
             </div>
