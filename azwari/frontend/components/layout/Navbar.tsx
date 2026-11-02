@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             href={brandHref} 
             className="flex items-center gap-2 text-left group"
           >
-            <div className="w-8 h-8 rounded-xl bg-emerald-950 flex items-center justify-center text-white font-bold text-sm shadow-xs border border-emerald-900 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-xs border border-slate-800 shrink-0">
               <Layers className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -171,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 className={`hidden xs:flex px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs items-center gap-1.5 ${
                   pathname === '/signup'
                     ? 'bg-slate-800 text-white'
-                    : 'bg-emerald-950 hover:bg-emerald-900 text-white'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white'
                 }`}
               >
                 <span>Get Started</span>
