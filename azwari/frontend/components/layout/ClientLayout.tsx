@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Navbar } from './Navbar';
@@ -13,6 +14,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useLanguage();
   const { 
     currentUser, 
     setCurrentView, 
@@ -108,14 +110,14 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <span className="font-bold text-slate-900 text-sm">Azwari</span>
               </div>
               <p className="text-slate-500 leading-relaxed">
-                Azwari connects Ethiopian product owners with independent sales agents. Operating in Addis Ababa.
+                {t('footer.desc')}
               </p>
             </div>
 
             {/* Column 1: For agents */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                For agents
+                {t('footer.forAgents')}
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
@@ -123,18 +125,18 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     onClick={() => handleFooterRoleClick('salesperson')} 
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
-                    <span>Agent portal</span>
+                    <span>{t('footer.agentPortal')}</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
                 <li>
                   <Link href="/#how-it-works" className="hover:text-slate-900 transition-colors block">
-                    How it works
+                    {t('footer.howItWorks')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/#calculator" className="hover:text-slate-900 transition-colors block">
-                    Commission calculator
+                    {t('footer.calc')}
                   </Link>
                 </li>
               </ul>
@@ -143,7 +145,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             {/* Column 2: For merchants */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                For merchants
+                {t('footer.forMerchants')}
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
@@ -151,7 +153,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     onClick={() => handleFooterRoleClick('supplier')} 
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
-                    <span>Merchant console</span>
+                    <span>{t('footer.merchantConsole')}</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </li>
@@ -161,12 +163,12 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     onClick={() => setAuthRolePreference('supplier')}
                     className="hover:text-slate-900 transition-colors block"
                   >
-                    List a product
+                    {t('footer.listAProduct')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/#why-trust" className="hover:text-slate-900 transition-colors block">
-                    How the deposit works
+                    {t('footer.depositWorks')}
                   </Link>
                 </li>
               </ul>
@@ -175,7 +177,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             {/* Column 3: Payments */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                Payments
+                {t('footer.payments')}
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>Telebirr</li>
@@ -187,17 +189,17 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             {/* Column 4: Help */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                Help
+                {t('footer.help')}
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
                   <a href="mailto:support@azwari.et" className="hover:text-slate-900 transition-colors">
-                    Contact us
+                    {t('footer.contactUs')}
                   </a>
                 </li>
                 <li>
                   <Link href="/#why-trust" className="hover:text-slate-900 transition-colors">
-                    FAQ
+                    {t('footer.faq')}
                   </Link>
                 </li>
               </ul>
@@ -206,12 +208,12 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
             <div>
-              © 2026 Azwari PLC. All rights reserved. Addis Ababa, Ethiopia.
+              {t('footer.copyright')}
             </div>
             <div className="flex items-center gap-4 text-slate-500">
-              <span className="hover:text-slate-900 cursor-pointer">Terms of Service</span>
+              <span className="hover:text-slate-900 cursor-pointer">{t('footer.terms')}</span>
               <span>·</span>
-              <span className="hover:text-slate-900 cursor-pointer">Privacy Policy</span>
+              <span className="hover:text-slate-900 cursor-pointer">{t('footer.privacy')}</span>
             </div>
           </div>
         </div>
@@ -224,9 +226,11 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
   const [qc] = useState(() => queryClient);
   return (
     <QueryClientProvider client={qc}>
-      <AppProvider>
-        <LayoutContent>{children}</LayoutContent>
-      </AppProvider>
+      <LanguageProvider>
+        <AppProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </AppProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 };

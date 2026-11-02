@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   ShoppingBag,
   Search,
@@ -18,13 +19,15 @@ import {
   Users,
   ShieldCheck,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Globe
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const { currentUser, setAuthRolePreference } = useApp();
+  const { language, toggleLanguage, t } = useLanguage();
 
   // Role detection
   const isMarketplace = pathname === '/';
@@ -95,10 +98,10 @@ export const MobileBottomNav: React.FC = () => {
         aria-label="Mobile Navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"
       >
-        <div className="grid grid-cols-3 items-center gap-1 text-center">
+        <div className="grid grid-cols-4 items-center gap-1 text-center">
           <Link
             href="/"
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all ${
               isMarketplace
                 ? 'text-slate-950 font-bold'
                 : 'text-slate-500 hover:text-slate-900'
@@ -107,13 +110,25 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl ${isMarketplace ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
               <ShoppingBag className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 tracking-tight">Products</span>
+            <span className="text-[10px] mt-1 tracking-tight truncate max-w-[65px]">{t('nav.products')}</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className="flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all text-slate-700 hover:text-slate-950"
+            title={language === 'en' ? 'ወደ አማርኛ ቀይር' : 'Switch to English'}
+          >
+            <div className="p-1.5 rounded-xl bg-slate-100 border border-slate-200 shadow-2xs">
+              <Globe className="w-4 h-4 text-emerald-700" />
+            </div>
+            <span className="text-[10px] mt-1 tracking-tight font-bold">{language === 'en' ? 'አማርኛ' : 'EN'}</span>
+          </button>
 
           <Link
             href="/signin"
             onClick={() => setAuthRolePreference('salesperson')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all ${
               isSignIn
                 ? 'text-slate-950 font-bold'
                 : 'text-slate-500 hover:text-slate-900'
@@ -122,13 +137,13 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl ${isSignIn ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
               <LogIn className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 tracking-tight">Sign In</span>
+            <span className="text-[10px] mt-1 tracking-tight truncate max-w-[65px]">{t('nav.signIn')}</span>
           </Link>
 
           <Link
             href="/signup"
             onClick={() => setAuthRolePreference('salesperson')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all ${
               isSignUp
                 ? 'text-slate-950 font-bold'
                 : 'text-slate-500 hover:text-slate-900'
@@ -137,7 +152,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl ${isSignUp ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
               <Sparkles className="w-4 h-4 text-amber-500" />
             </div>
-            <span className="text-[10px] mt-1 tracking-tight font-semibold">Join</span>
+            <span className="text-[10px] mt-1 tracking-tight font-semibold truncate max-w-[65px]">{t('nav.getStarted')}</span>
           </Link>
         </div>
       </nav>

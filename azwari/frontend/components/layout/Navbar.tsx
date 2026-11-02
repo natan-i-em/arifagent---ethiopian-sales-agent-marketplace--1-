@@ -4,12 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '../../context/AppContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Building2, 
   LogOut,
   Layers,
   Sparkles,
-  CreditCard
+  CreditCard,
+  Globe
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -18,6 +20,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = () => {
+  const { language, toggleLanguage, t } = useLanguage();
   const { 
     currentUser, 
     logout,
@@ -71,12 +74,12 @@ export const Navbar: React.FC<NavbarProps> = () => {
                       ? 'bg-blue-50 text-blue-800 border-blue-200'
                       : 'bg-purple-50 text-purple-800 border-purple-200'
                   }`}>
-                    {currentUser.role === 'salesperson' ? 'Agent' : currentUser.role === 'supplier' ? 'Merchant' : 'Admin'}
+                    {currentUser.role === 'salesperson' ? t('nav.agent') : currentUser.role === 'supplier' ? t('nav.merchant') : t('nav.admin')}
                   </span>
                 )}
               </div>
               <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium tracking-wide hidden xs:inline truncate">
-                Addis Ababa, Ethiopia
+                {t('nav.brandTagline')}
               </span>
             </div>
           </Link>
@@ -95,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
                 }`}
               >
-                Products
+                {t('nav.products')}
               </Link>
             </div>
           )}
@@ -111,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-emerald-800 hover:bg-white/60'
                 }`}
               >
-                Agent Workspace & Catalog
+                {t('nav.agentWorkspace')}
               </Link>
             </div>
           )}
@@ -127,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-blue-800 hover:bg-white/60'
                 }`}
               >
-                Supplier Operations & Fulfillment
+                {t('nav.supplierConsole')}
               </Link>
             </div>
           )}
@@ -143,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'text-purple-800 hover:bg-white/60'
                 }`}
               >
-                Admin Console
+                {t('nav.adminConsole')}
               </Link>
             </div>
           )}
@@ -151,6 +154,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
         {/* Zone 3: Authentication & Profile Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Language Switcher Toggle */}
+          <button
+            onClick={toggleLanguage}
+            type="button"
+            title={language === 'en' ? 'ወደ አማርኛ ቀይር (Switch to Amharic)' : 'Switch to English'}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 transition-all shadow-2xs text-xs font-semibold"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <span className="font-bold text-[11px] sm:text-xs">{language === 'en' ? 'አማርኛ' : 'English'}</span>
+          </button>
           {!currentUser ? (
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Link
@@ -162,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'bg-white/90 text-slate-800 border-slate-200 hover:border-slate-400 hover:bg-white'
                 }`}
               >
-                Sign In
+                {t('nav.signIn')}
               </Link>
 
               <Link
@@ -174,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     : 'bg-slate-900 hover:bg-slate-800 text-white'
                 }`}
               >
-                <span>Get Started</span>
+                <span>{t('nav.getStarted')}</span>
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               </Link>
             </div>
@@ -213,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 className="flex px-2 sm:px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-200 text-xs font-semibold transition-all items-center gap-1.5 shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline">{t('nav.signOut')}</span>
               </button>
             </div>
           )}
