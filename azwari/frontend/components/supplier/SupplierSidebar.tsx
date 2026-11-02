@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   LayoutDashboard, 
   Package, 
@@ -46,6 +47,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
+  const { t } = useLanguage();
   const navItems: {
     id: SupplierTab;
     label: string;
@@ -55,40 +57,40 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
   }[] = [
     {
       id: 'overview',
-      label: 'Dashboard Overview',
+      label: t('supplierSidebar.overview'),
       icon: LayoutDashboard,
     },
     {
       id: 'products',
-      label: 'Product Catalog',
+      label: t('supplierSidebar.products'),
       icon: Package,
       badge: productsCount,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'orders',
-      label: 'Orders & Verification',
+      label: t('supplierSidebar.orders'),
       icon: ShoppingCart,
-      badge: ordersNeedingVerificationCount > 0 ? `${ordersNeedingVerificationCount} pending` : ordersCount,
+      badge: ordersNeedingVerificationCount > 0 ? `${ordersNeedingVerificationCount} ${t('supplierSidebar.pendingBadge')}` : ordersCount,
       badgeColor: ordersNeedingVerificationCount > 0 ? 'bg-amber-500 text-white font-bold' : 'bg-slate-200 text-slate-800',
     },
     {
       id: 'settlement',
-      label: 'Commission Settlement',
+      label: t('supplierSidebar.settlement'),
       icon: WalletCards,
-      badge: settlementDueCount > 0 ? `${settlementDueCount} due` : undefined,
+      badge: settlementDueCount > 0 ? `${settlementDueCount} ${t('supplierSidebar.dueBadge')}` : undefined,
       badgeColor: 'bg-rose-500 text-white font-bold',
     },
     {
       id: 'accounts',
-      label: 'Payment Accounts',
+      label: t('supplierSidebar.accounts'),
       icon: CreditCard,
       badge: currentSupplier.paymentAccounts?.length || 0,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'settings',
-      label: 'Settings & Profile',
+      label: t('supplierSidebar.settings'),
       icon: Settings,
     },
   ];
@@ -122,7 +124,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
               </p>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Merchant
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> {t('supplierSidebar.verifiedMerchant')}
                 </span>
               </div>
             </div>
@@ -132,7 +134,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
         {/* Navigation List */}
         <nav className="space-y-1">
           <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Merchant Portal
+            {t('supplierSidebar.portalTitle')}
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;

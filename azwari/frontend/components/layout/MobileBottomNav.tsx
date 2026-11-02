@@ -179,7 +179,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('overview') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
               <LayoutDashboard className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Overview</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.overview')}</span>
           </button>
 
           {/* Tab 2: Available Offers */}
@@ -192,7 +192,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('offers') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
               <Package className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Offers</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.offers')}</span>
           </button>
 
           {/* Tab 3: Orders */}
@@ -205,7 +205,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('orders') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
               <ShoppingCart className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Orders</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.orders')}</span>
           </button>
 
           {/* Tab 4: Ledger */}
@@ -218,7 +218,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('ledger') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
               <Coins className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Ledger</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.ledger')}</span>
           </button>
 
           {/* Tab 5: Payouts */}
@@ -231,7 +231,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('payouts') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
               <CreditCard className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Payouts</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.payouts')}</span>
           </button>
         </div>
       </nav>
@@ -258,7 +258,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('overview') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
               <LayoutDashboard className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Hub</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.hub')}</span>
           </button>
 
           {/* Tab 2: Products */}
@@ -271,7 +271,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('products') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
               <Package className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Products</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.products')}</span>
           </button>
 
           {/* Tab 3: Orders */}
@@ -284,7 +284,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('orders') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
               <ShoppingCart className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Orders</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.orders')}</span>
           </button>
 
           {/* Tab 4: Wallet */}
@@ -297,7 +297,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('wallet') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
               <CreditCard className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Wallet</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.wallet')}</span>
           </button>
 
           {/* Tab 5: Accounts */}
@@ -310,7 +310,7 @@ export const MobileBottomNav: React.FC = () => {
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('accounts') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
               <WalletCards className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">Accounts</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.accounts')}</span>
           </button>
         </div>
       </nav>
@@ -336,7 +336,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1.5 rounded-xl transition-all ${isAdminTabActive('analytics') ? 'bg-purple-600 text-white shadow-xs' : ''}`}>
             <BarChart3 className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-1 truncate max-w-full">Analytics</span>
+          <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.analytics')}</span>
         </button>
 
         {/* Tab 2: Users */}
@@ -349,7 +349,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1.5 rounded-xl transition-all ${isAdminTabActive('users') ? 'bg-purple-600 text-white shadow-xs' : ''}`}>
             <Users className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-1 truncate max-w-full">Users</span>
+          <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.users')}</span>
         </button>
 
         {/* Tab 3: Verifications */}
@@ -362,7 +362,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1.5 rounded-xl transition-all ${isAdminTabActive('verifications') ? 'bg-purple-600 text-white shadow-xs' : ''}`}>
             <ShieldCheck className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-1 truncate max-w-full">KYC</span>
+          <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.kyc')}</span>
         </button>
 
         {/* Tab 4: Disputes */}
@@ -375,7 +375,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1.5 rounded-xl transition-all ${isAdminTabActive('disputes') ? 'bg-purple-600 text-white shadow-xs' : ''}`}>
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-1 truncate max-w-full">Disputes</span>
+          <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.disputes')}</span>
         </button>
 
         {/* Tab 5: Finances */}
@@ -388,7 +388,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1.5 rounded-xl transition-all ${isAdminTabActive('finances') ? 'bg-purple-600 text-white shadow-xs' : ''}`}>
             <Coins className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-1 truncate max-w-full">Finances</span>
+          <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.finances')}</span>
         </button>
       </div>
     </nav>

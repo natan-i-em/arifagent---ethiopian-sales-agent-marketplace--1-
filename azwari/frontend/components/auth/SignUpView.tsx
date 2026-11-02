@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '../../context/AppContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { PaymentMethodProvider } from '../../types';
 import {
   Layers,
@@ -40,6 +41,7 @@ export const SignUpView: React.FC = () => {
     authRolePreference,
     setAuthRolePreference
   } = useApp();
+  const { t } = useLanguage();
 
   const [selectedRole, setSelectedRole] = useState<'salesperson' | 'supplier'>(
     authRolePreference === 'supplier' ? 'supplier' : 'salesperson'
@@ -174,31 +176,31 @@ export const SignUpView: React.FC = () => {
 
           <div className="space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-3 py-1 rounded-full">
-              Application on Waitlist
+              {t('auth.pendingApproval')}
             </span>
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Registration Received!
+              {t('auth.regReceivedTitle')}
             </h2>
             <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-              Thank you for registering. In accordance with platform governance, your account has been placed on the waitlist pending administrative approval.
+              {t('auth.regReceivedSubtitle')}
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs space-y-2">
             <div className="flex justify-between">
-              <span className="text-slate-500">Applicant:</span>
+              <span className="text-slate-500">{t('auth.applicant')}</span>
               <strong className="text-slate-900">{selectedRole === 'supplier' ? bizName : agentName}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Role:</span>
+              <span className="text-slate-500">{t('auth.accountType')}:</span>
               <span className="font-semibold text-slate-800 capitalize">
-                {selectedRole === 'supplier' ? 'Merchant Supplier' : 'Independent Sales Agent'}
+                {selectedRole === 'supplier' ? t('auth.merchant') : t('auth.agent')}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Verification Status:</span>
+              <span className="text-slate-500">{t('auth.verificationStatus')}</span>
               <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                PENDING APPROVAL
+                {t('auth.pendingApproval')}
               </span>
             </div>
           </div>
@@ -206,7 +208,7 @@ export const SignUpView: React.FC = () => {
           <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs text-left flex items-start gap-2">
             <ShieldCheck className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
             <span>
-              You will not be able to log in until an administrator reviews and verifies your credentials. You will receive an SMS confirmation once your account is activated.
+              {t('auth.reviewNotice')}
             </span>
           </div>
 
@@ -214,7 +216,7 @@ export const SignUpView: React.FC = () => {
             onClick={() => setCurrentView('signin')}
             className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs shadow-xs transition-colors"
           >
-            Go to Sign In
+            {t('auth.goToSignIn')}
           </button>
         </div>
       </div>
@@ -230,10 +232,10 @@ export const SignUpView: React.FC = () => {
             <Layers className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Create Your Azwari Account
+            {t('auth.signUpTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
-            Choose your role and register directly to the Supabase-backed commerce & escrow platform.
+            {t('auth.signUpSubtitle')}
           </p>
         </div>
 
@@ -254,17 +256,17 @@ export const SignUpView: React.FC = () => {
               </div>
               {selectedRole === 'salesperson' && (
                 <span className="text-[10px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded-full">
-                  Selected
+                  ✓
                 </span>
               )}
             </div>
-            <h2 className="text-sm font-bold text-slate-900">Independent Sales Agent</h2>
+            <h2 className="text-sm font-bold text-slate-900">{t('auth.agentCardTitle')}</h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Market verified products to your customers, create tokenized orders, and receive direct Telebirr/CBE commission payouts.
+              {t('auth.agentCardDesc')}
             </p>
             <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Up to 20% commission / unit</span>
+              <span>{t('auth.agentCardBadge')}</span>
             </div>
           </button>
 
@@ -283,17 +285,17 @@ export const SignUpView: React.FC = () => {
               </div>
               {selectedRole === 'supplier' && (
                 <span className="text-[10px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded-full">
-                  Selected
+                  ✓
                 </span>
               )}
             </div>
-            <h2 className="text-sm font-bold text-slate-900">Product Supplier / Merchant</h2>
+            <h2 className="text-sm font-bold text-slate-900">{t('auth.merchantCardTitle')}</h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              List inventory, connect with active sales agents across Addis, and verify customer bank receipts with escrow protection.
+              {t('auth.merchantCardDesc')}
             </p>
             <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-blue-700">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Direct CBE & Telebirr Settlements</span>
+              <span>{t('auth.merchantCardBadge')}</span>
             </div>
           </button>
         </div>
@@ -322,7 +324,7 @@ export const SignUpView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Full Name *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.fullName')}</label>
                     <input
                       type="text"
                       required
@@ -334,7 +336,7 @@ export const SignUpView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Phone Number *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.phoneNumber')}</label>
                     <input
                       type="text"
                       required
@@ -351,7 +353,7 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Email Address *</span>
+                      <span>{t('auth.contactEmail')}</span>
                     </label>
                     <input
                       type="email"
@@ -366,7 +368,7 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Password (min 6 characters) *</span>
+                      <span>{t('auth.passwordMin6')}</span>
                     </label>
                     <input
                       type="password"
@@ -382,7 +384,7 @@ export const SignUpView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Addis Ababa Subcity *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.subcity')}</label>
                     <select
                       value={agentSubcity}
                       onChange={(e) => setAgentSubcity(e.target.value)}
@@ -395,7 +397,7 @@ export const SignUpView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Telegram Handle (Optional)</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.telegramHandle')}</label>
                     <input
                       type="text"
                       value={agentTelegram}
@@ -410,12 +412,12 @@ export const SignUpView: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-slate-700" />
-                    <span className="text-xs font-bold text-slate-900">Commission Payout Destination</span>
+                    <span className="text-xs font-bold text-slate-900">{t('auth.payoutDestination')}</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-700">Payout Provider</label>
+                      <label className="text-xs font-semibold text-slate-700">{t('auth.payoutProvider')}</label>
                       <select
                         value={agentPayoutProvider}
                         onChange={(e) => setAgentPayoutProvider(e.target.value as 'Telebirr' | 'CBE')}
@@ -427,7 +429,7 @@ export const SignUpView: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5 sm:col-span-2">
-                      <label className="text-xs font-semibold text-slate-700">Account / Phone Number *</label>
+                      <label className="text-xs font-semibold text-slate-700">{t('auth.accountOrPhone')}</label>
                       <input
                         type="text"
                         required
@@ -447,14 +449,14 @@ export const SignUpView: React.FC = () => {
               <div className="space-y-4">
                 <div className="border-b border-slate-200/80 pb-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Business Verification & Registration
+                    {t('auth.merchantCardTitle')}
                   </h3>
                   <p className="text-xs text-slate-500">Provide trade and TIN particulars required under Ethiopian commerce laws.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Business / Legal Name *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.businessName')}</label>
                     <input
                       type="text"
                       required
@@ -466,7 +468,7 @@ export const SignUpView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Trade / Brand Name</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.tradeName')}</label>
                     <input
                       type="text"
                       value={tradeName}
@@ -479,7 +481,7 @@ export const SignUpView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Tax Identification Number (TIN) *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.tinNumber')}</label>
                     <input
                       type="text"
                       required
@@ -491,7 +493,7 @@ export const SignUpView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Business License Number</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.licenseNumber')}</label>
                     <input
                       type="text"
                       value={licenseNumber}
@@ -507,7 +509,7 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Official Contact Email *</span>
+                      <span>{t('auth.contactEmail')}</span>
                     </label>
                     <input
                       type="email"
@@ -522,7 +524,7 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Password (min 6 characters) *</span>
+                      <span>{t('auth.passwordMin6')}</span>
                     </label>
                     <input
                       type="password"
@@ -538,7 +540,7 @@ export const SignUpView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700">Subcity Base *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.subcity')}</label>
                     <select
                       value={bizSubcity}
                       onChange={(e) => setBizSubcity(e.target.value)}
@@ -551,7 +553,7 @@ export const SignUpView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700">Specific Shop / Warehouse Address *</label>
+                    <label className="text-xs font-semibold text-slate-700">{t('auth.warehouseAddress')}</label>
                     <input
                       type="text"
                       required
@@ -564,7 +566,7 @@ export const SignUpView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Business Phone *</label>
+                  <label className="text-xs font-semibold text-slate-700">{t('auth.businessPhone')}</label>
                   <input
                     type="text"
                     required
@@ -579,12 +581,12 @@ export const SignUpView: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-slate-700" />
-                    <span className="text-xs font-bold text-slate-900">Primary Bank Settlement Account</span>
+                    <span className="text-xs font-bold text-slate-900">{t('auth.primaryBank')}</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-700">Financial Institution</label>
+                      <label className="text-xs font-semibold text-slate-700">{t('auth.financialInstitution')}</label>
                       <select
                         value={bizBankProvider}
                         onChange={(e) => setBizBankProvider(e.target.value as PaymentMethodProvider)}
@@ -599,7 +601,7 @@ export const SignUpView: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-700">Account Number *</label>
+                      <label className="text-xs font-semibold text-slate-700">{t('auth.accountNumber')}</label>
                       <input
                         type="text"
                         required
@@ -624,7 +626,7 @@ export const SignUpView: React.FC = () => {
                   className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 />
                 <span className="text-xs text-slate-600 leading-relaxed">
-                  I agree to Azwari's verified commerce terms, commission escrow safeguards, and Ethiopian regulatory standards.
+                  {t('auth.termsAgreement')}
                 </span>
               </label>
             </div>
@@ -636,10 +638,10 @@ export const SignUpView: React.FC = () => {
               className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
             >
               {submitting ? (
-                <span>Registering on Supabase...</span>
+                <span>{t('auth.registering')}</span>
               ) : (
                 <>
-                  <span>Complete {selectedRole === 'salesperson' ? 'Sales Agent' : 'Merchant'} Registration</span>
+                  <span>{selectedRole === 'salesperson' ? t('auth.completeAgentReg') : t('auth.completeMerchantReg')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -649,13 +651,13 @@ export const SignUpView: React.FC = () => {
           {/* Switch to Sign In */}
           <div className="border-t border-slate-200/80 pt-4 text-center">
             <p className="text-xs text-slate-600">
-              Already have an account?{' '}
+              {t('auth.alreadyHaveAccount')}{' '}
               <Link
                 href="/signin"
                 onClick={() => setAuthRolePreference(selectedRole)}
                 className="font-bold text-slate-900 hover:underline cursor-pointer"
               >
-                Sign in here
+                {t('auth.signInHere')}
               </Link>
             </p>
           </div>

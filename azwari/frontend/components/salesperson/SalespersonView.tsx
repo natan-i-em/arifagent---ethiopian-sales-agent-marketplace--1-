@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { CreateOrderModal } from './CreateOrderModal';
@@ -46,6 +47,7 @@ export const SalespersonView: React.FC = () => {
     setCurrentView,
     createDispute
   } = useApp();
+  const { t } = useLanguage();
 
   // Active navigation tab synchronized with URL query ?tab=
   const [activeTab, setActiveTabState] = useState<SalespersonTab>(() => {
@@ -293,7 +295,7 @@ export const SalespersonView: React.FC = () => {
               {/* Financial KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="glass-card p-6 rounded-3xl border border-white/90 shadow-2xs">
-                  <span className="text-xs text-slate-500 block mb-1">Attributed Sales</span>
+                  <span className="text-xs text-slate-500 block mb-1">{t('agent.totalEarned')}</span>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     ETB {totalAttributedSales.toLocaleString()}
                   </div>
@@ -307,7 +309,7 @@ export const SalespersonView: React.FC = () => {
                   className="glass-card-hover p-6 rounded-3xl border border-amber-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-amber-50/40 shadow-2xs"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block font-medium">Pending Commission (Earned)</span>
+                    <span className="text-xs text-slate-500 block font-medium">{t('agent.pendingCommission')}</span>
                     <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Active Orders</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-amber-800">
@@ -319,7 +321,7 @@ export const SalespersonView: React.FC = () => {
                 </div>
 
                 <div className="glass-card p-6 rounded-3xl border border-white/90 shadow-2xs">
-                  <span className="text-xs text-slate-500 block mb-1">Total Settled Earnings</span>
+                  <span className="text-xs text-slate-500 block mb-1">{t('agent.eligibleSettlement')}</span>
                   <div className="font-mono-numbers font-bold text-2xl text-emerald-800">
                     ETB {currentAgent.paidCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
@@ -333,7 +335,7 @@ export const SalespersonView: React.FC = () => {
               <div className="glass-card rounded-3xl border border-white/90 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-900">Recent Customer Orders</h2>
+                    <h2 className="text-sm font-bold text-slate-900">{t('agent.myOrders')}</h2>
                     <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
                       <Lock className="w-3 h-3 text-slate-400" /> Read-Only Attributed
                     </span>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -54,6 +55,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
+  const { t } = useLanguage();
   const navItems: {
     id: AdminTab;
     label: string;
@@ -63,40 +65,40 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   }[] = [
     {
       id: 'analytics',
-      label: 'Detailed Analytics',
+      label: t('adminSidebar.analytics'),
       icon: TrendingUp,
     },
     {
       id: 'users',
-      label: 'Users Directory',
+      label: t('adminSidebar.users'),
       icon: Users,
       badge: usersCount,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'verifications',
-      label: 'Supplier KYC & TIN',
+      label: t('adminSidebar.verifications'),
       icon: ShieldCheck,
       badge: pendingVerificationsCount > 0 ? `${pendingVerificationsCount} pending` : undefined,
       badgeColor: 'bg-amber-500 text-white font-bold',
     },
     {
       id: 'waitlist',
-      label: 'Network Waitlist',
+      label: t('adminSidebar.waitlist'),
       icon: UserPlus,
       badge: waitlistCount > 0 ? waitlistCount : undefined,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'disputes',
-      label: 'Dispute Arbitration',
+      label: t('adminSidebar.disputes'),
       icon: AlertTriangle,
       badge: pendingDisputesCount > 0 ? `${pendingDisputesCount} review` : undefined,
       badgeColor: 'bg-rose-600 text-white font-bold',
     },
     {
       id: 'sms',
-      label: 'SMS Ethiopia Outbox',
+      label: t('adminSidebar.sms'),
       icon: MessageSquareText,
     },
     {
@@ -106,7 +108,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     },
     {
       id: 'finances',
-      label: 'Escrow Clearinghouse',
+      label: t('adminSidebar.finances'),
       icon: Coins,
     },
   ];
@@ -150,7 +152,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* Navigation List */}
         <nav className="space-y-1">
           <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Governance & Compliance
+            {t('adminSidebar.portalTitle')}
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;

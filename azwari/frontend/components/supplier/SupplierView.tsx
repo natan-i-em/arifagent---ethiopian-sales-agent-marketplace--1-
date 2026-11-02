@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ordersApi } from '../../lib/api';
 import { Order, Product, PaymentMethodProvider } from '../../types';
 import { 
@@ -38,7 +39,7 @@ import { SupplierProfileSettings } from './SupplierProfileSettings';
 export const SupplierView: React.FC = () => {
   const { 
     currentUser,
-    selectedSupplierId, 
+    selectedSupplierId,
     setSelectedSupplierId, 
     businesses, 
     orders, 
@@ -62,6 +63,7 @@ export const SupplierView: React.FC = () => {
     setActiveRole,
     setSelectedCustomerToken
   } = useApp();
+  const { t } = useLanguage();
 
   // Active navigation tab (left side panel router) synchronized with URL
   const [activeTab, setActiveTabState] = useState<SupplierTab>(() => {
@@ -428,8 +430,8 @@ export const SupplierView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-slate-900">Welcome, {currentSupplier.name}</h1>
                     <span className="text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md font-semibold border border-slate-200">
-                      Merchant Hub
-                    </span>
+                      {t('supplier.hubTitle')}
+              </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
                     TIN: <span className="font-mono font-semibold text-slate-700">{currentSupplier.tinNumber}</span> · Subcity: <span className="font-semibold text-slate-700">{currentSupplier.subcity}</span> · Addis Ababa
@@ -460,7 +462,7 @@ export const SupplierView: React.FC = () => {
                   onClick={() => setActiveTab('products')}
                   className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
                 >
-                  <span className="text-xs text-slate-500 block mb-1">Total Products</span>
+                  <span className="text-xs text-slate-500 block mb-1">{t('supplier.activeProducts')}</span>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
                     {totalProductsCount}
                   </div>

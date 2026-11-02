@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   LayoutDashboard, 
   Package, 
@@ -51,6 +52,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
   setMobileOpen,
   onCreateOrderClick,
 }) => {
+  const { t } = useLanguage();
   const [copiedCode, setCopiedCode] = React.useState(false);
 
   const handleCopyReferral = () => {
@@ -68,40 +70,40 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
   }[] = [
     {
       id: 'overview',
-      label: 'Agent Overview',
+      label: t('agentSidebar.overview'),
       icon: LayoutDashboard,
     },
     {
       id: 'orders',
-      label: 'My Orders (Read Only)',
+      label: t('agentSidebar.orders'),
       icon: ShoppingCart,
       badge: ordersCount,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'offers',
-      label: 'Available Offers',
+      label: t('agentSidebar.offers'),
       icon: Package,
       badge: activeOffersCount,
       badgeColor: 'bg-emerald-100 text-emerald-800 font-semibold',
     },
     {
       id: 'ledger',
-      label: 'Commission Ledger',
+      label: t('agentSidebar.ledger'),
       icon: Coins,
       badge: ledgerCount,
       badgeColor: 'bg-slate-200 text-slate-800',
     },
     {
       id: 'payouts',
-      label: 'Commission Settlements',
+      label: t('agentSidebar.payouts'),
       icon: CreditCard,
       badge: eligibleCommissions > 0 ? `ETB ${eligibleCommissions.toLocaleString()}` : undefined,
       badgeColor: 'bg-emerald-600 text-white font-bold',
     },
     {
       id: 'disputes',
-      label: 'Disputes & Support',
+      label: t('agentSidebar.disputes'),
       icon: AlertTriangle,
     },
   ];
@@ -133,7 +135,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
               </p>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Agent
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> {t('agentSidebar.verifiedAgent')}
                 </span>
               </div>
             </div>
@@ -141,7 +143,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
 
           {/* Referral Code Chip */}
           <div className="mt-3 pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
-            <span className="text-slate-500 text-[11px]">Referral Code:</span>
+            <span className="text-slate-500 text-[11px]">{t('agentSidebar.referralCode')}</span>
             <button
               onClick={handleCopyReferral}
               title="Click to copy your unique referral code"
@@ -150,7 +152,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
               {copiedCode ? (
                 <>
                   <Check className="w-3 h-3 text-emerald-600" />
-                  <span className="text-emerald-700">Copied!</span>
+                  <span className="text-emerald-700">{t('agentSidebar.copied')}</span>
                 </>
               ) : (
                 <>
@@ -171,13 +173,13 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
         >
           <Plus className="w-4 h-4 text-amber-400" />
-          <span>Create Order for Buyer</span>
+          <span>{t('agentSidebar.createOrder')}</span>
         </button>
 
         {/* Navigation List */}
         <nav className="space-y-1">
           <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Agent Portal
+            {t('agentSidebar.portalTitle')}
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import { Product } from '../../types';
 import { ProductImage } from './ProductImage';
 import { 
@@ -32,6 +33,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   onSellProduct,
   userRole = 'salesperson'
 }) => {
+  const { t } = useLanguage();
   const allImages = product.images && product.images.length > 0 
     ? product.images 
     : [product.imageUrl || ''];
@@ -115,10 +117,10 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-slate-500">Merchant Supplier:</span>
+                  <span className="text-xs text-slate-500">{t('modals.supplierInfo')}</span>
                   <strong className="text-xs text-slate-800">{product.supplierName}</strong>
                   <span className="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
-                    Verified
+                    {t('catalog.verified')}
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 leading-snug">
@@ -132,7 +134,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               {/* Financial Box */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xs text-slate-500 font-medium">Customer Retail Price:</span>
+                  <span className="text-xs text-slate-500 font-medium">{t('catalog.price')}</span>
                   <div className="font-mono-numbers font-extrabold text-2xl text-slate-900">
                     ETB {product.unitPrice.toLocaleString()}
                   </div>
@@ -151,7 +153,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Coins className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-900">Agent Commission:</span>
+                    <span className="text-xs font-bold text-slate-900">{t('catalog.yourCommission')}</span>
                   </div>
                   <div className="text-right">
                     <span className="font-mono-numbers font-bold text-base text-emerald-700">
@@ -173,7 +175,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     <Package className="w-3.5 h-3.5" /> Stock Available
                   </div>
                   <div className="font-bold text-slate-800 font-mono">
-                    {product.stock} units
+                    {product.stock} {t('modals.availableUnits')}
                   </div>
                 </div>
 
@@ -194,7 +196,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </div>
                 <div className="flex items-start gap-1 text-[11px] text-slate-500 pt-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                  <span>Available Subcities: {(product.deliveryAreas || []).slice(0, 5).join(', ')}...</span>
+                  <span>{t('modals.deliveryAreas')} {(product.deliveryAreas || []).slice(0, 5).join(', ')}...</span>
                 </div>
               </div>
             </div>
@@ -208,7 +210,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
           >
             {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-400" />}
-            <span>{copiedLink ? 'Link Copied!' : 'Copy Share Link'}</span>
+            <span>{copiedLink ? t('common.copied') : t('orderModal.copyLink')}</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -216,7 +218,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors"
             >
-              Close
+              {t('common.close')}
             </button>
 
             {onSellProduct && (
@@ -228,7 +230,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
               >
                 <ShoppingBag className="w-4 h-4 text-amber-400" />
-                <span>Sell to Buyer as Agent</span>
+                <span>{t('catalog.sellThis')}</span>
               </button>
             )}
           </div>
