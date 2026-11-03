@@ -476,7 +476,7 @@ export const SupplierView: React.FC = () => {
                   className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block">Total Money Received</span>
+                    <span className="text-xs text-slate-500 block">{t('supplier.totalSalesVolume')}</span>
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Net</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-emerald-700">
@@ -491,7 +491,7 @@ export const SupplierView: React.FC = () => {
                   onClick={() => setActiveTab('orders')}
                   className="glass-card-hover p-5 rounded-3xl border border-white/90 cursor-pointer"
                 >
-                  <span className="text-xs text-slate-500 block mb-1">Needs Verification</span>
+                  <span className="text-xs text-slate-500 block mb-1">{t('supplier.pendingVerifications')}</span>
                   <div className="font-mono-numbers font-bold text-xl text-amber-700 flex items-center gap-2">
                     <span>{ordersNeedingVerification.length}</span>
                     {ordersNeedingVerification.length > 0 && (
@@ -510,7 +510,7 @@ export const SupplierView: React.FC = () => {
                   className="glass-card-hover p-5 rounded-3xl border border-indigo-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-indigo-50/40"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 block">Agent Settlements</span>
+                    <span className="text-xs text-slate-500 block">{t('supplier.commissionSettlement')}</span>
                     <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">80% Net</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
@@ -908,7 +908,7 @@ export const SupplierView: React.FC = () => {
                   <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 via-white to-white border border-indigo-200 shadow-2xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Unpaid Platform Fee (20%)</span>
+                        <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">{t('supplier.unpaidPlatformFee')}</span>
                         <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">Azwari Cut</span>
                       </div>
                       <span className="text-2xl font-extrabold font-mono text-indigo-950 block mt-1">
@@ -924,7 +924,7 @@ export const SupplierView: React.FC = () => {
                       disabled={totalPlatformCutDue <= 0}
                       className="mt-3 px-3.5 py-2 text-xs font-bold rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white disabled:opacity-40 transition-colors shadow-2xs flex items-center justify-between cursor-pointer"
                     >
-                      <span>Settle Platform Fee (20%)</span>
+                      <span>{t('supplier.payPlatformFee')}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1205,10 +1205,10 @@ export const SupplierView: React.FC = () => {
       {/* ============================================================ */}
       {verifyingOrder && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-          <div className="glass-modal w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-white/90 flex flex-col overflow-hidden">
+          <div className="glass-modal w-full max-w-3xl max-h-[92vh] rounded-3xl shadow-2xl border border-white/90 flex flex-col min-h-0 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md shrink-0">
               <h3 className="text-sm font-bold text-slate-900">
-                Verify Customer Payment Evidence
+                {t('supplier.reviewSlipTitle')}
               </h3>
               <button
                 onClick={() => setVerifyingOrder(null)}
@@ -1218,7 +1218,7 @@ export const SupplierView: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
               <div className="p-4 glass-card rounded-2xl border border-slate-200/80 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Order Ref:</span>
@@ -1279,11 +1279,11 @@ export const SupplierView: React.FC = () => {
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
-                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center max-h-72">
+                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center max-h-56 sm:max-h-72">
                         <img
                           src={verifyingOrder.evidence.receiptMockImage}
                           alt="Customer payment screenshot"
-                          className="max-h-72 w-full object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                          className="max-h-56 sm:max-h-72 w-full object-contain cursor-pointer hover:opacity-95 transition-opacity"
                           onClick={() => window.open(verifyingOrder.evidence?.receiptMockImage, '_blank')}
                         />
                       </div>
@@ -1323,14 +1323,14 @@ export const SupplierView: React.FC = () => {
                       onClick={() => setShowRejectInput(true)}
                       className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-rose-300 text-rose-700 hover:bg-rose-50"
                     >
-                      Reject Evidence
+                      {t('supplier.rejectSlipBtn')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleConfirmPayment(verifyingOrder.id)}
                       className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
                     >
-                      Verify & Confirm Stock
+                      {t('supplier.verifySlipBtn')}
                     </button>
                   </>
                 ) : (

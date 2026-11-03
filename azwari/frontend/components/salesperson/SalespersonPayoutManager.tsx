@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { Order } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SalespersonPayoutManagerProps {
   currentAgent: SalesPartnerProfile;
@@ -37,6 +38,7 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
   eligibleAmount,
   pendingAmount,
 }) => {
+  const { t } = useLanguage();
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
   // Fetch real audited settlement batches for this sales agent
@@ -52,8 +54,9 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
 
   const batches: SettlementBatch[] = batchesData?.batches || [];
 
-  // Total amount already settled by merchants in historical batches
+  // Total amount already settled by merchants in historical batches or profile
   const settledBatchTotal = batches.reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
+  const effectivePaid = Math.max(settledBatchTotal, Number(currentAgent.paidCommissions || 0));
 
   // 1. Delivered & customer-verified orders waiting for payout (80% net to agent after 20% platform cut)
   const deliveredOrders = orders.filter(
@@ -63,11 +66,14 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
     (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
     0
   );
-  const computedEligibleNet = dynamicDeliveredGross > 0
-    ? Math.max(0, Math.round((dynamicDeliveredGross * 0.8) * 100) / 100 - settledBatchTotal)
+  const deliveredNet = dynamicDeliveredGross > 0
+    ? Math.round((dynamicDeliveredGross * 0.8) * 100) / 100
     : (Number(currentAgent.eligibleCommissions || 0) > 0 ? Math.round(Number(currentAgent.eligibleCommissions) * 0.8 * 100) / 100 : 0);
 
-  const eligibleEtb = eligibleAmount !== undefined ? eligibleAmount : computedEligibleNet;
+  // Real eligible amount owed by merchant right now = delivered net minus already paid
+  const computedEligibleNet = Math.max(0, Math.round((deliveredNet - effectivePaid) * 100) / 100);
+
+  const eligibleEtb = eligibleAmount !== undefined ? Math.max(0, eligibleAmount) : computedEligibleNet;
 
   // 2. Placed & active fulfillment orders (earned commission pending customer delivery)
   const inFulfillmentOrders = orders.filter(
@@ -106,10 +112,10 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-indigo-400" />
-                Eligible for Settlement
+                {t('payouts.eligibleTitle')}
               </span>
               <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-bold border border-indigo-400/20">
-                Awaiting Merchant Direct Transfer
+                {t('payouts.awaitingTransfer')}
               </span>
             </div>
 
@@ -117,13 +123,13 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
               ETB {eligibleEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Delivered and customer-verified orders. Merchants execute direct settlements to your registered Telebirr or CBE account within 24–48 hours.
+              {t('payouts.eligibleDesc')}
             </p>
           </div>
 
           <div className="pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-300">
-            <span>Your Net Payout:</span>
-            <span className="font-bold text-emerald-400 text-sm">80% Net Directly to You</span>
+            <span>{t('payouts.netPayout')}</span>
+            <span className="font-bold text-emerald-400 text-sm">{t('payouts.netPercent')}</span>
           </div>
         </div>
 
@@ -133,22 +139,22 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-amber-500" />
-                Pending Commission Balance (Earned)
+                {t('payouts.pendingBalance')}
               </span>
               <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">
-                Earned on Active Orders
+                {t('payouts.activeOrders')}
               </span>
             </div>
             <div className="text-2xl font-bold font-mono text-slate-900 mb-1">
               ETB {pendingEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Commission you earned from customer orders currently placed or in delivery. The merchant transfers this to you once the buyer confirms delivery.
+              {t('payouts.pendingDesc')}
             </p>
           </div>
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Customer Confirmation</span>
-            <span className="font-semibold text-slate-800">Direct Link</span>
+            <span>{t('payouts.customerConfirmation')}</span>
+            <span className="font-semibold text-slate-800">{t('payouts.directLink')}</span>
           </div>
         </div>
 
@@ -158,7 +164,7 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Total Settled & Paid
+                {t('payouts.paidToDate')}
               </span>
               <button
                 onClick={() => refetchBatches()}
@@ -172,11 +178,11 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
               ETB {paidEtb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Audited commissions transferred directly into your Telebirr and bank accounts with verified transaction slip references.
+              {t('payouts.paidDesc')}
             </p>
           </div>
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Verified Batches</span>
+            <span>{t('payouts.lifetimeReceived')}</span>
             <span className="font-semibold text-emerald-700">{batches.length} settled</span>
           </div>
         </div>
@@ -189,9 +195,9 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <WalletCards className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-bold text-slate-900 text-sm">How Commission Settlement Works</p>
+            <p className="font-bold text-slate-900 text-sm">{t('payouts.scheduleTitle')}</p>
             <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
-              Customers pay merchants directly via Telebirr or CBE screenshot. Once the customer confirms delivery, the merchant transfers your <strong>80% net payout</strong> directly to your bank account and enters the reference slip code. The platform retains a 20% marketplace fee.
+              {t('payouts.scheduleDesc')}
             </p>
           </div>
         </div>
@@ -244,10 +250,10 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Commission Settlement Batches &amp; Audit Records
+              {t('payouts.historyTitle')}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Permanent bank transfer receipts and Telebirr confirmation references recorded by merchants.
+              {t('payouts.historyDesc')}
             </p>
           </div>
           <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-bold">
@@ -258,9 +264,9 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
         {batches.length === 0 ? (
           <div className="py-12 text-center text-slate-500 text-xs glass-card-subtle rounded-3xl border border-slate-200/70 space-y-2">
             <CreditCard className="w-8 h-8 text-slate-400 mx-auto opacity-70" />
-            <p className="font-semibold text-slate-700 text-sm">No settlement batches recorded yet</p>
+            <p className="font-semibold text-slate-700 text-sm">{t('payouts.noHistory')}</p>
             <p className="text-slate-400 text-xs max-w-md mx-auto">
-              When customer orders are delivered, merchants will transfer your 80% net commission directly to your {currentAgent.payoutDestination?.provider || 'Telebirr'} account and the audited slip will appear here.
+              {t('payouts.noHistoryDesc')}
             </p>
           </div>
         ) : (
@@ -268,13 +274,13 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200/90 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-4 px-6 min-w-[170px]">Batch Number</th>
-                  <th className="py-4 px-6 min-w-[160px]">Payment Channel</th>
-                  <th className="py-4 px-6 min-w-[180px]">Destination Account</th>
-                  <th className="py-4 px-6 min-w-[150px] text-right">Net Paid (80%)</th>
-                  <th className="py-4 px-6 min-w-[220px]">Bank Slip / Ref ID</th>
-                  <th className="py-4 px-6 min-w-[140px]">Settled Date</th>
-                  <th className="py-4 px-6 min-w-[120px]">Status</th>
+                  <th className="py-4 px-6 min-w-[170px]">{t('payouts.batchRef')}</th>
+                  <th className="py-4 px-6 min-w-[160px]">{t('payouts.method')}</th>
+                  <th className="py-4 px-6 min-w-[180px]">{t('payouts.settledTo')}</th>
+                  <th className="py-4 px-6 min-w-[150px] text-right">{t('payouts.amountPaid')}</th>
+                  <th className="py-4 px-6 min-w-[220px]">{t('payouts.txRef')}</th>
+                  <th className="py-4 px-6 min-w-[140px]">{t('payouts.date')}</th>
+                  <th className="py-4 px-6 min-w-[120px]">{t('common.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">

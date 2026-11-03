@@ -193,22 +193,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-3">
-              {/* Agent Balance Indicator */}
-              {currentUser.role === 'salesperson' && currentAgent && (
-                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200/80 text-xs text-emerald-900 font-semibold">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>ETB {currentAgent.eligibleCommissions.toLocaleString()}</span>
-                </div>
-              )}
-
-              {/* Supplier Reserve Indicator */}
-              {currentUser.role === 'supplier' && currentSupplier && (
-                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 border border-blue-200/80 text-xs text-blue-900 font-semibold">
-                  <Building2 className="w-3.5 h-3.5 text-blue-700" />
-                  <span>ETB {currentSupplier.commissionReserveBalance.toLocaleString()}</span>
-                </div>
-              )}
-
               {/* Profile Pill */}
               <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs">
                 <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-[11px] shrink-0">

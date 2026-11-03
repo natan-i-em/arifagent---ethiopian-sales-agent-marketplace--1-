@@ -221,7 +221,7 @@ export const MobileBottomNav: React.FC = () => {
             <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.ledger')}</span>
           </button>
 
-          {/* Tab 5: Payouts */}
+          {/* Tab 5: Settlement */}
           <button
             onClick={() => handlePortalTab('/portal/salesperson', 'payouts')}
             className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all ${
@@ -229,16 +229,16 @@ export const MobileBottomNav: React.FC = () => {
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all ${isTabActive('payouts') ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
-              <CreditCard className="w-4 h-4" />
+              <Coins className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.payouts')}</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.settlement')}</span>
           </button>
         </div>
       </nav>
     );
   }
 
-  // 3. Supplier (Merchant) Bottom Nav: Direct routes to Hub, Products, Orders, Settlement, Wallet
+  // 3. Supplier (Merchant) Bottom Nav: Direct routes to Hub, Products, Orders, Settlement, Accounts
   if (currentUser.role === 'supplier') {
     const isTabActive = (tab: string) => isSupplier && currentTab === tab;
 
@@ -287,17 +287,17 @@ export const MobileBottomNav: React.FC = () => {
             <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.orders')}</span>
           </button>
 
-          {/* Tab 4: Wallet */}
+          {/* Tab 4: Settlement */}
           <button
-            onClick={() => handlePortalTab('/portal/supplier', 'wallet')}
+            onClick={() => handlePortalTab('/portal/supplier', 'settlement')}
             className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all ${
-              isTabActive('wallet') ? 'text-blue-950 font-bold' : 'text-slate-500 hover:text-slate-900'
+              isTabActive('settlement') ? 'text-blue-950 font-bold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <div className={`p-1.5 rounded-xl transition-all ${isTabActive('wallet') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
-              <CreditCard className="w-4 h-4" />
+            <div className={`p-1.5 rounded-xl transition-all ${isTabActive('settlement') ? 'bg-blue-600 text-white shadow-xs' : ''}`}>
+              <Coins className="w-4 h-4" />
             </div>
-            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.wallet')}</span>
+            <span className="text-[10px] mt-1 truncate max-w-full">{t('mobileNav.settlement')}</span>
           </button>
 
           {/* Tab 5: Accounts */}

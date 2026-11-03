@@ -158,9 +158,12 @@ export const SalespersonView: React.FC = () => {
     (sum, o) => sum + (Number(o.agreedCommissionAmount) || 0),
     0
   );
-  const liveEligibleCommissions = computedDeliveredGross > 0
+  const deliveredNet = computedDeliveredGross > 0
     ? Math.round((computedDeliveredGross * 0.8) * 100) / 100
     : (Number(currentAgent.eligibleCommissions || 0) > 0 ? Math.round(Number(currentAgent.eligibleCommissions) * 0.8 * 100) / 100 : 0);
+  const alreadyPaidTotal = Number(currentAgent.paidCommissions || 0);
+  // Real eligible amount owed right now by the merchant
+  const liveEligibleCommissions = Math.max(0, Math.round((deliveredNet - alreadyPaidTotal) * 100) / 100);
 
   const totalAttributedSales = agentOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
@@ -357,13 +360,13 @@ export const SalespersonView: React.FC = () => {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
                         <tr>
-                          <th className="py-3 px-4">Order Ref</th>
-                          <th className="py-3 px-4">Customer</th>
-                          <th className="py-3 px-4">Product</th>
-                          <th className="py-3 px-4 text-right">Total</th>
-                          <th className="py-3 px-4 text-right">Commission</th>
-                          <th className="py-3 px-4">Status</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
+                          <th className="py-3 px-4">{t('agent.orderRef')}</th>
+                          <th className="py-3 px-4">{t('agent.customer')}</th>
+                          <th className="py-3 px-4">{t('agent.product')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.total')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.commission')}</th>
+                          <th className="py-3 px-4">{t('agent.status')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.actions')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -423,8 +426,8 @@ export const SalespersonView: React.FC = () => {
               <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900">Available Products Ready to Sell</h2>
-                    <p className="text-xs text-slate-500">Live active offers verified by Addis Ababa suppliers</p>
+                    <h2 className="text-sm font-bold text-slate-900">{t('agent.availableOffers')}</h2>
+                    <p className="text-xs text-slate-500">{t('agent.availableOffersSubtitle')}</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('offers')}
@@ -555,13 +558,13 @@ export const SalespersonView: React.FC = () => {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
                         <tr>
-                          <th className="py-3 px-4">Order Ref</th>
-                          <th className="py-3 px-4">Customer</th>
-                          <th className="py-3 px-4">Product & Supplier</th>
-                          <th className="py-3 px-4 text-right">Order Total</th>
-                          <th className="py-3 px-4 text-right">Your Commission</th>
-                          <th className="py-3 px-4">Order Status</th>
-                          <th className="py-3 px-4 text-right">Tracking & View</th>
+                          <th className="py-3 px-4">{t('agent.orderRef')}</th>
+                          <th className="py-3 px-4">{t('agent.customer')}</th>
+                          <th className="py-3 px-4">{t('agent.product')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.total')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.commission')}</th>
+                          <th className="py-3 px-4">{t('agent.status')}</th>
+                          <th className="py-3 px-4 text-right">{t('agent.actions')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
