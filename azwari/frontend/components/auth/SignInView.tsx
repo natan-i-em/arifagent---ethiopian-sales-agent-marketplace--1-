@@ -8,29 +8,20 @@ import {
   Layers, 
   Lock, 
   Phone, 
-  UserCheck, 
-  Building2, 
   ArrowRight, 
   CheckCircle2, 
   AlertCircle,
   Eye,
-  EyeOff,
-  ShieldCheck
+  EyeOff
 } from 'lucide-react';
 
 export const SignInView: React.FC = () => {
-  const { 
-    login, 
-    setCurrentView, 
-    authRolePreference, 
-    setAuthRolePreference 
-  } = useApp();
+  const { login } = useApp();
   const { t } = useLanguage();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'salesperson' | 'supplier' | 'admin'>(authRolePreference || 'salesperson');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -50,7 +41,6 @@ export const SignInView: React.FC = () => {
     const res = await login({
       emailOrPhone: identifier.trim(),
       password,
-      role: selectedRole,
     });
 
     setLoading(false);
@@ -58,8 +48,6 @@ export const SignInView: React.FC = () => {
       setErrorMessage(res.error || 'Invalid credentials. Please verify your email/phone and password.');
     }
   };
-
-
 
   return (
     <div className="min-h-[85vh] bg-light-pattern py-12 px-4 sm:px-6 flex items-center justify-center">
@@ -79,8 +67,6 @@ export const SignInView: React.FC = () => {
 
         {/* Credentials Form */}
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5 bg-white/95 backdrop-blur-xl">
-
-
           {errorMessage && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-in fade-in duration-150">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -89,53 +75,10 @@ export const SignInView: React.FC = () => {
           )}
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
-            {/* Role Selection Tabs */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">{t('auth.accountType')}</label>
-              <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole('salesperson')}
-                  className={`py-2 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                    selectedRole === 'salesperson'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>{t('auth.agent')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole('supplier')}
-                  className={`py-2 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                    selectedRole === 'supplier'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>{t('auth.merchant')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole('admin')}
-                  className={`py-2 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                    selectedRole === 'admin'
-                      ? 'bg-slate-900 text-white shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{t('auth.admin')}</span>
-                </button>
-              </div>
-            </div>
-
             {/* Identifier input */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">
-                {selectedRole === 'admin' ? t('auth.adminEmail') : t('auth.emailOrPhone')}
+                {t('auth.emailOrPhone')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -146,13 +89,7 @@ export const SignInView: React.FC = () => {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={
-                    selectedRole === 'admin'
-                      ? 'admin@azwari.et'
-                      : selectedRole === 'salesperson'
-                      ? 'agent@example.com or +251 9...'
-                      : 'supplier@business.com'
-                  }
+                  placeholder="name@example.com or +251 9..."
                   className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-2xs"
                 />
               </div>
@@ -207,13 +144,7 @@ export const SignInView: React.FC = () => {
                 <span>{t('auth.signingIn')}</span>
               ) : (
                 <>
-                  <span>
-                    {selectedRole === 'admin'
-                      ? t('auth.signInAsAdmin')
-                      : selectedRole === 'salesperson'
-                      ? t('auth.signInAsAgent')
-                      : t('auth.signInAsMerchant')}
-                  </span>
+                  <span>{t('auth.signInButton')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -226,7 +157,6 @@ export const SignInView: React.FC = () => {
               {t('auth.newToAzwari')}{' '}
               <Link
                 href="/signup"
-                onClick={() => setAuthRolePreference(selectedRole)}
                 className="font-bold text-slate-900 hover:underline cursor-pointer"
               >
                 {t('auth.createAccount')}
