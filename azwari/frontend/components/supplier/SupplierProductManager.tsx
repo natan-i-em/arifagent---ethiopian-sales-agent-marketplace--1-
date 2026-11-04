@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { Product, Business } from '../../types';
 import { ProductImage, CURATED_ETHIOPIAN_PRODUCT_GALLERY } from '../common/ProductImage';
+import { supabase } from '../../lib/supabase';
 
 interface SupplierProductManagerProps {
   products: Product[];
@@ -104,7 +105,43 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
   const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Helper to send image file to backend Express API, which uploads to Supabase Storage
+  // Helper to compress & downscale camera photos (converts large 10MB mobile pictures into fast, clean ~300KB JPEGs)
+  const compressImage = (dataUrl: string, maxDimension = 1600, quality = 0.85): Promise<string> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined' || !dataUrl.startsWith('data:image/')) {
+        return resolve(dataUrl);
+      }
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width <= maxDimension && height <= maxDimension && dataUrl.length < 1024 * 1024) {
+          return resolve(dataUrl);
+        }
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
+  // Helper to send image file to backend Express API, with direct Supabase Storage fallback
   const handleFileUpload = async (file: File, isEdit: boolean = false) => {
     if (!file) return;
     setUploadError(null);
@@ -114,13 +151,19 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const fileData = e.target?.result as string;
-        if (!fileData) {
+        const rawFileData = e.target?.result as string;
+        if (!rawFileData) {
           if (isEdit) setIsUploadingEditImage(false);
           else setIsUploadingAddImage(false);
           return;
         }
 
+        // Downscale oversized camera pictures on-the-fly for smooth network upload
+        const fileData = await compressImage(rawFileData);
+
+        let uploadedUrl: string | null = null;
+
+        // Path A: Backend Express API (/api/upload/product-image)
         try {
           const res = await fetch('/api/upload/product-image', {
             method: 'POST',
@@ -135,32 +178,67 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
 
           const data = await res.json();
           if (data.success && data.imageUrl) {
-            if (isEdit) {
-              setEditForm((prev) => ({ ...prev, imageUrl: data.imageUrl }));
-            } else {
-              setAddForm((prev) => ({ ...prev, imageUrl: data.imageUrl }));
-            }
+            uploadedUrl = data.imageUrl;
           } else {
-            console.error('[UPLOAD ERROR]', data.error);
-            setUploadError(data.error || 'Upload failed');
-            if (isEdit) {
-              setEditForm((prev) => ({ ...prev, imageUrl: fileData }));
-            } else {
-              setAddForm((prev) => ({ ...prev, imageUrl: fileData }));
-            }
+            console.warn('[BACKEND UPLOAD NOTICE]', data.error);
           }
-        } catch (fetchErr: any) {
-          console.error('[UPLOAD NETWORK ERROR]', fetchErr);
-          setUploadError(fetchErr.message || 'Network upload failed');
+        } catch (fetchErr) {
+          console.warn('[BACKEND UPLOAD FETCH ERROR]', fetchErr);
+        }
+
+        // Path B: Direct Supabase Storage fallback (via public RLS bucket policy)
+        if (!uploadedUrl) {
+          try {
+            const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+            const cleanPath = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+            const byteString = atob(fileData.split(',')[1]);
+            const mimeString = fileData.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+
+            const { data: directData, error: directErr } = await supabase.storage
+              .from('Azwari_Product_Images')
+              .upload(cleanPath, blob, {
+                contentType: mimeString,
+                upsert: true,
+              });
+
+            if (!directErr && directData) {
+              const { data: urlData } = supabase.storage
+                .from('Azwari_Product_Images')
+                .getPublicUrl(cleanPath);
+              uploadedUrl = urlData.publicUrl;
+            } else if (directErr) {
+              console.error('[SUPABASE DIRECT UPLOAD ERROR]', directErr);
+            }
+          } catch (directExc: any) {
+            console.error('[SUPABASE DIRECT EXCEPTION]', directExc);
+          }
+        }
+
+        if (uploadedUrl) {
+          if (isEdit) {
+            setEditForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+          } else {
+            setAddForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+          }
+          setUploadError(null);
+        } else {
+          setUploadError('Failed to upload image. Please try again or select from the gallery.');
+          // As a last-resort fallback for local editing:
           if (isEdit) {
             setEditForm((prev) => ({ ...prev, imageUrl: fileData }));
           } else {
             setAddForm((prev) => ({ ...prev, imageUrl: fileData }));
           }
-        } finally {
-          if (isEdit) setIsUploadingEditImage(false);
-          else setIsUploadingAddImage(false);
         }
+
+        if (isEdit) setIsUploadingEditImage(false);
+        else setIsUploadingAddImage(false);
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
