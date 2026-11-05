@@ -3,6 +3,8 @@ import { prisma } from '../prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { validateBody, CreateProductSchema, UpdateProductSchema } from '../middleware/zodValidators.js';
 import { WalletService, InsufficientCollateralError } from '../services/walletService.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const productRouter = Router();
 
@@ -125,6 +127,13 @@ export function formatProductForFrontend(p: any) {
 productRouter.get('/', async (req: any, res: Response): Promise<void> => {
   try {
     const { activeOnly, supplierId } = req.query;
+    const cacheKey = `cache:products:all:${activeOnly || 'all'}:${supplierId || 'all'}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const whereClause: any = {};
     if (activeOnly === 'true') whereClause.isActive = true;
     if (supplierId) whereClause.businessId = supplierId as string;
@@ -139,7 +148,9 @@ productRouter.get('/', async (req: any, res: Response): Promise<void> => {
     });
 
     const formatted = products.map(formatProductForFrontend);
-    res.status(200).json({ success: true, count: formatted.length, products: formatted });
+    const responsePayload = { success: true, count: formatted.length, products: formatted };
+    await cacheService.set(cacheKey, responsePayload, 120);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Products Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch products' });
@@ -153,6 +164,13 @@ productRouter.get('/', async (req: any, res: Response): Promise<void> => {
 productRouter.get('/:id', async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const cacheKey = `cache:products:single:${id}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const p = await prisma.product.findUnique({
       where: { id },
       include: { variants: true, business: true },
@@ -163,7 +181,9 @@ productRouter.get('/:id', async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json({ success: true, product: formatProductForFrontend(p) });
+    const responsePayload = { success: true, product: formatProductForFrontend(p) };
+    await cacheService.set(cacheKey, responsePayload, 120);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -288,6 +308,9 @@ productRouter.post(
         console.warn('[Audit Log Notice]', auditErr);
       }
 
+      await cacheService.delPattern('cache:products:*');
+      realtimeEmitter.emit('change', { type: 'PRODUCT_CREATED', productId: product!.id });
+
       res.status(201).json({ success: true, product: formatProductForFrontend(product) });
     } catch (error: any) {
       console.error('[Create Product Error]', error);
@@ -379,6 +402,9 @@ productRouter.patch(
         console.warn('[Audit Log Notice]', auditErr);
       }
 
+      await cacheService.delPattern('cache:products:*');
+      realtimeEmitter.emit('change', { type: 'PRODUCT_UPDATED', productId: id });
+
       res.status(200).json({ success: true, product: formatProductForFrontend(updated) });
     } catch (error: any) {
       console.error('[Update Product Error]', error);
@@ -415,11 +441,15 @@ productRouter.delete('/:id', requireAuth, requireRole('supplier', 'admin'), asyn
           where: { id },
           data: { isActive: false },
         });
+        await cacheService.delPattern('cache:products:*');
+        realtimeEmitter.emit('change', { type: 'PRODUCT_ARCHIVED', productId: id });
         res.status(200).json({ success: true, message: 'Product has order history; archived safely.' });
         return;
       }
       await prisma.productVariant.deleteMany({ where: { productId: id } });
       await prisma.product.delete({ where: { id } });
+      await cacheService.delPattern('cache:products:*');
+      realtimeEmitter.emit('change', { type: 'PRODUCT_DELETED', productId: id });
       res.status(200).json({ success: true, message: 'Product permanently deleted' });
       return;
     }
@@ -428,6 +458,8 @@ productRouter.delete('/:id', requireAuth, requireRole('supplier', 'admin'), asyn
       where: { id },
       data: { isActive: false },
     });
+    await cacheService.delPattern('cache:products:*');
+    realtimeEmitter.emit('change', { type: 'PRODUCT_ARCHIVED', productId: id });
     res.status(200).json({ success: true, message: 'Product archived' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -484,6 +516,8 @@ productRouter.post(
           where: { id: salesPartnerId },
           data: { enrolledProductIds: enrolled },
         });
+        await cacheService.delPattern('cache:salesPartners:*');
+        realtimeEmitter.emit('change', { type: 'PRODUCT_ENROLLED', productId: id, salesPartnerId });
       }
 
       res.status(200).json({

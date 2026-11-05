@@ -6,6 +6,8 @@ import { validateBody, DepositSchema, WithdrawSchema } from '../middleware/zodVa
 import { WalletService } from '../services/walletService.js';
 import { ChapaService } from '../services/chapaService.js';
 import { etbToCents, centsToEtb, walletConfig } from '../config/walletConfig.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const walletRouter = Router();
 
@@ -122,11 +124,20 @@ walletRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respon
       }
     }
 
+    const cacheKey = `cache:wallet:${owner.businessId ? 'biz:' + owner.businessId : owner.salesPartnerId ? 'sp:' + owner.salesPartnerId : 'admin'}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const details = await WalletService.getWalletDetails(owner);
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       wallet: details,
-    });
+    };
+    await cacheService.set(cacheKey, responsePayload, 30);
+    res.status(200).json(responsePayload);
   } catch (err: any) {
     console.error('[GET WALLET ERROR]', err);
     res.status(500).json({ success: false, error: err.message || 'Failed to fetch wallet information' });
@@ -379,6 +390,9 @@ walletRouter.post(
         } catch (auditErr) {
           console.warn('[Audit Log Payout Fee Notice]', auditErr);
         }
+
+        await cacheService.delPattern('cache:wallet:*');
+        realtimeEmitter.emit('change', { type: 'WALLET_UPDATED' });
 
         res.status(200).json({
           success: true,

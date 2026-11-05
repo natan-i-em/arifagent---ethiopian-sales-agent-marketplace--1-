@@ -49,7 +49,6 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
   } = useQuery({
     queryKey: ['salespersonBatches', currentAgent.id],
     queryFn: () => commissionsApi.getBatches(),
-    refetchInterval: 12000,
   });
 
   const batches: SettlementBatch[] = batchesData?.batches || [];

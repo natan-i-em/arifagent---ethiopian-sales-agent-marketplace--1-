@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import { prisma, VerificationStatus } from '../prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { centsToEtb } from '../config/walletConfig.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const businessRouter = Router();
 
@@ -62,6 +64,13 @@ export const formatBusinessForFrontend = (b: any) => ({
  */
 businessRouter.get('/', async (_req: any, res: Response): Promise<void> => {
   try {
+    const cacheKey = 'cache:businesses:all';
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const businesses = await prisma.business.findMany({
       include: {
         paymentAccounts: true,
@@ -71,7 +80,9 @@ businessRouter.get('/', async (_req: any, res: Response): Promise<void> => {
     });
 
     const formatted = businesses.map(formatBusinessForFrontend);
-    res.status(200).json({ success: true, count: formatted.length, businesses: formatted });
+    const responsePayload = { success: true, count: formatted.length, businesses: formatted };
+    await cacheService.set(cacheKey, responsePayload, 180);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Businesses Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch businesses' });
@@ -84,6 +95,13 @@ businessRouter.get('/', async (_req: any, res: Response): Promise<void> => {
 businessRouter.get('/:id', async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const cacheKey = `cache:businesses:${id}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const b = await prisma.business.findUnique({
       where: { id },
       include: { 
@@ -97,7 +115,9 @@ businessRouter.get('/:id', async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json({ success: true, business: formatBusinessForFrontend(b) });
+    const responsePayload = { success: true, business: formatBusinessForFrontend(b) };
+    await cacheService.set(cacheKey, responsePayload, 180);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -147,6 +167,9 @@ businessRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res:
       include: { paymentAccounts: true },
     });
 
+    await cacheService.delPattern('cache:businesses:*');
+    realtimeEmitter.emit('change', { type: 'BUSINESS_UPDATED', businessId: id });
+
     res.status(200).json({ success: true, business: formatBusinessForFrontend(updated) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -176,6 +199,9 @@ businessRouter.post('/:id/verify', requireAuth, requireRole('admin'), async (req
       data: { verificationStatus: targetStatus },
       include: { paymentAccounts: true },
     });
+
+    await cacheService.delPattern('cache:businesses:*');
+    realtimeEmitter.emit('change', { type: 'BUSINESS_UPDATED', businessId: id });
 
     res.status(200).json({ success: true, business: formatBusinessForFrontend(updated) });
   } catch (error: any) {
@@ -227,6 +253,9 @@ businessRouter.post(
         },
       });
 
+      await cacheService.delPattern('cache:businesses:*');
+      realtimeEmitter.emit('change', { type: 'BUSINESS_UPDATED', businessId: id });
+
       res.status(201).json({
         success: true,
         account: {
@@ -265,6 +294,9 @@ businessRouter.delete(
       await prisma.supplierPaymentAccount.delete({
         where: { id: accountId },
       });
+
+      await cacheService.delPattern('cache:businesses:*');
+      realtimeEmitter.emit('change', { type: 'BUSINESS_UPDATED', businessId: id });
 
       res.status(200).json({ success: true, message: 'Payment account deleted' });
     } catch (error: any) {

@@ -3,6 +3,8 @@ import { prisma, VerificationStatus } from '../prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { centsToEtb } from '../config/walletConfig.js';
 import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const salesPartnerRouter = Router();
 
@@ -34,16 +36,25 @@ const formatPartner = (sp: any) => ({
  */
 salesPartnerRouter.get('/', async (_req: Request, res: Response) => {
   try {
+    const cacheKey = 'cache:salesPartners:all';
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const partners = await prisma.salesPartner.findMany({
       include: { wallet: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       count: partners.length,
       salesPartners: partners.map(formatPartner),
-    });
+    };
+    await cacheService.set(cacheKey, responsePayload, 180);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Sales Partners Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch sales partners' });
@@ -56,6 +67,13 @@ salesPartnerRouter.get('/', async (_req: Request, res: Response) => {
 salesPartnerRouter.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const cacheKey = `cache:salesPartners:${id}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     const partner = await prisma.salesPartner.findUnique({
       where: { id },
       include: { wallet: true },
@@ -66,7 +84,9 @@ salesPartnerRouter.get('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(200).json({ success: true, salesPartner: formatPartner(partner) });
+    const responsePayload = { success: true, salesPartner: formatPartner(partner) };
+    await cacheService.set(cacheKey, responsePayload, 180);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -90,6 +110,9 @@ salesPartnerRouter.patch('/:id', async (req: Request, res: Response) => {
         ...(subcity ? { subcity } : {}),
       },
     });
+
+    await cacheService.delPattern('cache:salesPartners:*');
+    realtimeEmitter.emit('change', { type: 'SALES_PARTNER_UPDATED', salesPartnerId: id });
 
     res.status(200).json({ success: true, salesPartner: formatPartner(updated) });
   } catch (error: any) {
@@ -141,6 +164,9 @@ salesPartnerRouter.post(
           }).catch(() => {});
         }
       }
+
+      await cacheService.delPattern('cache:salesPartners:*');
+      realtimeEmitter.emit('change', { type: 'SALES_PARTNER_UPDATED', salesPartnerId: id });
 
       res.status(200).json({ success: true, salesPartner: formatPartner(updated) });
     } catch (error: any) {

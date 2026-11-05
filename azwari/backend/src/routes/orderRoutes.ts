@@ -20,6 +20,7 @@ import { WalletService, InsufficientBalanceError } from '../services/walletServi
 import { ChapaService } from '../services/chapaService.js';
 import { walletConfig, etbToCents } from '../config/walletConfig.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
+import { cacheService } from '../services/cacheService.js';
 
 export const orderRouter = Router();
 
@@ -204,6 +205,13 @@ export const formatOrderForFrontend = (o: any) => {
 orderRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
+    const cacheKey = `cache:orders:${user.role}:${user.businessId || user.salesPartnerId || user.id}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     let whereClause: any = {};
 
     if (user.role === 'admin') {
@@ -236,7 +244,9 @@ orderRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
     });
 
     const formatted = orders.map(formatOrderForFrontend);
-    res.status(200).json({ success: true, count: formatted.length, orders: formatted });
+    const responsePayload = { success: true, count: formatted.length, orders: formatted };
+    await cacheService.set(cacheKey, responsePayload, 60);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Orders Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch orders' });
@@ -250,6 +260,17 @@ orderRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
 orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
+    const queryTxRef = (req.query.tx_ref || req.query.trx_ref || req.query.reference) as string | undefined;
+
+    // Check cache if no verification reference in query
+    if (!queryTxRef) {
+      const cached = await cacheService.get(`cache:orders:public:${token}`);
+      if (cached) {
+        res.status(200).json(cached);
+        return;
+      }
+    }
+
     const order = await prisma.order.findUnique({
       where: { publicAccessToken: token },
       include: {
@@ -267,7 +288,6 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
 
     // Auto-verify with Chapa if unconfirmed and has Chapa transactions recorded or query ref
     if (!['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
-      const queryTxRef = (req.query.tx_ref || req.query.trx_ref || req.query.reference) as string | undefined;
       const fromNotes = (order.deliveryNotes || '').match(/ORD-CHAPA-[^\s|]+/g) || [];
       const candidates: string[] = [];
       if (queryTxRef) candidates.push(queryTxRef);
@@ -314,14 +334,22 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
               return ord;
             });
 
-            res.status(200).json({ success: true, order: formatOrderForFrontend(confirmedOrder) });
+            await cacheService.delPattern('cache:orders:*');
+            realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: order.id });
+
+            const payload = { success: true, order: formatOrderForFrontend(confirmedOrder) };
+            res.status(200).json(payload);
             return;
           }
         } catch {}
       }
     }
 
-    res.status(200).json({ success: true, order: formatOrderForFrontend(order) });
+    const payload = { success: true, order: formatOrderForFrontend(order) };
+    if (!queryTxRef) {
+      await cacheService.set(`cache:orders:public:${token}`, payload, 60);
+    }
+    res.status(200).json(payload);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -530,7 +558,10 @@ orderRouter.post('/public/:token/verify-chapa', async (req: any, res: Response):
         console.warn('[Audit Log Notice]', auditErr);
       }
 
-      realtimeEmitter.emit('change', { type: 'EVIDENCE_SUBMITTED', orderId: updatedOrder.id });
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: updatedOrder.id });
+
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
       return;
     }
@@ -663,6 +694,11 @@ orderRouter.post('/public/:token/confirm-delivery', async (req: any, res: Respon
       templateName: 'order_delivered',
     }).catch(() => {});
 
+    await cacheService.delPattern('cache:orders:*');
+    await cacheService.delPattern('cache:commissions:*');
+    await cacheService.delPattern('cache:salesPartners:*');
+    realtimeEmitter.emit('change', { type: 'ORDER_DELIVERED', orderId: updatedOrder.id });
+
     res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
   } catch (error: any) {
     console.error('[Customer Confirm Delivery Error]', error);
@@ -751,6 +787,12 @@ orderRouter.post(
       } catch (auditErr) {
         console.warn('[Audit Log Notice]', auditErr);
       }
+
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', {
+        type: 'EVIDENCE_SUBMITTED',
+        orderId: updatedOrder.id,
+      });
 
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {
@@ -1066,6 +1108,11 @@ orderRouter.post(
         templateName: 'order_payment_instructions',
       }).catch((err) => console.warn('[SMS Dispatch Notice]', err));
 
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      await cacheService.delPattern('cache:products:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_CREATED', orderId: newOrder.id });
+
       res.status(201).json({ success: true, order: formatOrderForFrontend(newOrder) });
     } catch (error: any) {
       console.error('[Create Order Error]', error);
@@ -1184,6 +1231,12 @@ orderRouter.post(
       } catch (auditErr) {
         console.warn('[Audit Log Notice]', auditErr);
       }
+
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', {
+        type: 'EVIDENCE_SUBMITTED',
+        orderId: updatedOrder.id,
+      });
 
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {
@@ -1326,6 +1379,13 @@ orderRouter.post(
         }).catch(() => { });
       }
 
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      realtimeEmitter.emit('change', {
+        type: approved ? 'ORDER_PAYMENT_VERIFIED' : 'ORDER_PAYMENT_REJECTED',
+        orderId: updatedOrder.id,
+      });
+
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {
       console.error('[Verify Payment Error]', error);
@@ -1415,6 +1475,9 @@ orderRouter.post(
         templateName: 'order_scheduled',
       }).catch(() => { });
 
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_SCHEDULED', orderId: updated.id });
+
       res.status(200).json({ success: true, order: formatOrderForFrontend(updated) });
     } catch (error: any) {
       console.error('[Schedule Order Error]', error);
@@ -1497,6 +1560,9 @@ orderRouter.post(
         orderNumber: updated.orderNumber,
         templateName: 'order_dispatched',
       }).catch(() => { });
+
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_DISPATCHED', orderId: updated.id });
 
       res.status(200).json({ success: true, order: formatOrderForFrontend(updated) });
     } catch (error: any) {
@@ -1622,6 +1688,11 @@ orderRouter.post(
         templateName: 'order_delivered',
       }).catch(() => { });
 
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      await cacheService.delPattern('cache:salesPartners:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_DELIVERED', orderId: updatedOrder.id });
+
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {
       console.error('[Deliver Order Error]', error);
@@ -1704,6 +1775,9 @@ orderRouter.post(
       } catch (auditErr) {
         console.warn('[Audit Log Notice]', auditErr);
       }
+
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_EXTENDED', orderId: updated.id });
 
       res.status(200).json({ success: true, order: formatOrderForFrontend(updated) });
     } catch (error: any) {
@@ -1836,6 +1910,11 @@ orderRouter.post(
       } catch (auditErr) {
         console.warn('[Audit Log Notice]', auditErr);
       }
+
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      await cacheService.delPattern('cache:products:*');
+      realtimeEmitter.emit('change', { type: 'ORDER_CANCELLED', orderId: updatedOrder.id });
 
       res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {

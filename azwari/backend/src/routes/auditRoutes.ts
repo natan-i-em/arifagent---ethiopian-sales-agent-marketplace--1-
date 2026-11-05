@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { cacheService } from '../services/cacheService.js';
 
 export const auditRouter = Router();
 
@@ -12,6 +13,12 @@ auditRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
   try {
     const user = req.user!;
     const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const cacheKey = `cache:audit:${user.role}:${user.businessId || 'all'}:${limit}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
 
     let whereClause: any = {};
     if (user.role === 'admin') {
@@ -38,7 +45,9 @@ auditRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
       businessId: l.businessId || undefined,
     }));
 
-    res.status(200).json({ success: true, count: formatted.length, auditLogs: formatted });
+    const responsePayload = { success: true, count: formatted.length, auditLogs: formatted };
+    await cacheService.set(cacheKey, responsePayload, 30);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Audit Logs Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch audit logs' });
@@ -71,6 +80,8 @@ auditRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respon
         timestamp: new Date(),
       },
     });
+
+    await cacheService.delPattern('cache:audit:*');
 
     res.status(201).json({
       success: true,

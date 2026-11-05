@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole, optionalAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { validateBody, CreateDisputeSchema, ResolveDisputeSchema } from '../middleware/zodValidators.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const disputeRouter = Router();
 
@@ -22,6 +24,13 @@ const prismaToUiDisputeStatus = (s: string) => {
 disputeRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
+    const cacheKey = `cache:disputes:${user.role}:${user.businessId || user.salesPartnerId || 'all'}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     let whereClause: any = {};
 
     if (user.role === 'admin') {
@@ -62,7 +71,9 @@ disputeRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
       createdAt: d.createdAt.toISOString(),
     }));
 
-    res.status(200).json({ success: true, count: formatted.length, disputes: formatted });
+    const responsePayload = { success: true, count: formatted.length, disputes: formatted };
+    await cacheService.set(cacheKey, responsePayload, 60);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Disputes Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch disputes' });
@@ -132,6 +143,10 @@ disputeRouter.post(
 
         return createdDispute;
       });
+
+      await cacheService.delPattern('cache:disputes:*');
+      await cacheService.delPattern('cache:orders:*');
+      realtimeEmitter.emit('change', { type: 'DISPUTE_CREATED', disputeId: dispute.id, orderId: dispute.orderId });
 
       res.status(201).json({
         success: true,
@@ -253,6 +268,11 @@ disputeRouter.patch(
 
         return updatedDispute;
       });
+
+      await cacheService.delPattern('cache:disputes:*');
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:commissions:*');
+      realtimeEmitter.emit('change', { type: 'DISPUTE_RESOLVED', disputeId: updated.id, orderId: updated.orderId });
 
       res.status(200).json({
         success: true,

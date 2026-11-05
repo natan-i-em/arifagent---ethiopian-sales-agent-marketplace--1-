@@ -32,10 +32,15 @@ export function useRealtimeSync() {
 
             // Invalidate queries in parallel for instant UI reflection
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['publicOrder'] });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['businesses'] });
             queryClient.invalidateQueries({ queryKey: ['commissions'] });
             queryClient.invalidateQueries({ queryKey: ['settlementBatches'] });
             queryClient.invalidateQueries({ queryKey: ['salespersonBatches'] });
             queryClient.invalidateQueries({ queryKey: ['salesPartners'] });
+            queryClient.invalidateQueries({ queryKey: ['disputes'] });
+            queryClient.invalidateQueries({ queryKey: ['supplierWallet'] });
             queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
           } catch (err) {
             // Silently ignore non-JSON heartbeat frames

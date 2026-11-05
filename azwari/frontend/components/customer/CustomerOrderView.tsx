@@ -74,7 +74,6 @@ export const CustomerOrderView: React.FC = () => {
     queryKey: ['publicOrder', activeToken],
     queryFn: () => ordersApi.getByToken(activeToken),
     enabled: Boolean(activeToken),
-    refetchInterval: 10000,
   });
 
   const publicOrder = publicOrderData?.order;

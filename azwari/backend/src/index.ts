@@ -19,6 +19,7 @@ import { webhookRouter } from './routes/webhookRoutes.js';
 import { realtimeRouter } from './routes/realtimeRoutes.js';
 import { startOrderExpirationWorker } from './workers/orderExpirationWorker.js';
 import { SmsEthiopiaService } from './services/smsEthiopiaService.js';
+import { cacheService } from './services/cacheService.js';
 
 dotenv.config();
 
@@ -110,6 +111,7 @@ app.get('/health', async (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     database: dbStatus,
+    cache: cacheService.getStatus(),
     smsProvider: SmsEthiopiaService.getStatus(),
     environment: process.env.NODE_ENV || 'development',
   });

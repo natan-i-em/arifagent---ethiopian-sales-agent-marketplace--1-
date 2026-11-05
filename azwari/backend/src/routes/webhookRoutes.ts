@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { ChapaService } from '../services/chapaService.js';
 import { WalletService } from '../services/walletService.js';
 import { prisma, PaymentProvider } from '../prisma.js';
+import { cacheService } from '../services/cacheService.js';
+import { realtimeEmitter } from './realtimeRoutes.js';
 
 export const webhookRouter = Router();
 
@@ -56,10 +58,14 @@ webhookRouter.post('/chapa', async (req: Request, res: Response): Promise<void> 
 
         if (verification.status === 'success' || payload.status === 'success') {
           await WalletService.confirmWithdrawal(payoutRef, payload.id || payload.transfer_id, payload);
+          await cacheService.delPattern('cache:wallet:*');
+          realtimeEmitter.emit('change', { type: 'WALLET_UPDATED' });
           console.log(`✅ [PAYOUT SUCCESS] Payout ${payoutRef} confirmed and marked SUCCESS.`);
         } else if (verification.status === 'failed' || payload.status === 'failed') {
           const reason = payload.reason || payload.message || 'Transfer failed at Chapa';
           await WalletService.refundWithdrawal(payoutRef, reason, payload);
+          await cacheService.delPattern('cache:wallet:*');
+          realtimeEmitter.emit('change', { type: 'WALLET_UPDATED' });
           console.log(`🔄 [PAYOUT REFUNDED] Payout ${payoutRef} failed. Held funds refunded to agent wallet.`);
         }
       } catch (payoutErr) {
@@ -126,6 +132,9 @@ webhookRouter.post('/chapa', async (req: Request, res: Response): Promise<void> 
                   });
                 }
               });
+              await cacheService.delPattern('cache:orders:*');
+              await cacheService.delPattern('cache:commissions:*');
+              realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: matchingOrder.id });
               console.log(`✅ [ORDER CHAPA PAYMENT CONFIRMED] Order ${matchingOrder.orderNumber} verified via Chapa webhook.`);
             }
             return;
@@ -152,6 +161,8 @@ webhookRouter.post('/chapa', async (req: Request, res: Response): Promise<void> 
           rawPayload: payload,
         });
 
+        await cacheService.delPattern('cache:wallet:*');
+        realtimeEmitter.emit('change', { type: 'WALLET_UPDATED' });
         console.log(`✅ [DEPOSIT SUCCESS] Merchant wallet ${deposit.walletId} credited with ${deposit.amount} cents.`);
       } catch (depositErr) {
         console.error(`❌ [CHAPA WEBHOOK DEPOSIT PROCESSING ERROR] txRef ${txRef}:`, depositErr);

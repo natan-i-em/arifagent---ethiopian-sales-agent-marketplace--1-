@@ -58,7 +58,6 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { data, isLoading: isLoadingOrders } = useQuery({
     queryKey: ['orders'],
     queryFn: () => ordersApi.getAll(),
-    refetchInterval: 1000 * 20, // 20s soft background sync
   });
 
   const orders = data?.orders || [];

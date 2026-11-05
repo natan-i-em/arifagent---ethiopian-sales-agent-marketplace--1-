@@ -25,3 +25,4 @@ BEGIN
         RAISE NOTICE 'Secured table % with RLS and service_role access policy', tbl.tablename;
     END LOOP;
 END $$;
+

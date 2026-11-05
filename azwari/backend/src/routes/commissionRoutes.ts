@@ -3,6 +3,7 @@ import { prisma } from '../prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { validateBody, SettleCommissionsSchema } from '../middleware/zodValidators.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
+import { cacheService } from '../services/cacheService.js';
 
 export const commissionRouter = Router();
 
@@ -23,6 +24,13 @@ const prismaToUiCommStatus = (s: string) => {
 commissionRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
+    const cacheKey = `cache:commissions:${user.role}:${user.salesPartnerId || user.businessId || 'all'}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     let whereClause: any = {};
 
     if (user.role === 'admin') {
@@ -67,7 +75,9 @@ commissionRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Re
       createdAt: e.createdAt.toISOString(),
     }));
 
-    res.status(200).json({ success: true, count: formatted.length, commissions: formatted });
+    const responsePayload = { success: true, count: formatted.length, commissions: formatted };
+    await cacheService.set(cacheKey, responsePayload, 60);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('[Get Commissions Error]', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch commissions' });
@@ -81,6 +91,13 @@ commissionRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Re
 commissionRouter.get('/batches', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
+    const cacheKey = `cache:commissions:batches:${user.role}:${user.salesPartnerId || user.businessId || 'all'}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      res.status(200).json(cached);
+      return;
+    }
+
     let whereClause: any = {};
 
     if (user.role === 'admin') {
@@ -130,7 +147,9 @@ commissionRouter.get('/batches', requireAuth, async (req: AuthenticatedRequest, 
       createdAt: b.createdAt.toISOString(),
     }));
 
-    res.status(200).json({ success: true, count: formatted.length, batches: formatted });
+    const responsePayload = { success: true, count: formatted.length, batches: formatted };
+    await cacheService.set(cacheKey, responsePayload, 60);
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -286,6 +305,11 @@ commissionRouter.post(
         return createdBatch;
       });
 
+      await cacheService.delPattern('cache:commissions:*');
+      await cacheService.delPattern('cache:orders:*');
+      await cacheService.delPattern('cache:salesPartners:*');
+      realtimeEmitter.emit('change', { type: 'COMMISSION_SETTLED', batchId: batch.id });
+
       res.status(200).json({
         success: true,
         batch: {
@@ -369,6 +393,8 @@ commissionRouter.post(
         });
       });
 
+      await cacheService.delPattern('cache:commissions:*');
+      await cacheService.delPattern('cache:orders:*');
       realtimeEmitter.emit('change', { type: 'PLATFORM_FEE_SETTLED' });
       res.status(200).json({
         success: true,
