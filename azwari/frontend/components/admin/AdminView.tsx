@@ -361,7 +361,7 @@ export const AdminView: React.FC = () => {
               <span>·</span>
               <span className="flex items-center gap-1 text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                PostgreSQL Operational
+                Platform Operational
               </span>
               <span>·</span>
               <span className="text-slate-400">SMS Gateway Live</span>

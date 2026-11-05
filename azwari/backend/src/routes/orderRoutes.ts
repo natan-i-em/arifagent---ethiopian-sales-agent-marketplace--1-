@@ -181,7 +181,9 @@ export const formatOrderForFrontend = (o: any) => {
         amountShown: Number(latestReceipt.amountTransferred),
         submittedAt: latestReceipt.createdAt.toISOString(),
         receiptNote: latestReceipt.buyerNotes || undefined,
-        receiptMockImage: latestReceipt.receiptImageUrl || undefined,
+        receiptMockImage: latestReceipt.receiptImageUrl && (!latestReceipt.receiptImageUrl.startsWith('data:') || latestReceipt.receiptImageUrl.length < 50000)
+          ? latestReceipt.receiptImageUrl
+          : undefined,
         verifierStatus: latestReceipt.verifiedAt
           ? ('verified' as const)
           : latestReceipt.rejectionReason
@@ -234,10 +236,36 @@ orderRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
     const orders = await prisma.order.findMany({
       where: whereClause,
       include: {
-        items: { include: { product: true, variant: true } },
-        paymentReceipts: { orderBy: { createdAt: 'desc' } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                unitPrice: true,
+                imageUrl: true,
+              },
+            },
+            variant: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+              },
+            },
+          },
+        },
+        paymentReceipts: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
         commissionEscrow: true,
-        business: { include: { paymentAccounts: true } },
+        business: {
+          include: {
+            paymentAccounts: true,
+          },
+        },
         salesPartner: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -274,8 +302,30 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
     const order = await prisma.order.findUnique({
       where: { publicAccessToken: token },
       include: {
-        items: { include: { product: true, variant: true } },
-        paymentReceipts: { orderBy: { createdAt: 'desc' } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                unitPrice: true,
+                imageUrl: true,
+              },
+            },
+            variant: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+              },
+            },
+          },
+        },
+        paymentReceipts: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
         business: { include: { paymentAccounts: true } },
         salesPartner: true,
       },
@@ -286,7 +336,7 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
       return;
     }
 
-    // Auto-verify with Chapa if unconfirmed and has Chapa transactions recorded or query ref
+    // Auto-verify with Chapa ONLY if an explicit transaction reference or payment attempt was initiated
     if (!['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
       const fromNotes = (order.deliveryNotes || '').match(/ORD-CHAPA-[^\s|]+/g) || [];
       const candidates: string[] = [];
@@ -294,11 +344,14 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
       for (const r of fromNotes.reverse()) {
         if (!candidates.includes(r)) candidates.push(r);
       }
-      candidates.push(`ORD-CHAPA-${order.orderNumber}`);
 
-      for (const ref of candidates) {
-        try {
-          const ver = await ChapaService.verifyTransaction(ref);
+      if (candidates.length > 0) {
+        for (const ref of candidates) {
+          try {
+            const ver = await Promise.race([
+              ChapaService.verifyTransaction(ref),
+              new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Chapa verification timeout')), 3000)),
+            ]);
           if (ver.status === 'success') {
             const confirmedOrder = await prisma.$transaction(async (tx) => {
               const ord = await tx.order.update({
@@ -344,6 +397,7 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
         } catch {}
       }
     }
+  }
 
     const payload = { success: true, order: formatOrderForFrontend(order) };
     if (!queryTxRef) {

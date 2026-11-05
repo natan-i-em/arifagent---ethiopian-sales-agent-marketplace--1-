@@ -191,10 +191,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1">
-              <Database className="w-3 h-3 text-emerald-400" /> PostgreSQL
+              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Platform Core
             </span>
             <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-md">
-              Connected
+              Operational
             </span>
           </div>
 

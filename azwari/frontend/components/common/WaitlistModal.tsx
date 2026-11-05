@@ -229,7 +229,7 @@ export const WaitlistModal: React.FC = () => {
                   <span>Production Safeguards Verified</span>
                 </div>
                 <div className="text-[11px] text-slate-500 leading-relaxed">
-                  SMS webhook routing active. Payment evidence inspection window set to 15 minutes. Commission escrow records are locked in database transactions.
+                  SMS webhook routing active. Payment evidence inspection window set to 15 minutes. Commission escrow records are locked in secure transactions.
                 </div>
               </div>
 

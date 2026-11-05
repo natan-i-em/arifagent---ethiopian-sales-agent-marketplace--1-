@@ -141,6 +141,26 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
     });
   };
 
+  // Helper to sanitize any technical error message
+  const sanitizeErrorMessage = (msg?: string) => {
+    if (!msg) return 'Failed to upload image. Please try again or select from the gallery.';
+    const lower = msg.toLowerCase();
+    if (
+      lower.includes('supabase') ||
+      lower.includes('bucket') ||
+      lower.includes('azwari_product_images') ||
+      lower.includes('policy') ||
+      lower.includes('row-level') ||
+      lower.includes('rls') ||
+      lower.includes('database') ||
+      lower.includes('postgres') ||
+      lower.includes('violates')
+    ) {
+      return 'Failed to upload image. Please try again or select from the gallery.';
+    }
+    return msg;
+  };
+
   // Helper to upload a base64 / data URL directly to Supabase Storage or backend
   const uploadDataUrlToStorage = async (dataUrl?: string, isEdit: boolean = false) => {
     if (!dataUrl || !dataUrl.startsWith('data:image/')) return;
@@ -216,10 +236,10 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
         }
         setUploadError(null);
       } else {
-        setUploadError(`Upload notice: ${lastErrMsg || 'Please try again'}.`);
+        setUploadError(sanitizeErrorMessage(lastErrMsg));
       }
     } catch (err: any) {
-      setUploadError(err.message || 'Upload failed');
+      setUploadError(sanitizeErrorMessage(err?.message));
     } finally {
       if (isEdit) setIsUploadingEditImage(false);
       else setIsUploadingAddImage(false);
@@ -318,7 +338,7 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
           }
           setUploadError(null);
         } else {
-          setUploadError(`Upload failed: ${lastErrorMsg || 'Please try again or select from gallery'}`);
+          setUploadError(sanitizeErrorMessage(lastErrorMsg));
           // Set preview only if nothing was set yet
           if (isEdit) {
             setEditForm((prev) => ({ ...prev, imageUrl: fileData }));
@@ -333,7 +353,7 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
       reader.readAsDataURL(file);
     } catch (err: any) {
       console.error('[FILE READ ERROR]', err);
-      setUploadError(err.message || 'File reading failed');
+      setUploadError(sanitizeErrorMessage(err?.message));
       if (isEdit) setIsUploadingEditImage(false);
       else setIsUploadingAddImage(false);
     }
@@ -1120,19 +1140,43 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
 
                   <div className="flex-1 space-y-2 w-full">
                     <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="Paste image URL (https://...)"
-                        value={addForm.imageUrl}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setAddForm({ ...addForm, imageUrl: val });
-                          if (val.startsWith('data:image/')) {
-                            uploadDataUrlToStorage(val, false);
-                          }
-                        }}
-                        className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
-                      />
+                      {addForm.imageUrl ? (
+                        <div className="flex-1 flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="text-slate-700 font-medium truncate">
+                              {addForm.imageUrl.startsWith('data:')
+                                ? 'Local Photo Selected'
+                                : addForm.imageUrl.includes('supabase.co') || addForm.imageUrl.includes('Azwari_Product_Images')
+                                  ? 'Cloud CDN Image Connected'
+                                  : addForm.imageUrl.length > 35
+                                    ? addForm.imageUrl.substring(0, 32) + '...'
+                                    : addForm.imageUrl}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAddForm({ ...addForm, imageUrl: '' })}
+                            className="text-[11px] text-slate-500 hover:text-rose-600 font-semibold ml-2 shrink-0 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="Paste image URL (https://...)"
+                          value={addForm.imageUrl}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setAddForm({ ...addForm, imageUrl: val });
+                            if (val.startsWith('data:image/')) {
+                              uploadDataUrlToStorage(val, false);
+                            }
+                          }}
+                          className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
+                        />
+                      )}
                       {addForm.imageUrl?.startsWith('data:image/') && !isUploadingAddImage && (
                         <button
                           type="button"
@@ -1174,17 +1218,17 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                       </label>
                     </div>
 
-                    {/* Status notification for Supabase Storage */}
+                    {/* Status notification */}
                     {isUploadingAddImage && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
-                        <span>Sending to backend and saving to Supabase Storage (Azwari_Product_Images)...</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                        <span>Uploading image to secure cloud CDN...</span>
                       </div>
                     )}
-                    {!isUploadingAddImage && addForm.imageUrl && addForm.imageUrl.includes('Azwari_Product_Images') && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-medium">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        <span>Saved in Supabase Storage Bucket: <strong>Azwari_Product_Images</strong></span>
+                    {!isUploadingAddImage && addForm.imageUrl && !addForm.imageUrl.startsWith('data:') && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Image uploaded successfully</span>
                       </div>
                     )}
                     {uploadError && (
@@ -1441,19 +1485,43 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
 
                   <div className="flex-1 space-y-2 w-full">
                     <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="Paste image URL (https://...)"
-                        value={editForm.imageUrl || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEditForm({ ...editForm, imageUrl: val });
-                          if (val.startsWith('data:image/')) {
-                            uploadDataUrlToStorage(val, true);
-                          }
-                        }}
-                        className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
-                      />
+                      {editForm.imageUrl ? (
+                        <div className="flex-1 flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="text-slate-700 font-medium truncate">
+                              {editForm.imageUrl.startsWith('data:')
+                                ? 'Local Photo Selected'
+                                : editForm.imageUrl.includes('supabase.co') || editForm.imageUrl.includes('Azwari_Product_Images')
+                                  ? 'Cloud CDN Image Connected'
+                                  : editForm.imageUrl.length > 35
+                                    ? editForm.imageUrl.substring(0, 32) + '...'
+                                    : editForm.imageUrl}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditForm({ ...editForm, imageUrl: '' })}
+                            className="text-[11px] text-slate-500 hover:text-rose-600 font-semibold ml-2 shrink-0 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="Paste image URL (https://...)"
+                          value={editForm.imageUrl || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditForm({ ...editForm, imageUrl: val });
+                            if (val.startsWith('data:image/')) {
+                              uploadDataUrlToStorage(val, true);
+                            }
+                          }}
+                          className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
+                        />
+                      )}
                       {editForm.imageUrl?.startsWith('data:image/') && !isUploadingEditImage && (
                         <button
                           type="button"
@@ -1495,17 +1563,17 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                       </label>
                     </div>
 
-                    {/* Status notification for Supabase Storage */}
+                    {/* Status notification */}
                     {isUploadingEditImage && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200">
                         <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
-                        <span>Sending to backend and saving to Supabase Storage (Azwari_Product_Images)...</span>
+                        <span>Uploading image to secure cloud CDN...</span>
                       </div>
                     )}
-                    {!isUploadingEditImage && editForm.imageUrl && editForm.imageUrl.includes('Azwari_Product_Images') && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-medium">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        <span>Saved in Supabase Storage Bucket: <strong>Azwari_Product_Images</strong></span>
+                    {!isUploadingEditImage && editForm.imageUrl && !editForm.imageUrl.startsWith('data:') && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Image uploaded successfully</span>
                       </div>
                     )}
                     {uploadError && (

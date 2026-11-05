@@ -88,11 +88,10 @@ uploadRouter.post('/product-image', async (req: Request, res: Response) => {
       });
 
     if (uploadError) {
-      console.error('[STORAGE UPLOAD ERROR] Supabase Storage upload failed:', uploadError);
+      console.error('[STORAGE UPLOAD ERROR]', uploadError);
       return res.status(500).json({
         success: false,
-        error: `Supabase Storage upload failed: ${uploadError.message}`,
-        details: uploadError,
+        error: 'Image upload failed. Please try again.',
       });
     }
 
@@ -103,13 +102,12 @@ uploadRouter.post('/product-image', async (req: Request, res: Response) => {
 
     const publicUrl = urlData.publicUrl;
 
-    console.log(`[STORAGE] Uploaded product image to ${BUCKET_NAME}/${storagePath} (${buffer.length} bytes)`);
+    console.log(`[STORAGE] Uploaded product image to ${storagePath} (${buffer.length} bytes)`);
 
     return res.status(200).json({
       success: true,
-      message: 'Product image successfully uploaded to Supabase Storage',
+      message: 'Image uploaded successfully',
       imageUrl: publicUrl,
-      bucket: BUCKET_NAME,
       path: storagePath,
       sizeBytes: buffer.length,
       mimeType,
@@ -205,17 +203,15 @@ uploadRouter.get('/bucket-info', async (_req: Request, res: Response) => {
   try {
     const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
     if (error) {
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(500).json({ success: false, error: 'Storage health check failed' });
     }
 
     const targetBucket = buckets?.find((b) => b.name === BUCKET_NAME);
     return res.status(200).json({
       success: true,
-      bucketName: BUCKET_NAME,
       isConfigured: !!targetBucket,
-      bucketDetails: targetBucket || null,
     });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Storage health check error' });
   }
 });
