@@ -75,7 +75,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const verifyBusinessMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => businessesApi.verify(id, status),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['businesses'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['businesses'] });
+      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['sms'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-funnels'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-fees'] });
+    },
   });
 
   const addPaymentAccountMutation = useMutation({

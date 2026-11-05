@@ -389,6 +389,21 @@ model WaitlistEntry {
   invitedAt         DateTime?
 }
 
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  eventType String // page_view | app_download | supplier_signup | agent_signup | product_uploaded | order_placed
+  page      String?
+  device    String? // mobile | desktop | pwa | ios | android
+  userId    String?
+  entityId  String?
+  metadata  Json?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+}
+
 model IdempotencyRecord {
   id           String   @id @default(uuid())
   key          String   @unique

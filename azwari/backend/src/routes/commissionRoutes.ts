@@ -4,6 +4,7 @@ import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/au
 import { validateBody, SettleCommissionsSchema } from '../middleware/zodValidators.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
 import { cacheService } from '../services/cacheService.js';
+import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 
 export const commissionRouter = Router();
 
@@ -405,6 +406,286 @@ commissionRouter.post(
     } catch (err: any) {
       console.error('[Settle Platform Fee Error]', err);
       res.status(500).json({ success: false, error: err.message || 'Failed to settle platform fee' });
+    }
+  }
+);
+
+/**
+ * GET /api/commissions/platform-fees-summary
+ * Comprehensive breakdown of which suppliers paid the 20% platform fee and who hasn't,
+ * plus all commission payouts showing who got paid.
+ */
+commissionRouter.get(
+  '/platform-fees-summary',
+  requireAuth,
+  requireRole('admin'),
+  async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const cacheKey = 'cache:commissions:platform-fees-summary';
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.status(200).json(cached);
+        return;
+      }
+
+      // Fetch all businesses, orders, fee ledgers, and settlement batches
+      const [businesses, orders, feeLedgers, batches] = await Promise.all([
+        prisma.business.findMany({
+          select: {
+            id: true,
+            name: true,
+            tradeName: true,
+            phone: true,
+            subcity: true,
+            tinNumber: true,
+          },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.order.findMany({
+          where: { status: { in: ['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'] } },
+          select: {
+            id: true,
+            orderNumber: true,
+            businessId: true,
+            totalAmount: true,
+            commissionAmount: true,
+            platformFee: true,
+            status: true,
+            createdAt: true,
+          },
+        }),
+        prisma.platformFeeLedger.findMany({
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.settlementBatch.findMany({
+          include: {
+            salesPartner: {
+              select: {
+                id: true,
+                fullName: true,
+                phone: true,
+                subcity: true,
+                payoutAccountNumber: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      // Aggregate platform fees per supplier
+      const supplierFeeSummaries = businesses.map((biz) => {
+        const bizOrders = orders.filter((o) => o.businessId === biz.id);
+        const bizFeeLedgers = feeLedgers.filter((f) => f.businessId === biz.id);
+
+        const totalOrdersCount = bizOrders.length;
+        const totalGrossCommissions = bizOrders.reduce((sum, o) => sum + Number(o.commissionAmount || 0), 0);
+
+        // 20% platform cut on all agent commissions
+        const calculatedPlatformFeeIncurred = Math.round(totalGrossCommissions * 0.20);
+        // Also check ledger recorded amounts
+        const ledgerIncurred = bizFeeLedgers.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+        const platformFeeIncurred = Math.max(calculatedPlatformFeeIncurred, ledgerIncurred);
+
+        // Paid fees
+        const platformFeePaid = bizFeeLedgers
+          .filter((f) => f.status === 'PAID' || f.status === 'secured')
+          .reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+        const platformFeeOutstanding = Math.max(0, platformFeeIncurred - platformFeePaid);
+
+        let feeStatus: 'PAID_IN_FULL' | 'OUTSTANDING' | 'NO_ORDERS' = 'NO_ORDERS';
+        if (totalOrdersCount > 0) {
+          feeStatus = platformFeeOutstanding === 0 ? 'PAID_IN_FULL' : 'OUTSTANDING';
+        }
+
+        return {
+          businessId: biz.id,
+          name: biz.name,
+          tradeName: biz.tradeName,
+          phone: biz.phone,
+          subcity: biz.subcity,
+          tinNumber: biz.tinNumber,
+          totalOrdersCount,
+          totalGrossCommissions,
+          platformFeeIncurred,
+          platformFeePaid,
+          platformFeeOutstanding,
+          status: feeStatus,
+          ledgerEntries: bizFeeLedgers.map((f) => ({
+            id: f.id,
+            orderId: f.orderId,
+            orderNumber: f.orderNumber,
+            amount: Number(f.amount),
+            status: f.status,
+            createdAt: f.createdAt.toISOString(),
+          })),
+        };
+      });
+
+      // Format who got paid (Sales Agent Payouts)
+      const formattedPayouts = batches.map((b) => {
+        const netDisbursed = Number(b.totalAmount);
+        // Gross was net / 0.8, platform retained was gross - net (or net * 0.25)
+        const grossCommission = Math.round((netDisbursed / 0.8) * 100) / 100;
+        const platformFeeRetained = Math.round((grossCommission - netDisbursed) * 100) / 100;
+
+        return {
+          id: b.id,
+          batchNumber: b.batchNumber,
+          recipientName: b.salesPartner?.fullName || 'Sales Agent',
+          recipientPhone: b.salesPartner?.phone || 'N/A',
+          recipientSubcity: b.salesPartner?.subcity || 'Addis Ababa',
+          salesPartnerId: b.salesPartnerId,
+          grossCommission,
+          netDisbursed,
+          platformFeeRetained,
+          payoutMethod: b.payoutMethod,
+          destinationAccount: b.destinationAccount,
+          transactionReference: b.transactionReference || 'REF-VERIFIED',
+          status: b.status,
+          settledAt: b.settledAt ? b.settledAt.toISOString() : b.createdAt.toISOString(),
+        };
+      });
+
+      // Overall Totals
+      const totalIncurred = supplierFeeSummaries.reduce((sum, s) => sum + s.platformFeeIncurred, 0);
+      const totalPaid = supplierFeeSummaries.reduce((sum, s) => sum + s.platformFeePaid, 0);
+      const totalOutstanding = supplierFeeSummaries.reduce((sum, s) => sum + s.platformFeeOutstanding, 0);
+      const totalDisbursedToAgents = formattedPayouts.reduce((sum, p) => sum + p.netDisbursed, 0);
+
+      const payload = {
+        success: true,
+        totals: {
+          totalPlatformFeesIncurred: totalIncurred,
+          totalPlatformFeesPaid: totalPaid,
+          totalPlatformFeesOutstanding: totalOutstanding,
+          totalDisbursedToAgents,
+          suppliersCount: supplierFeeSummaries.length,
+          suppliersPaidCount: supplierFeeSummaries.filter((s) => s.status === 'PAID_IN_FULL').length,
+          suppliersOutstandingCount: supplierFeeSummaries.filter((s) => s.status === 'OUTSTANDING').length,
+        },
+        suppliers: supplierFeeSummaries,
+        payouts: formattedPayouts,
+      };
+
+      await cacheService.set(cacheKey, payload, 30);
+      res.status(200).json(payload);
+    } catch (err: any) {
+      console.error('[Platform Fees Summary Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to fetch platform fees summary' });
+    }
+  }
+);
+
+/**
+ * POST /api/commissions/mark-supplier-fee-paid
+ * Admin marks a supplier's platform fee balance as paid
+ */
+commissionRouter.post(
+  '/mark-supplier-fee-paid',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const user = req.user!;
+      const { businessId, amount, transactionReference = 'ADMIN-VERIFIED' } = req.body;
+
+      if (!businessId) {
+        res.status(400).json({ success: false, error: 'businessId is required' });
+        return;
+      }
+
+      const business = await prisma.business.findUnique({ where: { id: businessId } });
+      if (!business) {
+        res.status(404).json({ success: false, error: 'Business not found' });
+        return;
+      }
+
+      // Mark all accrued fee ledgers for this business as PAID
+      const updated = await prisma.platformFeeLedger.updateMany({
+        where: { businessId, status: 'accrued' },
+        data: { status: 'PAID' },
+      });
+
+      // If no fee ledgers existed, create one representing this settlement
+      if (updated.count === 0 && amount && amount > 0) {
+        await prisma.platformFeeLedger.create({
+          data: {
+            orderId: `fee_settle_${Date.now()}`,
+            orderNumber: `FEE-${Date.now().toString().slice(-6)}`,
+            businessId,
+            amount,
+            status: 'PAID',
+          },
+        });
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          actorRole: user.role,
+          actorName: user.fullName || 'Admin Finance Officer',
+          action: 'MARK_PLATFORM_FEE_PAID',
+          entityType: 'PlatformFeeLedger',
+          entityId: businessId,
+          businessId,
+          description: `Platform fee marked as PAID for supplier "${business.name}" (Amount: ETB ${amount || 'full balance'}, Ref: ${transactionReference}).`,
+        },
+      });
+
+      await cacheService.delPattern('cache:commissions:*');
+      realtimeEmitter.emit('change', { type: 'PLATFORM_FEE_SETTLED', businessId });
+
+      res.status(200).json({
+        success: true,
+        message: `Platform fee successfully marked as PAID for ${business.name}`,
+      });
+    } catch (err: any) {
+      console.error('[Mark Supplier Fee Paid Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to update fee status' });
+    }
+  }
+);
+
+/**
+ * POST /api/commissions/send-fee-reminder
+ * Admin sends polite SMS reminder to supplier regarding overdue 20% platform fee
+ */
+commissionRouter.post(
+  '/send-fee-reminder',
+  requireAuth,
+  requireRole('admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { businessId, amount } = req.body;
+
+      if (!businessId) {
+        res.status(400).json({ success: false, error: 'businessId is required' });
+        return;
+      }
+
+      const business = await prisma.business.findUnique({ where: { id: businessId } });
+      if (!business || !business.phone) {
+        res.status(404).json({ success: false, error: 'Business or phone not found' });
+        return;
+      }
+
+      const messageBody = `Azwari Merchant Notice: Dear ${business.name}, you have an outstanding 20% platform commission fee of ETB ${Number(amount || 0).toLocaleString()} for fulfilled orders. Please settle via Telebirr or CBE to keep your merchant listing active. Thank you!`;
+
+      await SmsEthiopiaService.sendSms({
+        recipientPhone: business.phone,
+        messageBody,
+        orderNumber: `REMIND-${businessId.substring(0, 8)}`,
+        templateName: 'platform_fee_reminder',
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Fee payment reminder sent to ${business.name} (${business.phone})`,
+      });
+    } catch (err: any) {
+      console.error('[Send Fee Reminder Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to send reminder' });
     }
   }
 );

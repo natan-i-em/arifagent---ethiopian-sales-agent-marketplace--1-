@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Download, X, Share, Layers } from 'lucide-react';
+import { analyticsApi } from '@/lib/api';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -63,6 +64,12 @@ export function InstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setShowPrompt(false);
+      analyticsApi.track({
+        eventType: 'app_download',
+        page: typeof window !== 'undefined' ? window.location.pathname : '/',
+        device: isIOS ? 'ios' : 'pwa',
+        metadata: { outcome: 'accepted' },
+      });
     }
     setDeferredPrompt(null);
   };

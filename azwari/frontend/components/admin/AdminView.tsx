@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { AdminSidebar, AdminTab } from './AdminSidebar';
+import { commissionsApi, analyticsApi } from '../../lib/api';
 import { 
   ShieldCheck, 
   Building2, 
@@ -11,31 +13,37 @@ import {
   FileText, 
   CheckCircle2, 
   XCircle, 
-  Search,
-  DollarSign,
-  Activity,
-  Users,
-  TrendingUp,
-  BarChart3,
-  PieChart,
-  ShoppingBag,
-  MapPin,
-  Clock,
-  ArrowUpRight,
-  Filter,
-  CreditCard,
-  UserCheck,
-  UserX,
-  Phone,
-  Mail,
-  Send,
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  Coins,
-  Award,
-  Sparkles,
-  RefreshCw
+  Search, 
+  DollarSign, 
+  Activity, 
+  Users, 
+  TrendingUp, 
+  BarChart3, 
+  PieChart, 
+  ShoppingBag, 
+  MapPin, 
+  Clock, 
+  ArrowUpRight, 
+  Filter, 
+  CreditCard, 
+  UserCheck, 
+  UserX, 
+  Phone, 
+  Mail, 
+  Send, 
+  ExternalLink, 
+  ChevronRight, 
+  Layers, 
+  Coins, 
+  Award, 
+  Sparkles, 
+  RefreshCw,
+  Flame,
+  Smartphone,
+  Globe,
+  Zap,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 
 interface UnifiedUser {
@@ -75,7 +83,7 @@ export const AdminView: React.FC = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'funnels', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (validTabs.includes(tabParam)) return tabParam;
     }
     return 'analytics';
@@ -96,7 +104,7 @@ export const AdminView: React.FC = () => {
     const handleTabPop = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
-      const validTabs: AdminTab[] = ['analytics', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
+      const validTabs: AdminTab[] = ['analytics', 'funnels', 'users', 'verifications', 'waitlist', 'disputes', 'sms', 'audit', 'finances'];
       if (tabParam && validTabs.includes(tabParam)) setActiveTabState(tabParam);
     };
     window.addEventListener('popstate', handleTabPop);
@@ -107,11 +115,47 @@ export const AdminView: React.FC = () => {
     };
   }, []);
 
+  const queryClient = useQueryClient();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(null);
   const [disputeDecision, setDisputeDecision] = useState('');
   const [disputeNote, setDisputeNote] = useState('');
   const [auditSearch, setAuditSearch] = useState('');
+
+  // Interactive feedback toast
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
+
+  // Fast action loading indicators
+  const [verifyingBizId, setVerifyingBizId] = useState<string | null>(null);
+  const [invitingWaitlistId, setInvitingWaitlistId] = useState<string | null>(null);
+  const [nudgeLoadingId, setNudgeLoadingId] = useState<string | null>(null);
+
+  // Finances & Platform Fee sub-tabs & filters
+  const [feeSubTab, setFeeSubTab] = useState<'suppliers' | 'payouts'>('suppliers');
+  const [supplierFeeFilter, setSupplierFeeFilter] = useState<'all' | 'outstanding' | 'paid'>('all');
+  const [supplierFeeSearch, setSupplierFeeSearch] = useState('');
+  const [payoutSearch, setPayoutSearch] = useState('');
+  const [markingPaidBizId, setMarkingPaidBizId] = useState<string | null>(null);
+  const [remindingBizId, setRemindingBizId] = useState<string | null>(null);
+
+  // Queries for funnels and platform fees
+  const { data: funnelsData, isLoading: isLoadingFunnels, refetch: refetchFunnels } = useQuery({
+    queryKey: ['analytics-funnels'],
+    queryFn: () => analyticsApi.getFunnels(),
+    staleTime: 30000,
+  });
+
+  const { data: platformFeesData, isLoading: isLoadingFees, refetch: refetchFees } = useQuery({
+    queryKey: ['platform-fees-summary'],
+    queryFn: () => commissionsApi.getPlatformFeesSummary(),
+    staleTime: 20000,
+  });
 
   // Users Directory state
   const [dbUsers, setDbUsers] = useState<any[]>([]);
@@ -415,14 +459,14 @@ export const AdminView: React.FC = () => {
 
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 font-medium">Platform Fee (2%)</span>
+                    <span className="text-xs text-slate-500 font-medium">Platform Fee (20% Cut)</span>
                     <Coins className="w-4 h-4 text-purple-600" />
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
-                    ETB {totalPlatformFees.toLocaleString()}
+                    ETB {(platformFeesData?.totals?.totalPlatformFeesIncurred || totalPlatformFees).toLocaleString()}
                   </div>
                   <span className="text-[11px] text-slate-500 mt-1 block">
-                    Marketplace gross revenue
+                    20% retained from agent commissions
                   </span>
                 </div>
 
@@ -705,6 +749,540 @@ export const AdminView: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Fast-Moving Products Leaderboard */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-4">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      Fast-Moving Ethiopian Products (Sales Velocity & Inventory Runway)
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Ranked by units sold, daily turnover velocity, and estimated days of stock remaining.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                      {funnelsData?.productVelocity?.fastMovingProducts?.length || 0} Ranked Items
+                    </span>
+                    <button
+                      onClick={() => setActiveTab('funnels')}
+                      className="text-xs font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-1 hover:underline ml-1"
+                    >
+                      <span>Deep Funnels</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3 px-3">Rank</th>
+                        <th className="py-3 px-3">Product Name</th>
+                        <th className="py-3 px-3">Merchant / Supplier</th>
+                        <th className="py-3 px-3 text-right">Units Sold</th>
+                        <th className="py-3 px-3 text-right">Daily Velocity</th>
+                        <th className="py-3 px-3 text-center">Velocity Tier</th>
+                        <th className="py-3 px-3 text-right">Stock & Runway</th>
+                        <th className="py-3 px-3 text-right">Gross GMV</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(!funnelsData?.productVelocity?.fastMovingProducts || funnelsData.productVelocity.fastMovingProducts.length === 0) ? (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
+                            No sales velocity records logged yet. When agents confirm customer orders, velocity analytics will populate here.
+                          </td>
+                        </tr>
+                      ) : (
+                        funnelsData.productVelocity.fastMovingProducts.map((p, idx) => (
+                          <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-3 px-3 font-mono font-bold text-slate-900">
+                              <span className={`w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] ${
+                                idx === 0 ? 'bg-amber-100 text-amber-900 font-bold border border-amber-300' :
+                                idx === 1 ? 'bg-slate-200 text-slate-800 font-bold' :
+                                idx === 2 ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                                'bg-slate-50 text-slate-600'
+                              }`}>
+                                #{idx + 1}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="font-bold text-slate-900">{p.name}</div>
+                              <div className="text-[10px] text-slate-500 font-mono">SKU: {p.sku || p.id.substring(0, 8)} · {p.category}</div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="text-slate-800 font-medium">{p.supplierName}</div>
+                              <div className="text-[10px] text-slate-400">ETB {Number(p.unitPrice).toLocaleString()} / unit</div>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                              {p.totalUnitsSold} units
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-emerald-700">
+                              {p.dailyVelocity} / day
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                p.velocityTier === 'HIGH'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                  : p.velocityTier === 'MODERATE'
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}>
+                                {p.velocityTier === 'HIGH' ? '🔥 High Velocity' : p.velocityTier === 'MODERATE' ? '⚡ Moderate' : '📦 Steady'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono">
+                              <div className="text-slate-900 font-semibold">{p.currentStock} in stock</div>
+                              <div className={`text-[10px] font-semibold ${
+                                p.isOutOfStock ? 'text-rose-600' : p.isStockLow ? 'text-amber-600' : 'text-slate-500'
+                              }`}>
+                                {p.isOutOfStock
+                                  ? 'Out of Stock'
+                                  : p.daysOfSupply !== null
+                                  ? `~${p.daysOfSupply}d runway`
+                                  : 'Adequate stock'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                              ETB {Number(p.totalRevenue).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: USER JOURNEY & PERFORMANCE FUNNELS */}
+          {activeTab === 'funnels' && (
+            <div className="space-y-6">
+              {/* Funnels Header */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                    User Journey, Acquisition & Time-to-Action Analytics
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Real-time telemetry tracking visitor traffic, PWA app installs, and time-to-first-action for Ethiopian merchants and sales agents.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    refetchFunnels();
+                    setToastMsg({ text: 'Updated analytics funnels metrics', type: 'success' });
+                  }}
+                  disabled={isLoadingFunnels}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shrink-0 shadow-2xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFunnels ? 'animate-spin text-indigo-600' : ''}`} />
+                  <span>Refresh Telemetry</span>
+                </button>
+              </div>
+
+              {/* Acquisition & Funnel KPI Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Website Visits */}
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Website Visits</span>
+                    <Globe className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    {(funnelsData?.traffic?.totalPageViews || 0).toLocaleString()}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                    <span>+{funnelsData?.traffic?.todayViews || 0} past 24h</span>
+                    <span className="font-semibold text-slate-700">{funnelsData?.traffic?.uniqueVisitors || 0} unique devices</span>
+                  </div>
+                </div>
+
+                {/* 2. PWA App Downloads */}
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">PWA App Installs</span>
+                    <Smartphone className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    {(funnelsData?.traffic?.appDownloads || 0).toLocaleString()}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                    <span>+{funnelsData?.traffic?.todayDownloads || 0} past 24h</span>
+                    <span className="font-semibold text-emerald-700">{funnelsData?.traffic?.downloadConversionRate || 0}% conversion</span>
+                  </div>
+                </div>
+
+                {/* 3. Supplier Time-to-Action */}
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Supplier Time-to-Product</span>
+                    <Clock className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    {funnelsData?.supplierMetrics?.medianTimeToCatalog || 'N/A'}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                    <span>Median (Signup → 1st item)</span>
+                    <span className="font-semibold text-purple-700">{funnelsData?.supplierMetrics?.activationRate || 0}% active</span>
+                  </div>
+                </div>
+
+                {/* 4. Agent Time-to-Action */}
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Agent Time-to-Sale</span>
+                    <Zap className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    {funnelsData?.agentMetrics?.medianTimeToFirstSale || 'N/A'}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                    <span>Median (Signup → 1st sale)</span>
+                    <span className="font-semibold text-amber-700">{funnelsData?.agentMetrics?.activationRate || 0}% closed</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Two-Column Dual Funnel Stage Visualizers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left: Supplier Activation Funnel */}
+                <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-purple-700" />
+                        Supplier Activation Funnel
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Progression from supplier registration to catalogue upload and order dispatch.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
+                      {funnelsData?.supplierMetrics?.activeSuppliersCount || 0} / {funnelsData?.supplierMetrics?.totalSuppliers || 0} Activated
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    {(funnelsData?.supplierMetrics?.funnel || [
+                      { stage: 'Registered Suppliers', count: businesses.length, percentage: 100 },
+                      { stage: 'Uploaded >= 1 Product', count: businesses.filter(b => products.some(p => p.supplierId === b.id)).length, percentage: 75 },
+                      { stage: 'Received Fulfillment Order', count: businesses.filter(b => orders.some(o => (o as any).businessId === b.id || o.supplierId === b.id)).length, percentage: 50 },
+                    ]).map((f, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-800">{f.stage}</span>
+                          <span className="font-mono font-bold text-slate-900">{f.count} ({f.percentage}%)</span>
+                        </div>
+                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(4, Math.min(100, f.percentage))}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 grid grid-cols-2 gap-2 text-xs border-t border-slate-100">
+                    <div className="p-2.5 rounded-xl bg-slate-50">
+                      <span className="text-[11px] text-slate-500 block">Fast Starters (&lt;24h)</span>
+                      <span className="font-mono font-bold text-slate-900 text-sm">{funnelsData?.supplierMetrics?.fastSuppliersCount || 0}</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50">
+                      <span className="text-[11px] text-slate-500 block">Catalog Stalled (0 Items)</span>
+                      <span className="font-mono font-bold text-rose-700 text-sm">{funnelsData?.supplierMetrics?.stalledSuppliersCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Sales Agent Sales Funnel */}
+                <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-amber-600" />
+                        Sales Agent Velocity Funnel
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Conversion rate of salespersons from registration to first sale and repeat sales.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                      {funnelsData?.agentMetrics?.activeAgentsCount || 0} / {funnelsData?.agentMetrics?.totalAgents || 0} Closed Sales
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    {(funnelsData?.agentMetrics?.funnel || [
+                      { stage: 'Registered Sales Agents', count: salesPartners.length, percentage: 100 },
+                      { stage: 'Closed 1st Verified Sale', count: salesPartners.filter(s => orders.some(o => o.salespersonId === s.id)).length, percentage: 65 },
+                      { stage: 'Repeat Producers (3+ Sales)', count: salesPartners.filter(s => orders.filter(o => o.salespersonId === s.id).length >= 3).length, percentage: 35 },
+                    ]).map((f, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-800">{f.stage}</span>
+                          <span className="font-mono font-bold text-slate-900">{f.count} ({f.percentage}%)</span>
+                        </div>
+                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(4, Math.min(100, f.percentage))}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 grid grid-cols-2 gap-2 text-xs border-t border-slate-100">
+                    <div className="p-2.5 rounded-xl bg-slate-50">
+                      <span className="text-[11px] text-slate-500 block">Super Sellers (&lt;24h)</span>
+                      <span className="font-mono font-bold text-slate-900 text-sm">{funnelsData?.agentMetrics?.fastAgentsCount || 0}</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50">
+                      <span className="text-[11px] text-slate-500 block">Onboarding (0 Sales)</span>
+                      <span className="font-mono font-bold text-amber-700 text-sm">{funnelsData?.agentMetrics?.stalledAgentsCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier Time-to-Action Ledger Table */}
+              <div className="glass-card rounded-3xl border border-white/90 overflow-hidden space-y-3">
+                <div className="px-6 py-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-700" />
+                      Supplier Time-to-Action Performance (Signup → 1st Product Upload)
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Detailed duration tracking how fast merchants upload their initial inventory catalog.
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                    {funnelsData?.supplierMetrics?.suppliers?.length || businesses.length} Merchants Tracked
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4">Merchant Name</th>
+                        <th className="py-3 px-4">Subcity & Contact</th>
+                        <th className="py-3 px-4">Registered On</th>
+                        <th className="py-3 px-4">1st Product Added</th>
+                        <th className="py-3 px-4 text-right">Time-to-Upload</th>
+                        <th className="py-3 px-4 text-center">Catalog Size</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(!funnelsData?.supplierMetrics?.suppliers || funnelsData.supplierMetrics.suppliers.length === 0) ? (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
+                            No supplier funnels logged yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        funnelsData.supplierMetrics.suppliers.map((s) => (
+                          <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="font-bold text-slate-900">{s.name}</div>
+                              {s.tradeName && <div className="text-[11px] text-slate-500">{s.tradeName}</div>}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="text-slate-800">{s.subcity} Subcity</div>
+                              <div className="text-[11px] font-mono text-slate-500">{s.phone}</div>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600">
+                              {new Date(s.registeredAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {s.hasUploadedProduct ? (
+                                <div>
+                                  <div className="font-medium text-slate-900 truncate max-w-xs">{s.firstProductName || 'Catalog Item'}</div>
+                                  <div className="text-[10px] font-mono text-slate-400">
+                                    {s.firstProductAt ? new Date(s.firstProductAt).toLocaleDateString() : 'Active'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic">None yet</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold">
+                              <span className={s.hasUploadedProduct ? 'text-purple-700' : 'text-slate-500'}>
+                                {s.timeToActionFormatted}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-900">
+                              {s.catalogSize} items
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${
+                                s.hasUploadedProduct
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                              }`}>
+                                {s.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              {!s.hasUploadedProduct ? (
+                                <button
+                                  onClick={async () => {
+                                    setNudgeLoadingId(`sup_${s.id}`);
+                                    try {
+                                      const res = await analyticsApi.sendNudge('supplier', s.id);
+                                      setToastMsg({ text: res.message || `Sent reminder SMS to ${s.name}!`, type: 'success' });
+                                    } catch {
+                                      setToastMsg({ text: `Failed to nudge ${s.name}`, type: 'error' });
+                                    } finally {
+                                      setNudgeLoadingId(null);
+                                    }
+                                  }}
+                                  disabled={nudgeLoadingId === `sup_${s.id}`}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-purple-700 hover:bg-purple-800 text-white transition-colors shadow-2xs"
+                                >
+                                  <Send className="w-3 h-3 text-purple-200" />
+                                  <span>{nudgeLoadingId === `sup_${s.id}` ? 'Sending...' : 'Nudge via SMS'}</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-emerald-700 flex items-center justify-end gap-1">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" /> Ready
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Sales Agent Time-to-Sale Ledger Table */}
+              <div className="glass-card rounded-3xl border border-white/90 overflow-hidden space-y-3">
+                <div className="px-6 py-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                      Sales Agent Time-to-Sale Performance (Signup → 1st Order Closed)
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Elapsed duration for newly enrolled sales agents to close their first verified customer sale.
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                    {funnelsData?.agentMetrics?.agents?.length || salesPartners.length} Agents Tracked
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4">Sales Agent Name</th>
+                        <th className="py-3 px-4">Referral Code & Phone</th>
+                        <th className="py-3 px-4">Registered On</th>
+                        <th className="py-3 px-4">1st Sale Order</th>
+                        <th className="py-3 px-4 text-right">Time-to-Sale</th>
+                        <th className="py-3 px-4 text-center">Orders Closed</th>
+                        <th className="py-3 px-4 text-right">Attributed GMV</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(!funnelsData?.agentMetrics?.agents || funnelsData.agentMetrics.agents.length === 0) ? (
+                        <tr>
+                          <td colSpan={9} className="py-8 text-center text-slate-500 text-xs">
+                            No agent sales funnels logged yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        funnelsData.agentMetrics.agents.map((a) => (
+                          <tr key={a.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-3.5 px-4 font-bold text-slate-900">
+                              {a.fullName}
+                            </td>
+                            <td className="py-3.5 px-4 font-mono">
+                              <div className="font-bold text-indigo-700">{a.referralCode}</div>
+                              <div className="text-[11px] text-slate-500">{a.phone}</div>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600">
+                              {new Date(a.registeredAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3.5 px-4 font-mono">
+                              {a.hasMadeSale ? (
+                                <div>
+                                  <div className="font-bold text-slate-900">#{a.firstSaleOrderNumber}</div>
+                                  <div className="text-[10px] text-slate-400">{a.firstSaleAt ? new Date(a.firstSaleAt).toLocaleDateString() : 'Verified'}</div>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic">No sales yet</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold">
+                              <span className={a.hasMadeSale ? 'text-emerald-700' : 'text-slate-500'}>
+                                {a.timeToSaleFormatted}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-900">
+                              {a.totalSalesCount}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
+                              ETB {Number(a.totalAttributedSales).toLocaleString()}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${
+                                a.hasMadeSale
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                              }`}>
+                                {a.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              {!a.hasMadeSale ? (
+                                <button
+                                  onClick={async () => {
+                                    setNudgeLoadingId(`agt_${a.id}`);
+                                    try {
+                                      const res = await analyticsApi.sendNudge('agent', a.id);
+                                      setToastMsg({ text: res.message || `Sent motivation SMS to ${a.fullName}!`, type: 'success' });
+                                    } catch {
+                                      setToastMsg({ text: `Failed to motivate ${a.fullName}`, type: 'error' });
+                                    } finally {
+                                      setNudgeLoadingId(null);
+                                    }
+                                  }}
+                                  disabled={nudgeLoadingId === `agt_${a.id}`}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white transition-colors shadow-2xs"
+                                >
+                                  <Send className="w-3 h-3 text-indigo-200" />
+                                  <span>{nudgeLoadingId === `agt_${a.id}` ? 'Sending...' : 'Motivate SMS'}</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-emerald-700 flex items-center justify-end gap-1">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" /> Active Producer
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
@@ -984,18 +1562,35 @@ export const AdminView: React.FC = () => {
                           <td className="py-3.5 px-4 text-right space-x-1.5">
                             {biz.verificationStatus !== 'verified' ? (
                               <button
-                                onClick={() => verifyBusiness(biz.id, 'verified')}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-2xs"
+                                onClick={async () => {
+                                  setVerifyingBizId(biz.id);
+                                  try {
+                                    await verifyBusiness(biz.id, 'verified');
+                                    setToastMsg({ text: `✓ Verified ${biz.name} KYC and dispatched onboarding invitation SMS!`, type: 'success' });
+                                  } catch {
+                                    setToastMsg({ text: `Failed to verify ${biz.name}`, type: 'error' });
+                                  } finally {
+                                    setVerifyingBizId(null);
+                                  }
+                                }}
+                                disabled={verifyingBizId === biz.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors"
                               >
-                                Approve KYC
+                                <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
+                                <span>{verifyingBizId === biz.id ? 'Verifying & Inviting...' : '1-Click Verify & Invite'}</span>
                               </button>
                             ) : (
-                              <button
-                                onClick={() => verifyBusiness(biz.id, 'pending')}
-                                className="px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
-                              >
-                                Re-audit
-                              </button>
+                              <div className="inline-flex items-center gap-2">
+                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-600" /> Verified & Active
+                                </span>
+                                <button
+                                  onClick={() => verifyBusiness(biz.id, 'pending')}
+                                  className="px-2.5 py-1 text-[11px] font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+                                >
+                                  Re-audit
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -1088,12 +1683,53 @@ export const AdminView: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             {item.status !== 'invited' ? (
-                              <button
-                                onClick={() => inviteWaitlistEntry(item.id)}
-                                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs"
-                              >
-                                Send Invitation SMS
-                              </button>
+                              (() => {
+                                const matchedBiz = businesses.find(
+                                  (b) => b.phone === item.phone || (b.name && b.name.toLowerCase() === item.fullName.toLowerCase())
+                                );
+                                if (item.role === 'supplier' && matchedBiz && matchedBiz.verificationStatus !== 'verified') {
+                                  return (
+                                    <button
+                                      onClick={async () => {
+                                        setInvitingWaitlistId(item.id);
+                                        try {
+                                          await verifyBusiness(matchedBiz.id, 'verified');
+                                          await inviteWaitlistEntry(item.id);
+                                          setToastMsg({ text: `✓ 1-Click Verified ${matchedBiz.name} KYC and dispatched invitation SMS!`, type: 'success' });
+                                        } catch {
+                                          setToastMsg({ text: `Failed to verify ${matchedBiz.name}`, type: 'error' });
+                                        } finally {
+                                          setInvitingWaitlistId(null);
+                                        }
+                                      }}
+                                      disabled={invitingWaitlistId === item.id}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
+                                      <span>{invitingWaitlistId === item.id ? 'Verifying...' : '1-Click Verify KYC & Invite'}</span>
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <button
+                                    onClick={async () => {
+                                      setInvitingWaitlistId(item.id);
+                                      try {
+                                        await inviteWaitlistEntry(item.id);
+                                        setToastMsg({ text: `✓ Dispatched onboarding invitation SMS to ${item.fullName}!`, type: 'success' });
+                                      } catch {
+                                        setToastMsg({ text: `Failed to invite ${item.fullName}`, type: 'error' });
+                                      } finally {
+                                        setInvitingWaitlistId(null);
+                                      }
+                                    }}
+                                    disabled={invitingWaitlistId === item.id}
+                                    className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-2xs"
+                                  >
+                                    {invitingWaitlistId === item.id ? 'Sending SMS...' : 'Send Invitation SMS'}
+                                  </button>
+                                );
+                              })()
                             ) : (
                               <span className="text-[11px] text-slate-800 font-semibold flex items-center justify-end gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-slate-900" /> Invited
@@ -1317,85 +1953,431 @@ export const AdminView: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 8: FINANCIAL HEALTH & ESCROW CLEARINGHOUSE */}
+          {/* TAB 8: 20% PLATFORM FEE & PAYOUTS CLEARINGHOUSE */}
           {activeTab === 'finances' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
-                <h2 className="text-base font-bold text-slate-900">
-                  Platform Take-Rate Revenue Ledger
-                </h2>
-                <p className="text-xs text-slate-500">
-                  The 2% platform fee charged on completed Ethiopian sales agent transactions.
-                </p>
+            <div className="space-y-6">
+              {/* Header & Policy Explainer */}
+              <div className="glass-card rounded-3xl border border-white/90 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-purple-700" />
+                    Platform Fee (20%) Take-Rate & Agent Disbursements
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    The platform retains a mandatory 20% cut from every sales agent commission earned on fulfilled orders (agents receive 80% net payout).
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    refetchFees();
+                    setToastMsg({ text: 'Updated platform fees and payouts ledger', type: 'success' });
+                  }}
+                  disabled={isLoadingFees}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shrink-0 shadow-2xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFees ? 'animate-spin text-purple-700' : ''}`} />
+                  <span>Refresh Financials</span>
+                </button>
+              </div>
 
-                <div className="space-y-2">
-                  {platformFeeLedger.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl border border-slate-200">
-                      No platform fees recorded yet. 2% GMV take-rate fees on fulfilled orders will be logged here.
-                    </div>
-                  ) : (
-                    platformFeeLedger.map((fee) => (
-                      <div
-                        key={fee.id}
-                        className="p-3 glass-card-subtle rounded-2xl border border-slate-200/80 flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <span className="font-mono font-bold text-slate-900">Order #{fee.orderNumber}</span>
-                          <span className="text-slate-500 block text-[11px]">
-                            Supplier: {fee.supplierName} (2% of GMV)
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-mono-numbers font-bold text-slate-900">
-                            ETB {fee.amount.toLocaleString()}
-                          </span>
-                          <span className="text-[10px] text-slate-700 font-semibold block capitalize">
-                            {fee.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+              {/* Financial KPI Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">20% Fees Incurred</span>
+                    <Coins className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    ETB {(platformFeesData?.totals?.totalPlatformFeesIncurred || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    Total 20% commission cut accrued
+                  </span>
+                </div>
+
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Fees Settled (Paid)</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-emerald-700">
+                    ETB {(platformFeesData?.totals?.totalPlatformFeesPaid || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    {platformFeesData?.totals?.suppliersPaidCount || 0} suppliers fully settled
+                  </span>
+                </div>
+
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Outstanding Due</span>
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-rose-700">
+                    ETB {(platformFeesData?.totals?.totalPlatformFeesOutstanding || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    {platformFeesData?.totals?.suppliersOutstandingCount || 0} suppliers owe balance
+                  </span>
+                </div>
+
+                <div className="glass-card p-5 rounded-3xl border border-white/90">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium">Disbursed to Agents</span>
+                    <DollarSign className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="font-mono-numbers font-bold text-2xl text-slate-900">
+                    ETB {(platformFeesData?.totals?.totalDisbursedToAgents || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    80% net payouts via Telebirr / CBE
+                  </span>
                 </div>
               </div>
 
-              <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
-                <h2 className="text-base font-bold text-slate-900">
-                  Settlement Batch History
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Cryptographically logged commission disbursements sent to agents via Telebirr & CBE.
-                </p>
-
-                <div className="space-y-2">
-                  {settlementBatches.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 text-xs glass-card-subtle rounded-2xl border border-slate-200">
-                      No settlement batches processed yet. Commission payouts to agents via Telebirr & CBE will be recorded here.
-                    </div>
-                  ) : (
-                    settlementBatches.map((batch) => (
-                      <div
-                        key={batch.id}
-                        className="p-3 glass-card-subtle rounded-2xl border border-slate-200/80 flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <span className="font-mono font-bold text-slate-900">{batch.batchNumber}</span>
-                          <span className="text-slate-500 block text-[11px]">
-                            Recipient: {batch.recipientName} ({batch.payoutMethod})
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-mono-numbers font-bold text-slate-900">
-                            ETB {batch.totalAmount.toLocaleString()}
-                          </span>
-                          <span className="text-[10px] text-slate-400 block font-mono">
-                            Ref: {batch.transactionReference}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+              {/* Sub-Tab Navigation Header */}
+              <div className="glass-card rounded-3xl border border-white/90 p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+                  <div className="flex items-center gap-2 p-1 glass-card-subtle rounded-2xl border border-slate-200/80">
+                    <button
+                      onClick={() => setFeeSubTab('suppliers')}
+                      className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                        feeSubTab === 'suppliers'
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🏢 Suppliers Fee Status (Paid vs Unpaid) ({platformFeesData?.suppliers?.length || 0})
+                    </button>
+                    <button
+                      onClick={() => setFeeSubTab('payouts')}
+                      className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                        feeSubTab === 'payouts'
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      💸 Sales Agent Payouts ("Who Got Paid") ({platformFeesData?.payouts?.length || 0})
+                    </button>
+                  </div>
                 </div>
+
+                {/* Sub-Tab 1: Suppliers Platform Fee Status */}
+                {feeSubTab === 'suppliers' && (
+                  <div className="space-y-4">
+                    {/* Filter and Search Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 overflow-x-auto">
+                        <button
+                          onClick={() => setSupplierFeeFilter('all')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+                            supplierFeeFilter === 'all'
+                              ? 'bg-purple-900 text-white'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          All Suppliers ({platformFeesData?.suppliers?.length || 0})
+                        </button>
+                        <button
+                          onClick={() => setSupplierFeeFilter('outstanding')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+                            supplierFeeFilter === 'outstanding'
+                              ? 'bg-rose-900 text-white'
+                              : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                          }`}
+                        >
+                          ⚠️ Outstanding Due ({platformFeesData?.suppliers?.filter((s) => s.status === 'OUTSTANDING').length || 0})
+                        </button>
+                        <button
+                          onClick={() => setSupplierFeeFilter('paid')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+                            supplierFeeFilter === 'paid'
+                              ? 'bg-emerald-900 text-white'
+                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                          }`}
+                        >
+                          ✓ Paid in Full ({platformFeesData?.suppliers?.filter((s) => s.status === 'PAID_IN_FULL').length || 0})
+                        </button>
+                      </div>
+
+                      <div className="relative min-w-[240px]">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search supplier, phone, or TIN..."
+                          value={supplierFeeSearch}
+                          onChange={(e) => setSupplierFeeSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-1 focus:ring-purple-700"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Suppliers Table */}
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200/80">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
+                          <tr>
+                            <th className="py-3 px-4">Supplier / Business</th>
+                            <th className="py-3 px-4">Contact & TIN</th>
+                            <th className="py-3 px-4 text-center">Fulfilled Orders</th>
+                            <th className="py-3 px-4 text-right">Gross Commissions</th>
+                            <th className="py-3 px-4 text-right">20% Fee Incurred</th>
+                            <th className="py-3 px-4 text-right">Fee Paid</th>
+                            <th className="py-3 px-4 text-right">Outstanding Due</th>
+                            <th className="py-3 px-4 text-center">Fee Status</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {(() => {
+                            const filtered = (platformFeesData?.suppliers || []).filter((s) => {
+                              if (supplierFeeFilter === 'outstanding' && s.status !== 'OUTSTANDING') return false;
+                              if (supplierFeeFilter === 'paid' && s.status !== 'PAID_IN_FULL') return false;
+                              if (supplierFeeSearch.trim()) {
+                                const q = supplierFeeSearch.toLowerCase();
+                                return (
+                                  s.name.toLowerCase().includes(q) ||
+                                  (s.phone && s.phone.includes(q)) ||
+                                  (s.tinNumber && s.tinNumber.includes(q))
+                                );
+                              }
+                              return true;
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={9} className="py-8 text-center text-slate-500 text-xs">
+                                    No supplier platform fee records found.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return filtered.map((s) => (
+                              <tr key={s.businessId} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3.5 px-4">
+                                  <div className="font-bold text-slate-900">{s.name}</div>
+                                  <div className="text-[11px] text-slate-500">{s.subcity || 'Addis Ababa'} Subcity</div>
+                                </td>
+                                <td className="py-3.5 px-4 font-mono">
+                                  <div className="text-slate-800">{s.phone || '—'}</div>
+                                  <div className="text-[10px] text-slate-400">TIN: {s.tinNumber || '—'}</div>
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-900">
+                                  {s.totalOrdersCount}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono text-slate-700">
+                                  ETB {Number(s.totalGrossCommissions).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold text-purple-700">
+                                  ETB {Number(s.platformFeeIncurred).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-700">
+                                  ETB {Number(s.platformFeePaid).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold">
+                                  <span className={s.platformFeeOutstanding > 0 ? 'text-rose-700' : 'text-slate-500'}>
+                                    ETB {Number(s.platformFeeOutstanding).toLocaleString()}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                    s.status === 'PAID_IN_FULL'
+                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                      : s.status === 'OUTSTANDING'
+                                      ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  }`}>
+                                    {s.status === 'PAID_IN_FULL'
+                                      ? '✓ Paid in Full'
+                                      : s.status === 'OUTSTANDING'
+                                      ? '⚠️ Unpaid'
+                                      : 'No Fees'}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                  {s.status === 'OUTSTANDING' ? (
+                                    <>
+                                      <button
+                                        onClick={async () => {
+                                          setMarkingPaidBizId(s.businessId);
+                                          try {
+                                            const res = await commissionsApi.markSupplierFeePaid(
+                                              s.businessId,
+                                              s.platformFeeOutstanding
+                                            );
+                                            await refetchFees();
+                                            setToastMsg({
+                                              text: res.message || `Platform fee marked as PAID for ${s.name}`,
+                                              type: 'success',
+                                            });
+                                          } catch {
+                                            setToastMsg({ text: `Failed to mark fee paid for ${s.name}`, type: 'error' });
+                                          } finally {
+                                            setMarkingPaidBizId(null);
+                                          }
+                                        }}
+                                        disabled={markingPaidBizId === s.businessId}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
+                                      >
+                                        <Check className="w-3 h-3" />
+                                        <span>{markingPaidBizId === s.businessId ? 'Saving...' : 'Mark Paid'}</span>
+                                      </button>
+
+                                      <button
+                                        onClick={async () => {
+                                          setRemindingBizId(s.businessId);
+                                          try {
+                                            const res = await commissionsApi.sendFeeReminder(
+                                              s.businessId,
+                                              s.platformFeeOutstanding
+                                            );
+                                            setToastMsg({
+                                              text: res.message || `Fee reminder sent to ${s.name}`,
+                                              type: 'success',
+                                            });
+                                          } catch {
+                                            setToastMsg({ text: `Failed to send reminder to ${s.name}`, type: 'error' });
+                                          } finally {
+                                            setRemindingBizId(null);
+                                          }
+                                        }}
+                                        disabled={remindingBizId === s.businessId}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors"
+                                      >
+                                        <Send className="w-3 h-3 text-purple-200" />
+                                        <span>{remindingBizId === s.businessId ? 'Sending...' : 'Reminder SMS'}</span>
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <span className="text-[11px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> All Settled
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-Tab 2: Sales Agent Payouts ("Who Got Paid") */}
+                {feeSubTab === 'payouts' && (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-emerald-600" />
+                          Sales Agent Payouts Disbursement Ledger ("Who Got Paid")
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Cryptographically logged net commission disbursements (80%) paid out to salespersons via Telebirr or CBE Bank.
+                        </p>
+                      </div>
+
+                      <div className="relative min-w-[240px]">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search agent name, phone, or batch #..."
+                          value={payoutSearch}
+                          onChange={(e) => setPayoutSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-1 focus:ring-purple-700"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200/80">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider text-[11px]">
+                          <tr>
+                            <th className="py-3 px-4">Recipient Sales Agent</th>
+                            <th className="py-3 px-4">Contact & Subcity</th>
+                            <th className="py-3 px-4">Batch #</th>
+                            <th className="py-3 px-4 text-right">Gross Commission</th>
+                            <th className="py-3 px-4 text-right">80% Net Disbursed</th>
+                            <th className="py-3 px-4 text-right">20% Platform Fee</th>
+                            <th className="py-3 px-4">Payout Method & Account</th>
+                            <th className="py-3 px-4">Bank Slip Reference</th>
+                            <th className="py-3 px-4">Date Settled</th>
+                            <th className="py-3 px-4 text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {(() => {
+                            const filtered = (platformFeesData?.payouts || []).filter((p) => {
+                              if (payoutSearch.trim()) {
+                                const q = payoutSearch.toLowerCase();
+                                return (
+                                  p.recipientName.toLowerCase().includes(q) ||
+                                  p.recipientPhone.includes(q) ||
+                                  p.batchNumber.toLowerCase().includes(q) ||
+                                  p.transactionReference.toLowerCase().includes(q)
+                                );
+                              }
+                              return true;
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={10} className="py-8 text-center text-slate-500 text-xs">
+                                    No sales agent payout batches found. When admin settles commissions, disbursement records will display here.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return filtered.map((p) => (
+                              <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3.5 px-4 font-bold text-slate-900">
+                                  {p.recipientName}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <div className="font-mono text-slate-700">{p.recipientPhone}</div>
+                                  <div className="text-[10px] text-slate-400">{p.recipientSubcity || 'Addis Ababa'} Subcity</div>
+                                </td>
+                                <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                                  {p.batchNumber}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono text-slate-600">
+                                  ETB {Number(p.grossCommission).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
+                                  ETB {Number(p.netDisbursed).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-right font-mono font-semibold text-purple-700">
+                                  ETB {Number(p.platformFeeRetained).toLocaleString()}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <div className="font-semibold text-slate-800">{p.payoutMethod}</div>
+                                  <div className="text-[10px] font-mono text-slate-500">{p.destinationAccount}</div>
+                                </td>
+                                <td className="py-3.5 px-4 font-mono text-slate-700">
+                                  <span className="bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                                    {p.transactionReference}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                                  {new Date(p.settledAt).toLocaleDateString()}
+                                </td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Disbursed
+                                  </span>
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1468,6 +2450,23 @@ export const AdminView: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {/* Interactive Portal Notification Toast */}
+      {toastMsg && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3 duration-200 border ${
+            toastMsg.type === 'error'
+              ? 'bg-rose-950 text-rose-100 border-rose-800'
+              : 'bg-slate-900 text-white border-slate-700'
+          }`}
+        >
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          )}
+          <span>{toastMsg.text}</span>
         </div>
       )}
     </div>

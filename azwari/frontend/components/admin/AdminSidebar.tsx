@@ -22,6 +22,7 @@ import {
 
 export type AdminTab = 
   | 'analytics' 
+  | 'funnels'
   | 'users' 
   | 'verifications' 
   | 'waitlist' 
@@ -69,6 +70,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: TrendingUp,
     },
     {
+      id: 'funnels',
+      label: 'User Journey & Funnels',
+      icon: Activity,
+      badge: 'Metrics',
+      badgeColor: 'bg-indigo-600 text-white font-bold',
+    },
+    {
       id: 'users',
       label: t('adminSidebar.users'),
       icon: Users,
@@ -108,8 +116,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     },
     {
       id: 'finances',
-      label: t('adminSidebar.finances'),
+      label: 'Platform Fees & Payouts (20%)',
       icon: Coins,
+      badge: '20% Cut',
+      badgeColor: 'bg-purple-700 text-white font-semibold',
     },
   ];
 

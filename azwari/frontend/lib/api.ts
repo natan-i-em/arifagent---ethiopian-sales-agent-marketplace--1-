@@ -16,6 +16,8 @@ import {
   SupportedBank,
   DepositInitResponse,
   PayoutResponse,
+  PlatformFeesSummaryResponse,
+  FunnelsAnalyticsResponse,
 } from '../types';
 
 export const getApiBase = () => {
@@ -358,6 +360,44 @@ export const commissionsApi = {
     apiRequest<{ success: boolean; message: string; batch?: any }>('/commissions/settle-platform-fee', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+  getPlatformFeesSummary: async () =>
+    apiRequest<PlatformFeesSummaryResponse>('/commissions/platform-fees-summary'),
+  markSupplierFeePaid: async (businessId: string, amount?: number, transactionReference?: string) =>
+    apiRequest<{ success: boolean; message: string }>('/commissions/mark-supplier-fee-paid', {
+      method: 'POST',
+      body: JSON.stringify({ businessId, amount, transactionReference }),
+    }),
+  sendFeeReminder: async (businessId: string, amount?: number) =>
+    apiRequest<{ success: boolean; message: string }>('/commissions/send-fee-reminder', {
+      method: 'POST',
+      body: JSON.stringify({ businessId, amount }),
+    }),
+};
+
+export const analyticsApi = {
+  track: async (data: {
+    eventType: string;
+    page?: string;
+    device?: string;
+    userId?: string;
+    entityId?: string;
+    metadata?: any;
+  }) => {
+    try {
+      return await apiRequest<{ success: boolean }>('/analytics/track', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch {
+      return { success: false };
+    }
+  },
+  getFunnels: async () => apiRequest<FunnelsAnalyticsResponse>('/analytics/funnels'),
+  sendNudge: async (targetType: 'supplier' | 'agent', targetId: string, message?: string) =>
+    apiRequest<{ success: boolean; message: string }>('/analytics/nudge', {
+      method: 'POST',
+      body: JSON.stringify({ targetType, targetId, message }),
     }),
 };
 

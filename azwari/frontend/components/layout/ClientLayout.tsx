@@ -11,20 +11,38 @@ import { SmsNotificationDrawer } from '@/components/common/SmsNotificationDrawer
 import { WaitlistModal } from '@/components/common/WaitlistModal';
 import { Layers, X, ShieldAlert, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { analyticsApi } from '@/lib/api';
 
 const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useLanguage();
-  const { 
-    currentUser, 
-    setCurrentView, 
-    permissionError, 
+  const {
+    currentUser,
+    setCurrentView,
+    permissionError,
     dismissPermissionError,
     setAuthRolePreference,
     setSelectedCustomerToken,
     logout
   } = useApp();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Lightweight page view & unique visitor tracking
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isPwa = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isMobile = /mobile|iphone|ipad|android/.test(ua);
+    const deviceType = isPwa ? 'pwa' : isMobile ? 'mobile' : 'desktop';
+
+    analyticsApi.track({
+      eventType: 'page_view',
+      page: pathname || window.location.pathname || '/',
+      device: deviceType,
+      userId: currentUser?.id,
+    });
+  }, [pathname, currentUser?.id]);
 
   React.useEffect(() => {
     // Automatically detect tokenized SMS checkout link
@@ -121,8 +139,8 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
-                  <button 
-                    onClick={() => handleFooterRoleClick('salesperson')} 
+                  <button
+                    onClick={() => handleFooterRoleClick('salesperson')}
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
                     <span>{t('footer.agentPortal')}</span>
@@ -149,8 +167,8 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
-                  <button 
-                    onClick={() => handleFooterRoleClick('supplier')} 
+                  <button
+                    onClick={() => handleFooterRoleClick('supplier')}
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
                   >
                     <span>{t('footer.merchantConsole')}</span>
@@ -158,8 +176,8 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </button>
                 </li>
                 <li>
-                  <Link 
-                    href="/signup" 
+                  <Link
+                    href="/signup"
                     onClick={() => setAuthRolePreference('supplier')}
                     className="hover:text-slate-900 transition-colors block"
                   >

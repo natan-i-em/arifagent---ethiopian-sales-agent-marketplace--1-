@@ -434,4 +434,158 @@ export interface AppNotification {
   };
 }
 
+// -------------------------------------------------------------
+// Platform Fees & Funnels Analytics Types
+// -------------------------------------------------------------
+
+export interface SupplierPlatformFeeItem {
+  businessId: string;
+  name: string;
+  tradeName?: string;
+  phone?: string;
+  subcity?: string;
+  tinNumber?: string;
+  totalOrdersCount: number;
+  totalGrossCommissions: number;
+  platformFeeIncurred: number;
+  platformFeePaid: number;
+  platformFeeOutstanding: number;
+  status: 'PAID_IN_FULL' | 'OUTSTANDING' | 'NO_FEES';
+  ledgerEntries: Array<{
+    id: string;
+    orderId: string;
+    orderNumber: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+export interface SalesAgentPayoutRecord {
+  id: string;
+  batchNumber: string;
+  recipientName: string;
+  recipientPhone: string;
+  recipientSubcity?: string;
+  salesPartnerId?: string;
+  grossCommission: number;
+  netDisbursed: number;
+  platformFeeRetained: number;
+  payoutMethod: string;
+  destinationAccount: string;
+  transactionReference: string;
+  status: string;
+  settledAt: string;
+}
+
+export interface PlatformFeesSummaryResponse {
+  success: boolean;
+  totals: {
+    totalPlatformFeesIncurred: number;
+    totalPlatformFeesPaid: number;
+    totalPlatformFeesOutstanding: number;
+    totalDisbursedToAgents: number;
+    suppliersCount: number;
+    suppliersPaidCount: number;
+    suppliersOutstandingCount: number;
+  };
+  suppliers: SupplierPlatformFeeItem[];
+  payouts: SalesAgentPayoutRecord[];
+}
+
+export interface SupplierFunnelItem {
+  id: string;
+  name: string;
+  tradeName?: string;
+  phone?: string;
+  subcity?: string;
+  verificationStatus: string;
+  registeredAt: string;
+  hasUploadedProduct: boolean;
+  firstProductAt: string | null;
+  firstProductName: string | null;
+  timeToActionMinutes: number | null;
+  timeToActionFormatted: string;
+  catalogSize: number;
+  status: 'Active Catalog' | 'Catalog Pending';
+}
+
+export interface AgentFunnelItem {
+  id: string;
+  fullName: string;
+  phone: string;
+  subcity?: string;
+  referralCode: string;
+  registeredAt: string;
+  hasMadeSale: boolean;
+  firstSaleAt: string | null;
+  firstSaleOrderNumber: string | null;
+  timeToSaleHours: number | null;
+  timeToSaleFormatted: string;
+  totalSalesCount: number;
+  totalAttributedSales: number;
+  status: 'Active Seller' | 'Onboarding';
+}
+
+export interface ProductVelocityItem {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  imageUrl?: string;
+  unitPrice: number;
+  currentStock: number;
+  supplierId: string;
+  supplierName: string;
+  totalUnitsSold: number;
+  totalRevenue: number;
+  totalCommission: number;
+  orderCount: number;
+  dailyVelocity: number;
+  velocityTier: 'HIGH' | 'MODERATE' | 'STANDARD' | 'LOW';
+  daysOfSupply: number | null;
+  isStockLow: boolean;
+  isOutOfStock: boolean;
+}
+
+export interface FunnelsAnalyticsResponse {
+  success: boolean;
+  traffic: {
+    totalPageViews: number;
+    uniqueVisitors: number;
+    todayViews: number;
+    appDownloads: number;
+    todayDownloads: number;
+    downloadConversionRate: number;
+    deviceCounts: Record<string, number>;
+  };
+  supplierMetrics: {
+    totalSuppliers: number;
+    activeSuppliersCount: number;
+    stalledSuppliersCount: number;
+    fastSuppliersCount: number;
+    activationRate: number;
+    medianTimeToCatalog: string;
+    funnel: Array<{ stage: string; count: number; percentage: number }>;
+    suppliers: SupplierFunnelItem[];
+  };
+  agentMetrics: {
+    totalAgents: number;
+    activeAgentsCount: number;
+    stalledAgentsCount: number;
+    fastAgentsCount: number;
+    activationRate: number;
+    medianTimeToFirstSale: string;
+    funnel: Array<{ stage: string; count: number; percentage: number }>;
+    agents: AgentFunnelItem[];
+  };
+  productVelocity: {
+    fastMovingProducts: ProductVelocityItem[];
+    allProducts: ProductVelocityItem[];
+    totalCatalogItems: number;
+    totalUnitsDispatched: number;
+  };
+}
+
+
 

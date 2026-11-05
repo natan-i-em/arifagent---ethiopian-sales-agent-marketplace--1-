@@ -4,6 +4,7 @@ import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/au
 import { centsToEtb } from '../config/walletConfig.js';
 import { cacheService } from '../services/cacheService.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
+import { SmsEthiopiaService } from '../services/smsEthiopiaService.js';
 
 export const businessRouter = Router();
 
@@ -200,8 +201,53 @@ businessRouter.post('/:id/verify', requireAuth, requireRole('admin'), async (req
       include: { paymentAccounts: true },
     });
 
+    // If verified, automatically update their waitlist entry and send onboarding invitation SMS
+    if (targetStatus === VerificationStatus.VERIFIED) {
+      try {
+        await prisma.waitlistEntry.updateMany({
+          where: {
+            OR: [
+              ...(updated.phone ? [{ phone: updated.phone }] : []),
+              { fullName: updated.name },
+              ...(updated.tradeName ? [{ fullName: updated.tradeName }] : []),
+            ],
+          },
+          data: {
+            status: 'invited',
+            invitedAt: new Date(),
+          },
+        });
+
+        if (updated.phone) {
+          const smsBody = `Congratulations ${updated.name}! Your Azwari supplier account has been verified and approved. You can now log in at https://arifagent-ethiopian-sales-agent-mar.vercel.app/signin to start listing your merchandise!`;
+          await SmsEthiopiaService.sendSms({
+            recipientPhone: updated.phone,
+            messageBody: smsBody,
+            orderNumber: `KYC-${updated.id.substring(0, 8)}`,
+            templateName: 'supplier_verified_invitation',
+          });
+        }
+
+        await prisma.auditLog.create({
+          data: {
+            actorRole: req.user!.role,
+            actorName: req.user!.fullName || 'Admin KYC Officer',
+            action: 'VERIFY_AND_INVITE_SUPPLIER',
+            entityType: 'Business',
+            entityId: updated.id,
+            businessId: updated.id,
+            description: `Supplier "${updated.name}" verified and invited to portal. Automated onboarding SMS sent to ${updated.phone}.`,
+          },
+        });
+      } catch (postVerifyErr) {
+        console.warn('[KYC Post-Verify Notice]', postVerifyErr);
+      }
+    }
+
     await cacheService.delPattern('cache:businesses:*');
+    await cacheService.delPattern('cache:waitlist:*');
     realtimeEmitter.emit('change', { type: 'BUSINESS_UPDATED', businessId: id });
+    realtimeEmitter.emit('change', { type: 'WAITLIST_UPDATED' });
 
     res.status(200).json({ success: true, business: formatBusinessForFrontend(updated) });
   } catch (error: any) {

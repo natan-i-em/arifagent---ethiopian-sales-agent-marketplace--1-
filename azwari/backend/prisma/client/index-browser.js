@@ -375,6 +375,18 @@ exports.Prisma.WaitlistEntryScalarFieldEnum = {
   invitedAt: 'invitedAt'
 };
 
+exports.Prisma.AnalyticsEventScalarFieldEnum = {
+  id: 'id',
+  eventType: 'eventType',
+  page: 'page',
+  device: 'device',
+  userId: 'userId',
+  entityId: 'entityId',
+  metadata: 'metadata',
+  ipHash: 'ipHash',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.IdempotencyRecordScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -460,12 +472,12 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
-exports.Prisma.JsonNullValueInput = {
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull
 };
 
-exports.Prisma.NullableJsonNullValueInput = {
-  DbNull: Prisma.DbNull,
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
@@ -541,6 +553,7 @@ exports.Prisma.ModelName = {
   AuditLog: 'AuditLog',
   PlatformFeeLedger: 'PlatformFeeLedger',
   WaitlistEntry: 'WaitlistEntry',
+  AnalyticsEvent: 'AnalyticsEvent',
   IdempotencyRecord: 'IdempotencyRecord',
   Wallet: 'Wallet',
   WalletTransaction: 'WalletTransaction',
