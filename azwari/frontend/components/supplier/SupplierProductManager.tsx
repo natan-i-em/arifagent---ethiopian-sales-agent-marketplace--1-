@@ -141,7 +141,92 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
     });
   };
 
-  // Helper to send image file to backend Express API, with direct Supabase Storage fallback
+  // Helper to upload a base64 / data URL directly to Supabase Storage or backend
+  const uploadDataUrlToStorage = async (dataUrl?: string, isEdit: boolean = false) => {
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) return;
+    setUploadError(null);
+    if (isEdit) setIsUploadingEditImage(true);
+    else setIsUploadingAddImage(true);
+
+    try {
+      let uploadedUrl: string | null = null;
+      let lastErrMsg = '';
+
+      // 1. Direct Supabase Storage upload
+      try {
+        const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ext = mimeString.includes('png') ? 'png' : mimeString.includes('webp') ? 'webp' : 'jpg';
+        const cleanPath = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const byteString = atob(dataUrl.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+
+        const { data: directData, error: directErr } = await supabase.storage
+          .from('Azwari_Product_Images')
+          .upload(cleanPath, blob, {
+            contentType: mimeString,
+            upsert: true,
+          });
+
+        if (!directErr && directData) {
+          const { data: urlData } = supabase.storage
+            .from('Azwari_Product_Images')
+            .getPublicUrl(cleanPath);
+          uploadedUrl = urlData.publicUrl;
+        } else if (directErr) {
+          lastErrMsg = directErr.message;
+        }
+      } catch (directExc: any) {
+        lastErrMsg = directExc.message;
+      }
+
+      // 2. Fallback to Backend Express API
+      if (!uploadedUrl) {
+        try {
+          const res = await fetch('/api/upload/product-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileData: dataUrl,
+              fileName: 'photo.jpg',
+              category: isEdit ? editForm.category : addForm.category,
+              productId: isEdit && editingProduct ? editingProduct.id : undefined,
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.imageUrl) {
+            uploadedUrl = data.imageUrl;
+          } else if (data.error) {
+            lastErrMsg = data.error;
+          }
+        } catch (fetchErr: any) {
+          lastErrMsg = fetchErr.message;
+        }
+      }
+
+      if (uploadedUrl) {
+        if (isEdit) {
+          setEditForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+        } else {
+          setAddForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+        }
+        setUploadError(null);
+      } else {
+        setUploadError(`Upload notice: ${lastErrMsg || 'Please try again'}.`);
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+    } finally {
+      if (isEdit) setIsUploadingEditImage(false);
+      else setIsUploadingAddImage(false);
+    }
+  };
+
+  // Helper to send image file to Supabase Storage with backend fallback
   const handleFileUpload = async (file: File, isEdit: boolean = false) => {
     if (!file) return;
     setUploadError(null);
@@ -162,61 +247,66 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
         const fileData = await compressImage(rawFileData);
 
         let uploadedUrl: string | null = null;
+        let lastErrorMsg = '';
 
-        // Path A: Backend Express API (/api/upload/product-image)
+        // Strategy 1: Direct Client-Side Supabase Upload (Fastest, direct to CDN, zero server proxy overhead)
         try {
-          const res = await fetch('/api/upload/product-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileData,
-              fileName: file.name,
-              category: isEdit ? editForm.category : addForm.category,
-              productId: isEdit && editingProduct ? editingProduct.id : undefined,
-            }),
-          });
-
-          const data = await res.json();
-          if (data.success && data.imageUrl) {
-            uploadedUrl = data.imageUrl;
-          } else {
-            console.warn('[BACKEND UPLOAD NOTICE]', data.error);
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const cleanPath = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+          const byteString = atob(fileData.split(',')[1]);
+          const mimeString = fileData.split(',')[0].split(':')[1].split(';')[0];
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
           }
-        } catch (fetchErr) {
-          console.warn('[BACKEND UPLOAD FETCH ERROR]', fetchErr);
+          const blob = new Blob([ab], { type: mimeString });
+
+          const { data: directData, error: directErr } = await supabase.storage
+            .from('Azwari_Product_Images')
+            .upload(cleanPath, blob, {
+              contentType: mimeString,
+              upsert: true,
+            });
+
+          if (!directErr && directData) {
+            const { data: urlData } = supabase.storage
+              .from('Azwari_Product_Images')
+              .getPublicUrl(cleanPath);
+            uploadedUrl = urlData.publicUrl;
+          } else if (directErr) {
+            lastErrorMsg = directErr.message;
+            console.warn('[SUPABASE DIRECT UPLOAD NOTICE]', directErr);
+          }
+        } catch (directExc: any) {
+          lastErrorMsg = directExc.message;
+          console.warn('[SUPABASE DIRECT EXCEPTION]', directExc);
         }
 
-        // Path B: Direct Supabase Storage fallback (via public RLS bucket policy)
+        // Strategy 2: Backend Express API (/api/upload/product-image) as fallback
         if (!uploadedUrl) {
           try {
-            const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-            const cleanPath = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-            const byteString = atob(fileData.split(',')[1]);
-            const mimeString = fileData.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: mimeString });
+            const res = await fetch('/api/upload/product-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fileData,
+                fileName: file.name,
+                category: isEdit ? editForm.category : addForm.category,
+                productId: isEdit && editingProduct ? editingProduct.id : undefined,
+              }),
+            });
 
-            const { data: directData, error: directErr } = await supabase.storage
-              .from('Azwari_Product_Images')
-              .upload(cleanPath, blob, {
-                contentType: mimeString,
-                upsert: true,
-              });
-
-            if (!directErr && directData) {
-              const { data: urlData } = supabase.storage
-                .from('Azwari_Product_Images')
-                .getPublicUrl(cleanPath);
-              uploadedUrl = urlData.publicUrl;
-            } else if (directErr) {
-              console.error('[SUPABASE DIRECT UPLOAD ERROR]', directErr);
+            const data = await res.json();
+            if (data.success && data.imageUrl) {
+              uploadedUrl = data.imageUrl;
+            } else if (data.error) {
+              lastErrorMsg = data.error;
+              console.warn('[BACKEND UPLOAD NOTICE]', data.error);
             }
-          } catch (directExc: any) {
-            console.error('[SUPABASE DIRECT EXCEPTION]', directExc);
+          } catch (fetchErr: any) {
+            lastErrorMsg = fetchErr.message;
+            console.warn('[BACKEND UPLOAD FETCH ERROR]', fetchErr);
           }
         }
 
@@ -228,8 +318,8 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
           }
           setUploadError(null);
         } else {
-          setUploadError('Failed to upload image. Please try again or select from the gallery.');
-          // As a last-resort fallback for local editing:
+          setUploadError(`Upload failed: ${lastErrorMsg || 'Please try again or select from gallery'}`);
+          // Set preview only if nothing was set yet
           if (isEdit) {
             setEditForm((prev) => ({ ...prev, imageUrl: fileData }));
           } else {
@@ -1034,9 +1124,25 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                         type="url"
                         placeholder="Paste image URL (https://...)"
                         value={addForm.imageUrl}
-                        onChange={(e) => setAddForm({ ...addForm, imageUrl: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setAddForm({ ...addForm, imageUrl: val });
+                          if (val.startsWith('data:image/')) {
+                            uploadDataUrlToStorage(val, false);
+                          }
+                        }}
                         className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
                       />
+                      {addForm.imageUrl?.startsWith('data:image/') && !isUploadingAddImage && (
+                        <button
+                          type="button"
+                          onClick={() => uploadDataUrlToStorage(addForm.imageUrl, false)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Upload to Cloud</span>
+                        </button>
+                      )}
                       <label className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors ${
                         isUploadingAddImage 
                           ? 'bg-amber-50 border-amber-300 text-amber-800' 
@@ -1339,9 +1445,25 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                         type="url"
                         placeholder="Paste image URL (https://...)"
                         value={editForm.imageUrl || ''}
-                        onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditForm({ ...editForm, imageUrl: val });
+                          if (val.startsWith('data:image/')) {
+                            uploadDataUrlToStorage(val, true);
+                          }
+                        }}
                         className="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-900 bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-500"
                       />
+                      {editForm.imageUrl?.startsWith('data:image/') && !isUploadingEditImage && (
+                        <button
+                          type="button"
+                          onClick={() => uploadDataUrlToStorage(editForm.imageUrl || '', true)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Upload to Cloud</span>
+                        </button>
+                      )}
                       <label className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors ${
                         isUploadingEditImage 
                           ? 'bg-amber-50 border-amber-300 text-amber-800' 
