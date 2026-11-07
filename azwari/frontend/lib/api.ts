@@ -199,6 +199,42 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  forgotPassword: async (data: { emailOrPhone: string }) =>
+    apiRequest<{
+      success: boolean;
+      message: string;
+      phoneMasked?: string;
+      emailMasked?: string;
+      resetToken?: string;
+      error?: string;
+    }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  verifyResetCode: async (data: { code: string; resetToken?: string }) =>
+    apiRequest<{
+      success: boolean;
+      message?: string;
+      verifiedToken?: string;
+      error?: string;
+    }>('/auth/verify-reset-code', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  resetPassword: async (data: {
+    newPassword: string;
+    verifiedToken?: string;
+    resetToken?: string;
+    code?: string;
+  }) =>
+    apiRequest<{
+      success: boolean;
+      message: string;
+      error?: string;
+    }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 export const productsApi = {

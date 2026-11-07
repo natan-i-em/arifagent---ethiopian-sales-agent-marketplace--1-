@@ -92,14 +92,20 @@ export const SignUpView: React.FC = () => {
 
     try {
       if (selectedRole === 'salesperson') {
-        if (!agentName.trim() || !agentPhone.trim() || !agentPayoutAccount.trim()) {
-          setErrorMessage('Please fill in your full name, phone number, and payout account details.');
+        if (!agentName.trim() || !agentPhone.trim() || !agentEmail.trim() || !agentPayoutAccount.trim()) {
+          setErrorMessage('Please fill in your full name, email address, phone number, and payout account details.');
           setSubmitting(false);
           return;
         }
 
-        if (!agentPassword || agentPassword.length < 6) {
-          setErrorMessage('Please choose a password of at least 6 characters.');
+        if (!agentPassword || agentPassword.length < 8) {
+          setErrorMessage('Password must be at least 8 characters long for account security.');
+          setSubmitting(false);
+          return;
+        }
+
+        if (!/[a-zA-Z]/.test(agentPassword) || !/[0-9]/.test(agentPassword)) {
+          setErrorMessage('Password must contain both letters and numbers.');
           setSubmitting(false);
           return;
         }
@@ -107,7 +113,7 @@ export const SignUpView: React.FC = () => {
         const res = await registerSalesAgent({
           fullName: agentName.trim(),
           phone: agentPhone.trim(),
-          email: agentEmail.trim() || undefined,
+          email: agentEmail.trim(),
           password: agentPassword,
           subcity: agentSubcity,
           telegramUsername: agentTelegram ? (agentTelegram.startsWith('@') ? agentTelegram : `@${agentTelegram}`) : undefined,
@@ -128,8 +134,14 @@ export const SignUpView: React.FC = () => {
           return;
         }
 
-        if (!bizPassword || bizPassword.length < 6) {
-          setErrorMessage('Please choose a password of at least 6 characters.');
+        if (!bizPassword || bizPassword.length < 8) {
+          setErrorMessage('Password must be at least 8 characters long for account security.');
+          setSubmitting(false);
+          return;
+        }
+
+        if (!/[a-zA-Z]/.test(bizPassword) || !/[0-9]/.test(bizPassword)) {
+          setErrorMessage('Password must contain both letters and numbers.');
           setSubmitting(false);
           return;
         }
@@ -305,9 +317,19 @@ export const SignUpView: React.FC = () => {
 
 
           {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMessage}</span>
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{errorMessage}</span>
+              </div>
+              {errorMessage.toLowerCase().includes('already') && (
+                <Link
+                  href="/signin"
+                  className="font-bold text-xs underline text-rose-900 hover:text-slate-950 shrink-0"
+                >
+                  Sign in instead &rarr;
+                </Link>
+              )}
             </div>
           )}
 
@@ -368,12 +390,12 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{t('auth.passwordMin6')}</span>
+                      <span>Password (min. 8 alphanumeric chars)</span>
                     </label>
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={agentPassword}
                       onChange={(e) => setAgentPassword(e.target.value)}
                       placeholder="••••••••"
@@ -524,12 +546,12 @@ export const SignUpView: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{t('auth.passwordMin6')}</span>
+                      <span>Password (min. 8 alphanumeric chars)</span>
                     </label>
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={bizPassword}
                       onChange={(e) => setBizPassword(e.target.value)}
                       placeholder="••••••••"

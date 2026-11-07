@@ -25,17 +25,61 @@ export const smsLimiter = rateLimit({
   },
 });
 
-// Auth Registration Limiter: Max 15 registration attempts per 15 minutes per IP
-export const authLimiter = rateLimit({
+// Account Signup Limiter: Max 5 registration attempts per 15 minutes per IP
+// Prevents bot account generation and registration spamming
+export const signupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    error: 'Too many registration attempts. Please wait before trying again.',
+    error: 'Too many account registration attempts. For security, please wait 15 minutes before trying again.',
   },
-});// Order Creation Limiter: Max 30 orders per 10 minutes per IP
+});
+
+// Login Limiter: Max 10 login attempts per 15 minutes per IP
+// Prevents password brute-forcing and credential stuffing attacks
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many login attempts. Your IP has been temporarily throttled for 15 minutes to protect user accounts.',
+  },
+});
+
+// Forgot Password Request Limiter: Max 3 requests per 15 minutes per IP
+// Prevents OTP SMS exhaustion, email bombing, and enumeration
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many password reset requests. Please wait 15 minutes before requesting another reset code.',
+  },
+});
+
+// Reset Password Execution Limiter: Max 5 attempts per 15 minutes per IP
+export const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many password reset attempts. Please wait 15 minutes before trying again.',
+  },
+});
+
+// General Auth Limiter: Backwards compatibility
+export const authLimiter = signupLimiter;
+
+// Order Creation Limiter: Max 30 orders per 10 minutes per IP
 export const orderLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 30,
