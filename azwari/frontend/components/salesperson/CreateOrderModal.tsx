@@ -228,10 +228,15 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ initialProdu
             <div className="inline-block px-3 py-1 bg-slate-100 rounded-lg font-mono text-xs font-semibold text-slate-800 mb-3 border border-slate-200/70">
               {createdOrderResult.orderNumber}
             </div>
-            <p className="text-xs text-slate-600 max-w-md mx-auto mb-4">
-              An SMS with payment instructions has been dispatched to{' '}
-              <strong className="text-slate-900">{buyerPhone}</strong>. The 15-minute payment countdown has started.
-            </p>
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 max-w-md mx-auto mb-4 text-xs space-y-1 text-left">
+              <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Checking Physical Stock with {supplier?.name || 'Merchant'}</span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                A 1-tap stock check was sent to the merchant. The customer (<strong className="text-amber-950">{buyerPhone}</strong>) has <strong>NOT</strong> been sent any payment link yet. Once {supplier?.name || 'the merchant'} confirms in-store stock, the payment link will be sent automatically.
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-5 text-left p-3.5 glass-card rounded-2xl border border-slate-200/80 text-xs">
               <div>

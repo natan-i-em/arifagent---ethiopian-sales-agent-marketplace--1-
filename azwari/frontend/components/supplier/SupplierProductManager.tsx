@@ -32,6 +32,7 @@ import {
 import { Product, Business } from '../../types';
 import { ProductImage, CURATED_ETHIOPIAN_PRODUCT_GALLERY } from '../common/ProductImage';
 import { supabase } from '../../lib/supabase';
+import { apiRequest } from '../../lib/api';
 
 interface SupplierProductManagerProps {
   products: Product[];
@@ -162,13 +163,16 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
   };
 
   // Helper to upload a base64 / data URL directly to Supabase Storage or backend
-  const uploadDataUrlToStorage = async (dataUrl?: string, isEdit: boolean = false) => {
-    if (!dataUrl || !dataUrl.startsWith('data:image/')) return;
+  const uploadDataUrlToStorage = async (rawUrl?: string, isEdit: boolean = false) => {
+    if (!rawUrl || !rawUrl.startsWith('data:image/')) return;
     setUploadError(null);
     if (isEdit) setIsUploadingEditImage(true);
     else setIsUploadingAddImage(true);
 
     try {
+      // Always compress oversized data URLs before network transmission
+      const dataUrl = await compressImage(rawUrl);
+
       let uploadedUrl: string | null = null;
       let lastErrMsg = '';
 
@@ -204,12 +208,11 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
         lastErrMsg = directExc.message;
       }
 
-      // 2. Fallback to Backend Express API
+      // 2. Fallback to Backend Express API via authenticated apiRequest
       if (!uploadedUrl) {
         try {
-          const res = await fetch('/api/upload/product-image', {
+          const res = await apiRequest<{ success: boolean; imageUrl: string }>('/upload/product-image', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               fileData: dataUrl,
               fileName: 'photo.jpg',
@@ -217,29 +220,31 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
               productId: isEdit && editingProduct ? editingProduct.id : undefined,
             }),
           });
-          const data = await res.json();
-          if (data.success && data.imageUrl) {
-            uploadedUrl = data.imageUrl;
-          } else if (data.error) {
-            lastErrMsg = data.error;
+          if (res.success && res.imageUrl) {
+            uploadedUrl = res.imageUrl;
           }
         } catch (fetchErr: any) {
           lastErrMsg = fetchErr.message;
         }
       }
 
-      if (uploadedUrl) {
-        if (isEdit) {
-          setEditForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
-        } else {
-          setAddForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
-        }
-        setUploadError(null);
+      // 3. Save resolved URL or fallback to compressed data URL (never block product creation)
+      const finalUrl = uploadedUrl || dataUrl;
+      if (isEdit) {
+        setEditForm((prev) => ({ ...prev, imageUrl: finalUrl }));
       } else {
-        setUploadError(sanitizeErrorMessage(lastErrMsg));
+        setAddForm((prev) => ({ ...prev, imageUrl: finalUrl }));
       }
+      setUploadError(null);
     } catch (err: any) {
-      setUploadError(sanitizeErrorMessage(err?.message));
+      console.warn('[IMAGE UPLOAD RECOVERY]', err);
+      // Keep data URL so merchant can still save product smoothly
+      if (isEdit) {
+        setEditForm((prev) => ({ ...prev, imageUrl: rawUrl }));
+      } else {
+        setAddForm((prev) => ({ ...prev, imageUrl: rawUrl }));
+      }
+      setUploadError(null);
     } finally {
       if (isEdit) setIsUploadingEditImage(false);
       else setIsUploadingAddImage(false);
@@ -306,9 +311,8 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
         // Strategy 2: Backend Express API (/api/upload/product-image) as fallback
         if (!uploadedUrl) {
           try {
-            const res = await fetch('/api/upload/product-image', {
+            const data = await apiRequest<{ success: boolean; imageUrl: string }>('/upload/product-image', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 fileData,
                 fileName: file.name,
@@ -317,43 +321,29 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
               }),
             });
 
-            const data = await res.json();
             if (data.success && data.imageUrl) {
               uploadedUrl = data.imageUrl;
-            } else if (data.error) {
-              lastErrorMsg = data.error;
-              console.warn('[BACKEND UPLOAD NOTICE]', data.error);
             }
           } catch (fetchErr: any) {
-            lastErrorMsg = fetchErr.message;
             console.warn('[BACKEND UPLOAD FETCH ERROR]', fetchErr);
           }
         }
 
-        if (uploadedUrl) {
-          if (isEdit) {
-            setEditForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
-          } else {
-            setAddForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
-          }
-          setUploadError(null);
+        const finalUrl = uploadedUrl || fileData;
+        if (isEdit) {
+          setEditForm((prev) => ({ ...prev, imageUrl: finalUrl }));
         } else {
-          setUploadError(sanitizeErrorMessage(lastErrorMsg));
-          // Set preview only if nothing was set yet
-          if (isEdit) {
-            setEditForm((prev) => ({ ...prev, imageUrl: fileData }));
-          } else {
-            setAddForm((prev) => ({ ...prev, imageUrl: fileData }));
-          }
+          setAddForm((prev) => ({ ...prev, imageUrl: finalUrl }));
         }
+        setUploadError(null);
 
         if (isEdit) setIsUploadingEditImage(false);
         else setIsUploadingAddImage(false);
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
-      console.error('[FILE READ ERROR]', err);
-      setUploadError(sanitizeErrorMessage(err?.message));
+      console.warn('[FILE READ ERROR]', err);
+      setUploadError(null);
       if (isEdit) setIsUploadingEditImage(false);
       else setIsUploadingAddImage(false);
     }

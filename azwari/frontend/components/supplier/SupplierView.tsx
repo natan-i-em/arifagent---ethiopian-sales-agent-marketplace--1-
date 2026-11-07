@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { ordersApi } from '../../lib/api';
+import { ordersApi, telegramApi } from '../../lib/api';
 import { Order, Product, PaymentMethodProvider } from '../../types';
 import { 
   Building2, 
   CheckCircle2, 
+  Check,
   Clock, 
   Truck, 
   DollarSign, 
@@ -30,7 +31,8 @@ import {
   LayoutDashboard,
   Store,
   ArrowRight,
-  Layers
+  Layers,
+  Bot
 } from 'lucide-react';
 import { SupplierSidebar, SupplierTab } from './SupplierSidebar';
 import { SupplierProductManager } from './SupplierProductManager';
@@ -48,6 +50,7 @@ export const SupplierView: React.FC = () => {
     platformFeeLedger,
     settlementBatches,
     salesPartners,
+    confirmStock,
     settleCommissions,
     settlePlatformFee,
     verifyPayment, 
@@ -111,7 +114,22 @@ export const SupplierView: React.FC = () => {
   const [openAddProductFromGlobal, setOpenAddProductFromGlobal] = useState(false);
 
   // Orders Tab Filter State
-  const [orderFilter, setOrderFilter] = useState<'all' | 'awaiting_payment' | 'review' | 'fulfillment' | 'delivered'>('all');
+  const [orderFilter, setOrderFilter] = useState<'all' | 'stock_check' | 'awaiting_payment' | 'review' | 'fulfillment' | 'delivered'>('all');
+  const [stockProcessingId, setStockProcessingId] = useState<string | null>(null);
+
+  // Telegram Stock Bot Integration State
+  const [telegramStatus, setTelegramStatus] = useState<{
+    configured: boolean;
+    isConnected: boolean;
+    botUsername: string;
+    telegramUsername?: string;
+    connectUrl: string;
+  }>({
+    configured: false,
+    isConnected: false,
+    botUsername: 'AzwariMerchantBot',
+    connectUrl: '',
+  });
   
   // Verification Modal State
   const [verifyingOrder, setVerifyingOrder] = useState<Order | null>(null);
@@ -218,8 +236,48 @@ export const SupplierView: React.FC = () => {
   );
   const totalGrossReceived = fulfilledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
+  const ordersAwaitingStock = supplierOrders.filter((o) => o.orderStatus === 'awaiting_verification');
+
+  // Load Telegram Bot Connection Status
+  React.useEffect(() => {
+    if (currentSupplier?.id) {
+      telegramApi.getStatus(currentSupplier.id).then((res) => {
+        if (res.success) {
+          setTelegramStatus({
+            configured: res.configured,
+            isConnected: res.isConnected,
+            botUsername: res.botUsername || 'AzwariMerchantBot',
+            telegramUsername: res.telegramUsername,
+            connectUrl: res.connectUrl || `https://t.me/${res.botUsername || 'AzwariMerchantBot'}?start=biz_${currentSupplier.id}`,
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [currentSupplier?.id]);
+
+  const handleConfirmStock = async (orderId: string, decision: 'confirm' | 'reject') => {
+    setStockProcessingId(orderId);
+    try {
+      const res = await confirmStock(orderId, decision);
+      if (res.success) {
+        if (decision === 'confirm') {
+          setOrderActionNotice('In-store physical stock confirmed! Official payment instructions dispatched to the buyer.');
+        } else {
+          setOrderActionNotice('Marked out of stock. Order cancelled silently and customer was shielded from notifications.');
+        }
+      } else {
+        alert(res.message || 'Failed to update stock confirmation');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error updating stock confirmation');
+    } finally {
+      setStockProcessingId(null);
+    }
+  };
+
   // Filtered orders
   const filteredOrders = supplierOrders.filter((o) => {
+    if (orderFilter === 'stock_check') return o.orderStatus === 'awaiting_verification';
     if (orderFilter === 'awaiting_payment') return o.orderStatus === 'awaiting_payment';
     if (orderFilter === 'review') return o.orderStatus === 'payment_review';
     if (orderFilter === 'fulfillment')
@@ -522,6 +580,82 @@ export const SupplierView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Action Banner if orders need physical stock check */}
+              {ordersAwaitingStock.length > 0 && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {ordersAwaitingStock.length}
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs flex items-center gap-2">
+                        <span>Physical Stock Verification Needed</span>
+                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          Customer Shielded
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-emerald-800">
+                        {ordersAwaitingStock.length} order(s) submitted by sales agents. Please physically confirm items before payment links are released to customers.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('orders');
+                      setOrderFilter('stock_check');
+                    }}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shrink-0 flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>Check & Hold Items</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Telegram Bot Live Connect Card */}
+              <div className="glass-card rounded-3xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-white to-slate-50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900">Telegram 1-Tap Stock Bot (@{telegramStatus.botUsername})</h3>
+                      {telegramStatus.isConnected ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          <Check className="w-3 h-3" />
+                          <span>Connected {telegramStatus.telegramUsername ? `@${telegramStatus.telegramUsername}` : ''}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full">
+                          Recommended
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {telegramStatus.isConnected 
+                        ? 'Your shop is connected! You receive live interactive stock verification requests directly on Telegram.'
+                        : 'Connect your store to receive instant 1-tap stock checks directly on your phone whenever an agent places an order.'}
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={telegramStatus.connectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-2 transition-colors shadow-2xs ${
+                    telegramStatus.isConnected
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                      : 'bg-sky-500 hover:bg-sky-600 text-slate-950 font-extrabold'
+                  }`}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{telegramStatus.isConnected ? 'Open Telegram Bot' : 'Connect Telegram Bot'}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
               {/* Action Banner if orders need verification */}
               {ordersNeedingVerification.length > 0 && (
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -683,6 +817,19 @@ export const SupplierView: React.FC = () => {
                       All ({supplierOrders.length})
                     </button>
                     <button
+                      onClick={() => setOrderFilter('stock_check')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                        orderFilter === 'stock_check' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>Stock Check</span>
+                      {ordersAwaitingStock.length > 0 && (
+                        <span className="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                          {ordersAwaitingStock.length}
+                        </span>
+                      )}
+                    </button>
+                    <button
                       onClick={() => setOrderFilter('review')}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
                         orderFilter === 'review' ? 'bg-amber-600 text-white' : 'text-slate-600'
@@ -801,9 +948,20 @@ export const SupplierView: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="py-3.5 px-4">
-                                  <span className="font-semibold text-slate-800 block text-xs">
-                                    {order.orderStatus.replace('_', ' ').toUpperCase()}
-                                  </span>
+                                  {order.orderStatus === 'awaiting_verification' ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md">
+                                      <Clock className="w-3 h-3 text-amber-700" />
+                                      <span>CHECK IN-STORE STOCK</span>
+                                    </span>
+                                  ) : order.orderStatus === 'cancelled_out_of_stock' ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-md">
+                                      <span>SOLD OUT IN SHOP</span>
+                                    </span>
+                                  ) : (
+                                    <span className="font-semibold text-slate-800 block text-xs">
+                                      {order.orderStatus.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                  )}
                                   {order.delivery.assignedDriverName && (
                                     <span className="text-[10px] text-slate-500 block">
                                       Driver: {order.delivery.assignedDriverName}
@@ -812,6 +970,33 @@ export const SupplierView: React.FC = () => {
                                 </td>
                                 <td className="py-3.5 px-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                    {order.orderStatus === 'awaiting_verification' && (
+                                      <div className="flex items-center gap-1.5">
+                                        <button
+                                          onClick={() => handleConfirmStock(order.id, 'confirm')}
+                                          disabled={stockProcessingId === order.id}
+                                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs shadow-xs flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                          <Check className="w-3.5 h-3.5" />
+                                          <span>Confirm Stock</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleConfirmStock(order.id, 'reject')}
+                                          disabled={stockProcessingId === order.id}
+                                          className="px-2 py-1.5 bg-slate-100 hover:bg-rose-50 text-rose-700 border border-slate-200 hover:border-rose-300 font-semibold rounded-lg text-xs transition-colors disabled:opacity-50"
+                                          title="Mark Out of Stock (Customer Shielded)"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {order.orderStatus === 'cancelled_out_of_stock' && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-md text-[11px] font-semibold">
+                                        Sold Out (Shielded)
+                                      </span>
+                                    )}
+
                                     {order.orderStatus === 'payment_review' && (
                                       <button
                                         onClick={() => setVerifyingOrder(order)}

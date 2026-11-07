@@ -21,12 +21,16 @@ import { ChapaService } from '../services/chapaService.js';
 import { walletConfig, etbToCents } from '../config/walletConfig.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
 import { cacheService } from '../services/cacheService.js';
+import { TelegramBotService } from '../services/telegramBotService.js';
+import { processStockDecision } from './telegramRoutes.js';
 
 export const orderRouter = Router();
 
 // Helper mappings for OrderStatus
 const prismaToUiStatus = (status: OrderStatus): string => {
   const map: Record<OrderStatus, string> = {
+    AWAITING_MERCHANT_VERIFICATION: 'awaiting_verification',
+    CANCELLED_OUT_OF_STOCK: 'cancelled_out_of_stock',
     PENDING_PAYMENT: 'awaiting_payment',
     PAYMENT_SUBMITTED: 'payment_review',
     CONFIRMED: 'payment_verified',
@@ -195,6 +199,9 @@ export const formatOrderForFrontend = (o: any) => {
       }
       : undefined,
     idempotencyKey: 'idemp_' + o.orderNumber,
+    stockConfirmedAt: o.stockConfirmedAt ? o.stockConfirmedAt.toISOString() : undefined,
+    stockConfirmedBy: o.stockConfirmedBy || undefined,
+    stockVerificationExpiresAt: o.stockVerificationExpiresAt ? o.stockVerificationExpiresAt.toISOString() : undefined,
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
   };
@@ -1069,7 +1076,8 @@ orderRouter.post(
             commissionAmount,
             platformFee,
             supplierNetPayout,
-            status: 'PENDING_PAYMENT',
+            status: 'AWAITING_MERCHANT_VERIFICATION',
+            stockVerificationExpiresAt: new Date(Date.now() + 45 * 60 * 1000),
             paymentExpiresAt,
             items: {
               create: [
@@ -1146,21 +1154,50 @@ orderRouter.post(
         console.warn('[Audit Log Notice]', auditErr);
       }
 
-      // Post-commit side effects: SMS Dispatch (failsafe, will not roll back financial transaction)
-      const primaryAccount = product.business?.paymentAccounts?.[0];
-      const payProviderName = primaryAccount?.provider ? primaryAccount.provider.replace('_', ' ') : 'Telebirr';
-      const payAccNum = primaryAccount?.accountNumber || product.business.phone;
-      const payHolder = primaryAccount?.accountHolderName || product.business.name;
-      const trackingUrl = `https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${newOrder.publicAccessToken}`;
+      // Post-commit side effects: Physical Stock Verification Dispatch
+      // CUSTOMER SHIELDING: Customer receives NO SMS at this stage!
+      // The buyer payment link is only sent AFTER the merchant physically confirms stock.
 
-      const smsText = `Azwari: ${salesPartner.fullName} created order #${newOrder.orderNumber}. Total: ETB ${totalAmount.toLocaleString()}. Track order and pay online via Chapa (Telebirr/CBE/Card): ${trackingUrl}`;
-
-      SmsEthiopiaService.sendSms({
-        recipientPhone: body.buyerPhone,
-        messageBody: smsText,
+      // 1. Dispatch 1-tap stock check to merchant via Telegram Bot
+      TelegramBotService.sendStockVerificationRequest({
+        orderId: newOrder.id,
         orderNumber: newOrder.orderNumber,
-        templateName: 'order_payment_instructions',
-      }).catch((err) => console.warn('[SMS Dispatch Notice]', err));
+        publicAccessToken: newOrder.publicAccessToken,
+        productName: product.name,
+        quantity: requestedQty,
+        subtotal,
+        supplierNetPayout,
+        deliverySubcity: body.deliverySubcity,
+        salesPartnerName: salesPartner.fullName,
+        salesPartnerPhone: salesPartner.phone,
+        businessId: product.businessId,
+        businessName: product.business.name,
+        telegramChatId: (product.business as any).telegramChatId || null,
+        phone: product.business.phone,
+      }).catch((err) => console.warn('[Telegram Dispatch Warning]', err));
+
+      // 2. Fallback SMS to merchant phone with 1-click verify link
+      if (product.business.phone) {
+        const verifyStockUrl = `https://arifagent-ethiopian-sales-agent-mar.vercel.app/verify-stock?token=${newOrder.publicAccessToken}`;
+        const merchantStockSms = `Azwari Stock Check: Order #${newOrder.orderNumber} for "${product.name}" (${requestedQty} unit(s)). In stock in your shop? Confirm/Reject 1-tap: ${verifyStockUrl}`;
+        SmsEthiopiaService.sendSms({
+          recipientPhone: product.business.phone,
+          messageBody: merchantStockSms,
+          orderNumber: newOrder.orderNumber,
+          templateName: 'merchant_stock_check',
+        }).catch((err) => console.warn('[Merchant Stock SMS Warning]', err));
+      }
+
+      // 3. Notify Sales Agent that order is held awaiting physical store check
+      if (salesPartner.phone) {
+        const agentSms = `Azwari: Order #${newOrder.orderNumber} received. Checking physical stock with ${product.business.name}. Payment link will be sent to ${body.buyerName} as soon as merchant confirms.`;
+        SmsEthiopiaService.sendSms({
+          recipientPhone: salesPartner.phone,
+          messageBody: agentSms,
+          orderNumber: newOrder.orderNumber,
+          templateName: 'agent_order_held',
+        }).catch((err) => console.warn('[Agent Alert SMS Warning]', err));
+      }
 
       await cacheService.delPattern('cache:orders:*');
       await cacheService.delPattern('cache:commissions:*');
@@ -1974,6 +2011,134 @@ orderRouter.post(
     } catch (error: any) {
       console.error('[Cancel Order Error]', error);
       res.status(500).json({ success: false, error: error.message || 'Failed to cancel order' });
+    }
+  }
+);
+
+/**
+ * POST /api/orders/:id/confirm-stock
+ * Supplier or Admin stock decision (confirm / reject)
+ */
+orderRouter.post(
+  '/:id/confirm-stock',
+  requireAuth,
+  requireRole('supplier', 'admin'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { decision } = req.body;
+      if (decision !== 'confirm' && decision !== 'reject') {
+        res.status(400).json({ success: false, error: 'decision must be "confirm" or "reject"' });
+        return;
+      }
+
+      const order = await prisma.order.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        res.status(404).json({ success: false, error: 'Order not found' });
+        return;
+      }
+
+      // Security: ensure supplier owns the order
+      if (req.user?.role === 'supplier' && req.user.businessId && order.businessId !== req.user.businessId) {
+        res.status(403).json({ success: false, error: 'Unauthorized to confirm stock for this order' });
+        return;
+      }
+
+      const result = await processStockDecision(
+        id,
+        decision,
+        req.user?.fullName || (req.user?.role === 'supplier' ? 'MERCHANT_PORTAL' : 'ADMIN_PORTAL')
+      );
+      res.status(200).json(result);
+    } catch (err: any) {
+      console.error('[Confirm Stock Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to process stock decision' });
+    }
+  }
+);
+
+/**
+ * POST /api/orders/public/:token/confirm-stock
+ * Public 1-click tokenized merchant stock verification (from SMS link)
+ */
+orderRouter.post(
+  '/public/:token/confirm-stock',
+  async (req: any, res: Response): Promise<void> => {
+    try {
+      const { token } = req.params;
+      const { decision } = req.body;
+      if (decision !== 'confirm' && decision !== 'reject') {
+        res.status(400).json({ success: false, error: 'decision must be "confirm" or "reject"' });
+        return;
+      }
+
+      const order = await prisma.order.findUnique({
+        where: { publicAccessToken: token },
+      });
+
+      if (!order) {
+        res.status(404).json({ success: false, error: 'Order not found or invalid token' });
+        return;
+      }
+
+      const result = await processStockDecision(order.id, decision, 'MERCHANT_SMS_LINK');
+      res.status(200).json(result);
+    } catch (err: any) {
+      console.error('[Public Confirm Stock Error]', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to process stock decision' });
+    }
+  }
+);
+
+/**
+ * GET /api/orders/public/:token/verify-details
+ * Public endpoint to fetch order details for 1-click merchant stock check page
+ */
+orderRouter.get(
+  '/public/:token/verify-details',
+  async (req: any, res: Response): Promise<void> => {
+    try {
+      const { token } = req.params;
+      const order = await prisma.order.findUnique({
+        where: { publicAccessToken: token },
+        include: {
+          items: { include: { product: true, variant: true } },
+          business: true,
+          salesPartner: true,
+        },
+      });
+
+      if (!order) {
+        res.status(404).json({ success: false, error: 'Order not found' });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          uiStatus: prismaToUiStatus(order.status),
+          productName: order.items[0]?.product?.name || 'Product item',
+          quantity: order.items[0]?.quantity || 1,
+          unitPrice: Number(order.items[0]?.unitPrice || 0),
+          totalAmount: Number(order.totalAmount),
+          supplierNetPayout: Number(order.supplierNetPayout),
+          deliverySubcity: order.deliverySubcity,
+          specificAddress: order.specificAddress,
+          salesAgentName: order.salesPartner?.fullName || 'Sales Agent',
+          createdAt: order.createdAt.toISOString(),
+          stockVerificationExpiresAt: order.stockVerificationExpiresAt?.toISOString(),
+          stockConfirmedAt: order.stockConfirmedAt?.toISOString(),
+          stockConfirmedBy: order.stockConfirmedBy,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 );

@@ -48,6 +48,7 @@ interface OrdersContextType {
   markOrderDelivered: (orderId: string, proofNotes?: string) => boolean;
   extendPaymentWindow: (orderId: string) => boolean;
   cancelOrder: (orderId: string, reason: string) => boolean;
+  confirmStock: (orderId: string, decision: 'confirm' | 'reject') => Promise<{ success: boolean; message: string; order?: Order }>;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -161,6 +162,12 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return true;
   };
 
+  const confirmStock = async (orderId: string, decision: 'confirm' | 'reject') => {
+    const res = await ordersApi.confirmStock(orderId, decision);
+    invalidateOrdersAndFinance();
+    return res;
+  };
+
   return (
     <OrdersContext.Provider
       value={{
@@ -174,6 +181,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         markOrderDelivered,
         extendPaymentWindow,
         cancelOrder,
+        confirmStock,
       }}
     >
       {children}

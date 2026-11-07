@@ -49,6 +49,9 @@ export interface Business {
   subscriptionPlan: 'starter_pilot' | 'business_growth' | 'enterprise_scale';
   subscriptionStatus: 'active' | 'trial' | 'past_due';
   subscriptionRenewalDate: string;
+  telegramChatId?: string;
+  telegramUsername?: string;
+  telegramConnectedAt?: string;
   createdAt: string;
 }
 
@@ -126,6 +129,8 @@ export interface Product {
 
 export type OrderStatus =
   | 'draft'
+  | 'awaiting_verification'
+  | 'cancelled_out_of_stock'
   | 'awaiting_payment'
   | 'payment_review'
   | 'payment_verified'
@@ -224,6 +229,9 @@ export interface Order {
   evidence?: PaymentEvidence;
   disputeId?: string;
   idempotencyKey: string;
+  stockConfirmedAt?: string;
+  stockConfirmedBy?: string;
+  stockVerificationExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;

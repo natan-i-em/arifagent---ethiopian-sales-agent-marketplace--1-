@@ -113,6 +113,7 @@ export interface AppContextType {
   markOrderDelivered: (orderId: string, proofNotes?: string) => boolean;
   extendPaymentWindow: (orderId: string) => boolean;
   cancelOrder: (orderId: string, reason: string) => boolean;
+  confirmStock: (orderId: string, decision: 'confirm' | 'reject') => Promise<{ success: boolean; message: string; order?: Order }>;
 
   createProduct: (product: Partial<Product>) => boolean;
   updateProduct: (productId: string, updates: Partial<Product>) => boolean;
@@ -254,6 +255,7 @@ const AppFacadeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
     markOrderDelivered: orders.markOrderDelivered,
     extendPaymentWindow: orders.extendPaymentWindow,
     cancelOrder: orders.cancelOrder,
+    confirmStock: orders.confirmStock,
 
     // Finance & Compliance
     commissionLedger: finance.commissionLedger,

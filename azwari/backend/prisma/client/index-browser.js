@@ -135,6 +135,9 @@ exports.Prisma.UserScalarFieldEnum = {
 };
 
 exports.Prisma.BusinessScalarFieldEnum = {
+  telegramChatId: 'telegramChatId',
+  telegramUsername: 'telegramUsername',
+  telegramConnectedAt: 'telegramConnectedAt',
   id: 'id',
   authUserId: 'authUserId',
   name: 'name',
@@ -245,6 +248,9 @@ exports.Prisma.OrderScalarFieldEnum = {
   platformFee: 'platformFee',
   supplierNetPayout: 'supplierNetPayout',
   status: 'status',
+  stockConfirmedAt: 'stockConfirmedAt',
+  stockConfirmedBy: 'stockConfirmedBy',
+  stockVerificationExpiresAt: 'stockVerificationExpiresAt',
   paymentExpiresAt: 'paymentExpiresAt',
   assignedDriverName: 'assignedDriverName',
   assignedDriverPhone: 'assignedDriverPhone',
@@ -512,6 +518,7 @@ exports.PaymentProvider = exports.$Enums.PaymentProvider = {
 };
 
 exports.OrderStatus = exports.$Enums.OrderStatus = {
+  AWAITING_MERCHANT_VERIFICATION: 'AWAITING_MERCHANT_VERIFICATION',
   PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAYMENT_SUBMITTED: 'PAYMENT_SUBMITTED',
   CONFIRMED: 'CONFIRMED',
@@ -519,7 +526,8 @@ exports.OrderStatus = exports.$Enums.OrderStatus = {
   DISPATCHED: 'DISPATCHED',
   DELIVERED: 'DELIVERED',
   DISPUTED: 'DISPUTED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  CANCELLED_OUT_OF_STOCK: 'CANCELLED_OUT_OF_STOCK'
 };
 
 exports.CommissionStatus = exports.$Enums.CommissionStatus = {

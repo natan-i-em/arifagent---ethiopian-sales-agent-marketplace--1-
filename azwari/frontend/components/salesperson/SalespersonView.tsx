@@ -186,6 +186,14 @@ export const SalespersonView: React.FC = () => {
   }, [activeProducts, searchQuery]);
 
   const handleCopyLink = (order: typeof orders[0]) => {
+    if (order.orderStatus === 'awaiting_verification') {
+      alert(`Order #${order.orderNumber} is pending physical in-store stock check by ${order.supplierName}. The customer will automatically receive their payment link via SMS once confirmed.`);
+      return;
+    }
+    if (order.orderStatus === 'cancelled_out_of_stock') {
+      alert(`Order #${order.orderNumber} was marked out of stock by ${order.supplierName}. The customer was shielded from notifications. Please recommend an alternative product to the buyer.`);
+      return;
+    }
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://arifagent-ethiopian-sales-agent-mar.vercel.app';
     const link = `${origin}/track?token=${order.publicAccessToken}`;
     navigator.clipboard.writeText(link);
@@ -208,6 +216,8 @@ export const SalespersonView: React.FC = () => {
   };
 
   const statusColors: Record<string, string> = {
+    awaiting_verification: 'text-amber-900 bg-amber-100 border-amber-300 font-bold',
+    cancelled_out_of_stock: 'text-rose-900 bg-rose-100 border-rose-300 font-bold',
     awaiting_payment: 'text-amber-800 bg-amber-50 border-amber-200',
     payment_review: 'text-slate-800 bg-slate-100 border-slate-300',
     payment_verified: 'text-slate-900 bg-slate-100 border-slate-300 font-semibold',
@@ -217,6 +227,13 @@ export const SalespersonView: React.FC = () => {
     completed: 'text-slate-900 bg-slate-100 border-slate-300 font-bold',
     cancelled: 'text-rose-800 bg-rose-50 border-rose-200',
     disputed: 'text-rose-900 bg-rose-100 border-rose-300',
+  };
+
+  const formatOrderStatusLabel = (status: string) => {
+    if (status === 'awaiting_verification') return 'Checking Store Stock';
+    if (status === 'cancelled_out_of_stock') return 'Sold Out in Shop';
+    if (status === 'awaiting_payment') return 'Awaiting Payment';
+    return status.replace(/_/g, ' ');
   };
 
   return (
@@ -393,7 +410,7 @@ export const SalespersonView: React.FC = () => {
                                   statusColors[order.orderStatus] || 'text-slate-600 bg-slate-50 border-slate-200'
                                 }`}
                               >
-                                {order.orderStatus.replace(/_/g, ' ')}
+                                {formatOrderStatusLabel(order.orderStatus)}
                               </span>
                             </td>
                             <td className="py-3 px-4 text-right space-x-1.5">
@@ -607,7 +624,7 @@ export const SalespersonView: React.FC = () => {
                                     statusColors[order.orderStatus] || 'text-slate-600 bg-slate-50 border-slate-200'
                                   }`}
                                 >
-                                  {order.orderStatus.replace(/_/g, ' ')}
+                                  {formatOrderStatusLabel(order.orderStatus)}
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-right space-x-2">

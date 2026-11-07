@@ -291,6 +291,18 @@ export const ordersApi = {
       method: 'POST',
       body: JSON.stringify({ notes }),
     }),
+  confirmStock: async (id: string, decision: 'confirm' | 'reject') =>
+    apiRequest<{ success: boolean; message: string; order?: Order }>(`/orders/${id}/confirm-stock`, {
+      method: 'POST',
+      body: JSON.stringify({ decision }),
+    }),
+  confirmStockByToken: async (token: string, decision: 'confirm' | 'reject') =>
+    apiRequest<{ success: boolean; message: string; order?: Order }>(`/orders/public/${token}/confirm-stock`, {
+      method: 'POST',
+      body: JSON.stringify({ decision }),
+    }),
+  getVerifyDetailsByToken: async (token: string) =>
+    apiRequest<{ success: boolean; order?: any }>(`/orders/public/${token}/verify-details`),
   submitEvidenceByToken: async (token: string, data: any) =>
     apiRequest<{ success: boolean; order: Order }>(`/orders/public/${token}/evidence`, {
       method: 'POST',
@@ -481,4 +493,16 @@ export const walletApi = {
       }),
     });
   },
+};
+
+export const telegramApi = {
+  getStatus: async (businessId?: string) =>
+    apiRequest<{
+      success: boolean;
+      configured: boolean;
+      botUsername: string;
+      isConnected: boolean;
+      telegramUsername?: string;
+      connectUrl: string;
+    }>(`/telegram/status${businessId ? `?businessId=${encodeURIComponent(businessId)}` : ''}`),
 };

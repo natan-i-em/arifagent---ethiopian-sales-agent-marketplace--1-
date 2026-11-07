@@ -18,6 +18,7 @@ import { walletRouter } from './routes/walletRoutes.js';
 import { webhookRouter } from './routes/webhookRoutes.js';
 import { realtimeRouter } from './routes/realtimeRoutes.js';
 import { analyticsRouter } from './routes/analyticsRoutes.js';
+import { telegramRouter } from './routes/telegramRoutes.js';
 import { startOrderExpirationWorker } from './workers/orderExpirationWorker.js';
 import { SmsEthiopiaService } from './services/smsEthiopiaService.js';
 import { cacheService } from './services/cacheService.js';
@@ -98,6 +99,7 @@ app.use('/api/wallet', walletRouter);
 app.use('/api/webhooks', webhookRouter);
 app.use('/api/realtime', realtimeRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/telegram', telegramRouter);
 
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {

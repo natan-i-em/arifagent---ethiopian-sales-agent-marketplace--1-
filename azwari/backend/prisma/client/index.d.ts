@@ -155,6 +155,7 @@ export type PaymentProvider = (typeof PaymentProvider)[keyof typeof PaymentProvi
 
 
 export const OrderStatus: {
+  AWAITING_MERCHANT_VERIFICATION: 'AWAITING_MERCHANT_VERIFICATION',
   PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAYMENT_SUBMITTED: 'PAYMENT_SUBMITTED',
   CONFIRMED: 'CONFIRMED',
@@ -162,7 +163,8 @@ export const OrderStatus: {
   DISPATCHED: 'DISPATCHED',
   DELIVERED: 'DELIVERED',
   DISPUTED: 'DISPUTED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  CANCELLED_OUT_OF_STOCK: 'CANCELLED_OUT_OF_STOCK'
 };
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
@@ -4463,6 +4465,9 @@ export namespace Prisma {
   }
 
   export type BusinessMinAggregateOutputType = {
+    telegramChatId: string | null
+    telegramUsername: string | null
+    telegramConnectedAt: Date | null
     id: string | null
     authUserId: string | null
     name: string | null
@@ -4484,6 +4489,9 @@ export namespace Prisma {
   }
 
   export type BusinessMaxAggregateOutputType = {
+    telegramChatId: string | null
+    telegramUsername: string | null
+    telegramConnectedAt: Date | null
     id: string | null
     authUserId: string | null
     name: string | null
@@ -4505,6 +4513,9 @@ export namespace Prisma {
   }
 
   export type BusinessCountAggregateOutputType = {
+    telegramChatId: number
+    telegramUsername: number
+    telegramConnectedAt: number
     id: number
     authUserId: number
     name: number
@@ -4536,6 +4547,9 @@ export namespace Prisma {
   }
 
   export type BusinessMinAggregateInputType = {
+    telegramChatId?: true
+    telegramUsername?: true
+    telegramConnectedAt?: true
     id?: true
     authUserId?: true
     name?: true
@@ -4557,6 +4571,9 @@ export namespace Prisma {
   }
 
   export type BusinessMaxAggregateInputType = {
+    telegramChatId?: true
+    telegramUsername?: true
+    telegramConnectedAt?: true
     id?: true
     authUserId?: true
     name?: true
@@ -4578,6 +4595,9 @@ export namespace Prisma {
   }
 
   export type BusinessCountAggregateInputType = {
+    telegramChatId?: true
+    telegramUsername?: true
+    telegramConnectedAt?: true
     id?: true
     authUserId?: true
     name?: true
@@ -4686,6 +4706,9 @@ export namespace Prisma {
   }
 
   export type BusinessGroupByOutputType = {
+    telegramChatId: string | null
+    telegramUsername: string | null
+    telegramConnectedAt: Date | null
     id: string
     authUserId: string | null
     name: string
@@ -4726,6 +4749,9 @@ export namespace Prisma {
 
 
   export type BusinessSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    telegramChatId?: boolean
+    telegramUsername?: boolean
+    telegramConnectedAt?: boolean
     id?: boolean
     authUserId?: boolean
     name?: boolean
@@ -4755,6 +4781,9 @@ export namespace Prisma {
   }, ExtArgs["result"]["business"]>
 
   export type BusinessSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    telegramChatId?: boolean
+    telegramUsername?: boolean
+    telegramConnectedAt?: boolean
     id?: boolean
     authUserId?: boolean
     name?: boolean
@@ -4776,6 +4805,9 @@ export namespace Prisma {
   }, ExtArgs["result"]["business"]>
 
   export type BusinessSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    telegramChatId?: boolean
+    telegramUsername?: boolean
+    telegramConnectedAt?: boolean
     id?: boolean
     authUserId?: boolean
     name?: boolean
@@ -4797,6 +4829,9 @@ export namespace Prisma {
   }, ExtArgs["result"]["business"]>
 
   export type BusinessSelectScalar = {
+    telegramChatId?: boolean
+    telegramUsername?: boolean
+    telegramConnectedAt?: boolean
     id?: boolean
     authUserId?: boolean
     name?: boolean
@@ -4817,7 +4852,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type BusinessOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "authUserId" | "name" | "tradeName" | "tinNumber" | "licenseNumber" | "verificationStatus" | "verificationDocumentUrl" | "city" | "subcity" | "specificLocation" | "phone" | "contactEmail" | "commissionReserveBalance" | "subscriptionPlan" | "subscriptionStatus" | "createdAt" | "updatedAt", ExtArgs["result"]["business"]>
+  export type BusinessOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"telegramChatId" | "telegramUsername" | "telegramConnectedAt" | "id" | "authUserId" | "name" | "tradeName" | "tinNumber" | "licenseNumber" | "verificationStatus" | "verificationDocumentUrl" | "city" | "subcity" | "specificLocation" | "phone" | "contactEmail" | "commissionReserveBalance" | "subscriptionPlan" | "subscriptionStatus" | "createdAt" | "updatedAt", ExtArgs["result"]["business"]>
   export type BusinessInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     paymentAccounts?: boolean | Business$paymentAccountsArgs<ExtArgs>
     products?: boolean | Business$productsArgs<ExtArgs>
@@ -4843,6 +4878,9 @@ export namespace Prisma {
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
+      telegramChatId: string | null
+      telegramUsername: string | null
+      telegramConnectedAt: Date | null
       id: string
       authUserId: string | null
       name: string
@@ -4944,8 +4982,8 @@ export namespace Prisma {
      * // Get first 10 Businesses
      * const businesses = await prisma.business.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const businessWithIdOnly = await prisma.business.findMany({ select: { id: true } })
+     * // Only select the `telegramChatId`
+     * const businessWithTelegramChatIdOnly = await prisma.business.findMany({ select: { telegramChatId: true } })
      * 
      */
     findMany<T extends BusinessFindManyArgs>(args?: SelectSubset<T, BusinessFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BusinessPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -4989,9 +5027,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Create many Businesses and only return the `id`
-     * const businessWithIdOnly = await prisma.business.createManyAndReturn({
-     *   select: { id: true },
+     * // Create many Businesses and only return the `telegramChatId`
+     * const businessWithTelegramChatIdOnly = await prisma.business.createManyAndReturn({
+     *   select: { telegramChatId: true },
      *   data: [
      *     // ... provide data here
      *   ]
@@ -5080,9 +5118,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Businesses and only return the `id`
-     * const businessWithIdOnly = await prisma.business.updateManyAndReturn({
-     *   select: { id: true },
+     * // Update zero or more Businesses and only return the `telegramChatId`
+     * const businessWithTelegramChatIdOnly = await prisma.business.updateManyAndReturn({
+     *   select: { telegramChatId: true },
      *   where: {
      *     // ... provide filter here
      *   },
@@ -5291,6 +5329,9 @@ export namespace Prisma {
    * Fields of the Business model
    */
   interface BusinessFieldRefs {
+    readonly telegramChatId: FieldRef<"Business", 'String'>
+    readonly telegramUsername: FieldRef<"Business", 'String'>
+    readonly telegramConnectedAt: FieldRef<"Business", 'DateTime'>
     readonly id: FieldRef<"Business", 'String'>
     readonly authUserId: FieldRef<"Business", 'String'>
     readonly name: FieldRef<"Business", 'String'>
@@ -10991,6 +11032,9 @@ export namespace Prisma {
     platformFee: Decimal | null
     supplierNetPayout: Decimal | null
     status: $Enums.OrderStatus | null
+    stockConfirmedAt: Date | null
+    stockConfirmedBy: string | null
+    stockVerificationExpiresAt: Date | null
     paymentExpiresAt: Date | null
     assignedDriverName: string | null
     assignedDriverPhone: string | null
@@ -11022,6 +11066,9 @@ export namespace Prisma {
     platformFee: Decimal | null
     supplierNetPayout: Decimal | null
     status: $Enums.OrderStatus | null
+    stockConfirmedAt: Date | null
+    stockConfirmedBy: string | null
+    stockVerificationExpiresAt: Date | null
     paymentExpiresAt: Date | null
     assignedDriverName: string | null
     assignedDriverPhone: string | null
@@ -11053,6 +11100,9 @@ export namespace Prisma {
     platformFee: number
     supplierNetPayout: number
     status: number
+    stockConfirmedAt: number
+    stockConfirmedBy: number
+    stockVerificationExpiresAt: number
     paymentExpiresAt: number
     assignedDriverName: number
     assignedDriverPhone: number
@@ -11104,6 +11154,9 @@ export namespace Prisma {
     platformFee?: true
     supplierNetPayout?: true
     status?: true
+    stockConfirmedAt?: true
+    stockConfirmedBy?: true
+    stockVerificationExpiresAt?: true
     paymentExpiresAt?: true
     assignedDriverName?: true
     assignedDriverPhone?: true
@@ -11135,6 +11188,9 @@ export namespace Prisma {
     platformFee?: true
     supplierNetPayout?: true
     status?: true
+    stockConfirmedAt?: true
+    stockConfirmedBy?: true
+    stockVerificationExpiresAt?: true
     paymentExpiresAt?: true
     assignedDriverName?: true
     assignedDriverPhone?: true
@@ -11166,6 +11222,9 @@ export namespace Prisma {
     platformFee?: true
     supplierNetPayout?: true
     status?: true
+    stockConfirmedAt?: true
+    stockConfirmedBy?: true
+    stockVerificationExpiresAt?: true
     paymentExpiresAt?: true
     assignedDriverName?: true
     assignedDriverPhone?: true
@@ -11284,6 +11343,9 @@ export namespace Prisma {
     platformFee: Decimal
     supplierNetPayout: Decimal
     status: $Enums.OrderStatus
+    stockConfirmedAt: Date | null
+    stockConfirmedBy: string | null
+    stockVerificationExpiresAt: Date | null
     paymentExpiresAt: Date
     assignedDriverName: string | null
     assignedDriverPhone: string | null
@@ -11334,6 +11396,9 @@ export namespace Prisma {
     platformFee?: boolean
     supplierNetPayout?: boolean
     status?: boolean
+    stockConfirmedAt?: boolean
+    stockConfirmedBy?: boolean
+    stockVerificationExpiresAt?: boolean
     paymentExpiresAt?: boolean
     assignedDriverName?: boolean
     assignedDriverPhone?: boolean
@@ -11373,6 +11438,9 @@ export namespace Prisma {
     platformFee?: boolean
     supplierNetPayout?: boolean
     status?: boolean
+    stockConfirmedAt?: boolean
+    stockConfirmedBy?: boolean
+    stockVerificationExpiresAt?: boolean
     paymentExpiresAt?: boolean
     assignedDriverName?: boolean
     assignedDriverPhone?: boolean
@@ -11406,6 +11474,9 @@ export namespace Prisma {
     platformFee?: boolean
     supplierNetPayout?: boolean
     status?: boolean
+    stockConfirmedAt?: boolean
+    stockConfirmedBy?: boolean
+    stockVerificationExpiresAt?: boolean
     paymentExpiresAt?: boolean
     assignedDriverName?: boolean
     assignedDriverPhone?: boolean
@@ -11439,6 +11510,9 @@ export namespace Prisma {
     platformFee?: boolean
     supplierNetPayout?: boolean
     status?: boolean
+    stockConfirmedAt?: boolean
+    stockConfirmedBy?: boolean
+    stockVerificationExpiresAt?: boolean
     paymentExpiresAt?: boolean
     assignedDriverName?: boolean
     assignedDriverPhone?: boolean
@@ -11450,7 +11524,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "publicAccessToken" | "businessId" | "salesPartnerId" | "buyerName" | "buyerPhone" | "deliverySubcity" | "specificAddress" | "preferredDate" | "preferredTimeSlot" | "specialInstructions" | "subtotalAmount" | "deliveryFee" | "totalAmount" | "commissionAmount" | "platformFee" | "supplierNetPayout" | "status" | "paymentExpiresAt" | "assignedDriverName" | "assignedDriverPhone" | "scheduledAt" | "dispatchedAt" | "deliveredAt" | "deliveryNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "publicAccessToken" | "businessId" | "salesPartnerId" | "buyerName" | "buyerPhone" | "deliverySubcity" | "specificAddress" | "preferredDate" | "preferredTimeSlot" | "specialInstructions" | "subtotalAmount" | "deliveryFee" | "totalAmount" | "commissionAmount" | "platformFee" | "supplierNetPayout" | "status" | "stockConfirmedAt" | "stockConfirmedBy" | "stockVerificationExpiresAt" | "paymentExpiresAt" | "assignedDriverName" | "assignedDriverPhone" | "scheduledAt" | "dispatchedAt" | "deliveredAt" | "deliveryNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
   export type OrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     business?: boolean | BusinessDefaultArgs<ExtArgs>
     salesPartner?: boolean | SalesPartnerDefaultArgs<ExtArgs>
@@ -11501,6 +11575,9 @@ export namespace Prisma {
       platformFee: Prisma.Decimal
       supplierNetPayout: Prisma.Decimal
       status: $Enums.OrderStatus
+      stockConfirmedAt: Date | null
+      stockConfirmedBy: string | null
+      stockVerificationExpiresAt: Date | null
       paymentExpiresAt: Date
       assignedDriverName: string | null
       assignedDriverPhone: string | null
@@ -11959,6 +12036,9 @@ export namespace Prisma {
     readonly platformFee: FieldRef<"Order", 'Decimal'>
     readonly supplierNetPayout: FieldRef<"Order", 'Decimal'>
     readonly status: FieldRef<"Order", 'OrderStatus'>
+    readonly stockConfirmedAt: FieldRef<"Order", 'DateTime'>
+    readonly stockConfirmedBy: FieldRef<"Order", 'String'>
+    readonly stockVerificationExpiresAt: FieldRef<"Order", 'DateTime'>
     readonly paymentExpiresAt: FieldRef<"Order", 'DateTime'>
     readonly assignedDriverName: FieldRef<"Order", 'String'>
     readonly assignedDriverPhone: FieldRef<"Order", 'String'>
@@ -30903,6 +30983,9 @@ export namespace Prisma {
 
 
   export const BusinessScalarFieldEnum: {
+    telegramChatId: 'telegramChatId',
+    telegramUsername: 'telegramUsername',
+    telegramConnectedAt: 'telegramConnectedAt',
     id: 'id',
     authUserId: 'authUserId',
     name: 'name',
@@ -31028,6 +31111,9 @@ export namespace Prisma {
     platformFee: 'platformFee',
     supplierNetPayout: 'supplierNetPayout',
     status: 'status',
+    stockConfirmedAt: 'stockConfirmedAt',
+    stockConfirmedBy: 'stockConfirmedBy',
+    stockVerificationExpiresAt: 'stockVerificationExpiresAt',
     paymentExpiresAt: 'paymentExpiresAt',
     assignedDriverName: 'assignedDriverName',
     assignedDriverPhone: 'assignedDriverPhone',
@@ -31616,6 +31702,9 @@ export namespace Prisma {
     AND?: BusinessWhereInput | BusinessWhereInput[]
     OR?: BusinessWhereInput[]
     NOT?: BusinessWhereInput | BusinessWhereInput[]
+    telegramChatId?: StringNullableFilter<"Business"> | string | null
+    telegramUsername?: StringNullableFilter<"Business"> | string | null
+    telegramConnectedAt?: DateTimeNullableFilter<"Business"> | Date | string | null
     id?: StringFilter<"Business"> | string
     authUserId?: StringNullableFilter<"Business"> | string | null
     name?: StringFilter<"Business"> | string
@@ -31644,6 +31733,9 @@ export namespace Prisma {
   }
 
   export type BusinessOrderByWithRelationInput = {
+    telegramChatId?: SortOrderInput | SortOrder
+    telegramUsername?: SortOrderInput | SortOrder
+    telegramConnectedAt?: SortOrderInput | SortOrder
     id?: SortOrder
     authUserId?: SortOrderInput | SortOrder
     name?: SortOrder
@@ -31679,6 +31771,9 @@ export namespace Prisma {
     AND?: BusinessWhereInput | BusinessWhereInput[]
     OR?: BusinessWhereInput[]
     NOT?: BusinessWhereInput | BusinessWhereInput[]
+    telegramChatId?: StringNullableFilter<"Business"> | string | null
+    telegramUsername?: StringNullableFilter<"Business"> | string | null
+    telegramConnectedAt?: DateTimeNullableFilter<"Business"> | Date | string | null
     name?: StringFilter<"Business"> | string
     tradeName?: StringFilter<"Business"> | string
     verificationStatus?: EnumVerificationStatusFilter<"Business"> | $Enums.VerificationStatus
@@ -31703,6 +31798,9 @@ export namespace Prisma {
   }, "id" | "authUserId" | "tinNumber" | "licenseNumber">
 
   export type BusinessOrderByWithAggregationInput = {
+    telegramChatId?: SortOrderInput | SortOrder
+    telegramUsername?: SortOrderInput | SortOrder
+    telegramConnectedAt?: SortOrderInput | SortOrder
     id?: SortOrder
     authUserId?: SortOrderInput | SortOrder
     name?: SortOrder
@@ -31732,6 +31830,9 @@ export namespace Prisma {
     AND?: BusinessScalarWhereWithAggregatesInput | BusinessScalarWhereWithAggregatesInput[]
     OR?: BusinessScalarWhereWithAggregatesInput[]
     NOT?: BusinessScalarWhereWithAggregatesInput | BusinessScalarWhereWithAggregatesInput[]
+    telegramChatId?: StringNullableWithAggregatesFilter<"Business"> | string | null
+    telegramUsername?: StringNullableWithAggregatesFilter<"Business"> | string | null
+    telegramConnectedAt?: DateTimeNullableWithAggregatesFilter<"Business"> | Date | string | null
     id?: StringWithAggregatesFilter<"Business"> | string
     authUserId?: StringNullableWithAggregatesFilter<"Business"> | string | null
     name?: StringWithAggregatesFilter<"Business"> | string
@@ -32213,6 +32314,9 @@ export namespace Prisma {
     platformFee?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+    stockConfirmedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    stockConfirmedBy?: StringNullableFilter<"Order"> | string | null
+    stockVerificationExpiresAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     paymentExpiresAt?: DateTimeFilter<"Order"> | Date | string
     assignedDriverName?: StringNullableFilter<"Order"> | string | null
     assignedDriverPhone?: StringNullableFilter<"Order"> | string | null
@@ -32251,6 +32355,9 @@ export namespace Prisma {
     platformFee?: SortOrder
     supplierNetPayout?: SortOrder
     status?: SortOrder
+    stockConfirmedAt?: SortOrderInput | SortOrder
+    stockConfirmedBy?: SortOrderInput | SortOrder
+    stockVerificationExpiresAt?: SortOrderInput | SortOrder
     paymentExpiresAt?: SortOrder
     assignedDriverName?: SortOrderInput | SortOrder
     assignedDriverPhone?: SortOrderInput | SortOrder
@@ -32292,6 +32399,9 @@ export namespace Prisma {
     platformFee?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+    stockConfirmedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    stockConfirmedBy?: StringNullableFilter<"Order"> | string | null
+    stockVerificationExpiresAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     paymentExpiresAt?: DateTimeFilter<"Order"> | Date | string
     assignedDriverName?: StringNullableFilter<"Order"> | string | null
     assignedDriverPhone?: StringNullableFilter<"Order"> | string | null
@@ -32330,6 +32440,9 @@ export namespace Prisma {
     platformFee?: SortOrder
     supplierNetPayout?: SortOrder
     status?: SortOrder
+    stockConfirmedAt?: SortOrderInput | SortOrder
+    stockConfirmedBy?: SortOrderInput | SortOrder
+    stockVerificationExpiresAt?: SortOrderInput | SortOrder
     paymentExpiresAt?: SortOrder
     assignedDriverName?: SortOrderInput | SortOrder
     assignedDriverPhone?: SortOrderInput | SortOrder
@@ -32369,6 +32482,9 @@ export namespace Prisma {
     platformFee?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
+    stockConfirmedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    stockConfirmedBy?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    stockVerificationExpiresAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     paymentExpiresAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     assignedDriverName?: StringNullableWithAggregatesFilter<"Order"> | string | null
     assignedDriverPhone?: StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -33817,6 +33933,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -33845,6 +33964,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -33873,6 +33995,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -33901,6 +34026,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -33929,6 +34057,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateManyInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -33950,6 +34081,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateManyMutationInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -33971,6 +34105,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateManyInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -34528,6 +34665,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -34566,6 +34706,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -34600,6 +34743,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34638,6 +34784,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34674,6 +34823,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -34703,6 +34855,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34734,6 +34889,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36363,6 +36521,17 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type EnumVerificationStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.VerificationStatus | EnumVerificationStatusFieldRefInput<$PrismaModel>
     in?: $Enums.VerificationStatus[] | ListEnumVerificationStatusFieldRefInput<$PrismaModel>
@@ -36447,6 +36616,9 @@ export namespace Prisma {
   }
 
   export type BusinessCountOrderByAggregateInput = {
+    telegramChatId?: SortOrder
+    telegramUsername?: SortOrder
+    telegramConnectedAt?: SortOrder
     id?: SortOrder
     authUserId?: SortOrder
     name?: SortOrder
@@ -36472,6 +36644,9 @@ export namespace Prisma {
   }
 
   export type BusinessMaxOrderByAggregateInput = {
+    telegramChatId?: SortOrder
+    telegramUsername?: SortOrder
+    telegramConnectedAt?: SortOrder
     id?: SortOrder
     authUserId?: SortOrder
     name?: SortOrder
@@ -36493,6 +36668,9 @@ export namespace Prisma {
   }
 
   export type BusinessMinOrderByAggregateInput = {
+    telegramChatId?: SortOrder
+    telegramUsername?: SortOrder
+    telegramConnectedAt?: SortOrder
     id?: SortOrder
     authUserId?: SortOrder
     name?: SortOrder
@@ -36515,6 +36693,20 @@ export namespace Prisma {
 
   export type BusinessSumOrderByAggregateInput = {
     commissionReserveBalance?: SortOrder
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type EnumVerificationStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -36955,17 +37147,6 @@ export namespace Prisma {
     not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type SalesPartnerScalarRelationFilter = {
     is?: SalesPartnerWhereInput
     isNot?: SalesPartnerWhereInput
@@ -37021,6 +37202,9 @@ export namespace Prisma {
     platformFee?: SortOrder
     supplierNetPayout?: SortOrder
     status?: SortOrder
+    stockConfirmedAt?: SortOrder
+    stockConfirmedBy?: SortOrder
+    stockVerificationExpiresAt?: SortOrder
     paymentExpiresAt?: SortOrder
     assignedDriverName?: SortOrder
     assignedDriverPhone?: SortOrder
@@ -37061,6 +37245,9 @@ export namespace Prisma {
     platformFee?: SortOrder
     supplierNetPayout?: SortOrder
     status?: SortOrder
+    stockConfirmedAt?: SortOrder
+    stockConfirmedBy?: SortOrder
+    stockVerificationExpiresAt?: SortOrder
     paymentExpiresAt?: SortOrder
     assignedDriverName?: SortOrder
     assignedDriverPhone?: SortOrder
@@ -37092,6 +37279,9 @@ export namespace Prisma {
     platformFee?: SortOrder
     supplierNetPayout?: SortOrder
     status?: SortOrder
+    stockConfirmedAt?: SortOrder
+    stockConfirmedBy?: SortOrder
+    stockVerificationExpiresAt?: SortOrder
     paymentExpiresAt?: SortOrder
     assignedDriverName?: SortOrder
     assignedDriverPhone?: SortOrder
@@ -37120,20 +37310,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumOrderStatusFilter<$PrismaModel>
     _max?: NestedEnumOrderStatusFilter<$PrismaModel>
-  }
-
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type OrderScalarRelationFilter = {
@@ -38217,6 +38393,10 @@ export namespace Prisma {
     connect?: AuditLogWhereUniqueInput | AuditLogWhereUniqueInput[]
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type EnumVerificationStatusFieldUpdateOperationsInput = {
     set?: $Enums.VerificationStatus
   }
@@ -38916,10 +39096,6 @@ export namespace Prisma {
 
   export type EnumOrderStatusFieldUpdateOperationsInput = {
     set?: $Enums.OrderStatus
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type BusinessUpdateOneRequiredWithoutOrdersNestedInput = {
@@ -39647,6 +39823,17 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedEnumVerificationStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.VerificationStatus | EnumVerificationStatusFieldRefInput<$PrismaModel>
     in?: $Enums.VerificationStatus[] | ListEnumVerificationStatusFieldRefInput<$PrismaModel>
@@ -39663,6 +39850,20 @@ export namespace Prisma {
     gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumVerificationStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -39782,17 +39983,6 @@ export namespace Prisma {
     not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedEnumOrderStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
     in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
@@ -39801,20 +39991,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumOrderStatusFilter<$PrismaModel>
     _max?: NestedEnumOrderStatusFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumCommissionStatusFilter<$PrismaModel = never> = {
@@ -40106,6 +40282,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -40142,6 +40321,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -40418,6 +40600,9 @@ export namespace Prisma {
     platformFee?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+    stockConfirmedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    stockConfirmedBy?: StringNullableFilter<"Order"> | string | null
+    stockVerificationExpiresAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     paymentExpiresAt?: DateTimeFilter<"Order"> | Date | string
     assignedDriverName?: StringNullableFilter<"Order"> | string | null
     assignedDriverPhone?: StringNullableFilter<"Order"> | string | null
@@ -40567,6 +40752,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutPaymentAccountsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -40594,6 +40782,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutPaymentAccountsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -40637,6 +40828,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutPaymentAccountsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -40664,6 +40858,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutPaymentAccountsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -40708,6 +40905,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -40744,6 +40944,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -41084,6 +41287,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutProductsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -41111,6 +41317,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutProductsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -41216,6 +41425,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutProductsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -41243,6 +41455,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutProductsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -41490,6 +41705,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutOrdersInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -41517,6 +41735,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutOrdersInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -41781,6 +42002,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutOrdersInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -41808,6 +42032,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutOrdersInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -42068,6 +42295,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42105,6 +42335,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42232,6 +42465,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42269,6 +42505,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42392,6 +42631,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42429,6 +42671,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42478,6 +42723,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42515,6 +42763,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42548,6 +42799,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42585,6 +42839,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -42726,6 +42983,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42763,6 +43023,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43078,6 +43341,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -43115,6 +43381,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -43164,6 +43433,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43201,6 +43473,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43217,6 +43492,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutAuditLogsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43244,6 +43522,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutAuditLogsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43287,6 +43568,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutAuditLogsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -43314,6 +43598,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutAuditLogsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -43358,6 +43645,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -43395,6 +43685,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -43416,6 +43709,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutPlatformFeeLedgersInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43443,6 +43739,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutPlatformFeeLedgersInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43503,6 +43802,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43540,6 +43842,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43567,6 +43872,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutPlatformFeeLedgersInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -43594,6 +43902,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutPlatformFeeLedgersInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -43621,6 +43932,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutWalletInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43648,6 +43962,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutWalletInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -43905,6 +44222,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutWalletInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -43932,6 +44252,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutWalletInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -44238,6 +44561,9 @@ export namespace Prisma {
   }
 
   export type BusinessCreateWithoutDepositsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -44265,6 +44591,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedCreateWithoutDepositsInput = {
+    telegramChatId?: string | null
+    telegramUsername?: string | null
+    telegramConnectedAt?: Date | string | null
     id?: string
     authUserId?: string | null
     name: string
@@ -44349,6 +44678,9 @@ export namespace Prisma {
   }
 
   export type BusinessUpdateWithoutDepositsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -44376,6 +44708,9 @@ export namespace Prisma {
   }
 
   export type BusinessUncheckedUpdateWithoutDepositsInput = {
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     id?: StringFieldUpdateOperationsInput | string
     authUserId?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -44713,6 +45048,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -44884,6 +45222,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44920,6 +45261,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44955,6 +45299,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45093,6 +45440,9 @@ export namespace Prisma {
     platformFee?: Decimal | DecimalJsLike | number | string
     supplierNetPayout?: Decimal | DecimalJsLike | number | string
     status?: $Enums.OrderStatus
+    stockConfirmedAt?: Date | string | null
+    stockConfirmedBy?: string | null
+    stockVerificationExpiresAt?: Date | string | null
     paymentExpiresAt: Date | string
     assignedDriverName?: string | null
     assignedDriverPhone?: string | null
@@ -45165,6 +45515,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45201,6 +45554,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45236,6 +45592,9 @@ export namespace Prisma {
     platformFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     supplierNetPayout?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    stockConfirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    stockConfirmedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    stockVerificationExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     paymentExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedDriverName?: NullableStringFieldUpdateOperationsInput | string | null
     assignedDriverPhone?: NullableStringFieldUpdateOperationsInput | string | null

@@ -288,6 +288,49 @@ export const CustomerOrderView: React.FC = () => {
     );
   }
 
+  // Pre-payment stock confirmation state: Customer is shielded while merchant verifies store inventory
+  if (currentOrder.orderStatus === 'awaiting_verification') {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 glass-card rounded-3xl border border-slate-200 text-center space-y-4 bg-white/90 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto">
+            <Clock className="w-6 h-6" />
+          </div>
+          <h2 className="text-base font-bold text-slate-900">Checking Physical Store Inventory</h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            The merchant is physically holding and verifying availability of your item in their shop. You will receive an SMS with your Telebirr / CBE payment instructions as soon as the merchant confirms availability.
+          </p>
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600">
+            Order #{currentOrder.orderNumber}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Sold out state: Merchant indicated out of stock in physical store
+  if (currentOrder.orderStatus === 'cancelled_out_of_stock') {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 glass-card rounded-3xl border border-slate-200 text-center space-y-4 bg-white/90 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-base font-bold text-slate-900">Product Unavailable in Store</h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            This item has physically sold out in the merchant's physical shop. No payment was charged. Your sales agent has been alerted to recommend an alternative product.
+          </p>
+          <Link
+            href="/"
+            className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shadow-2xs inline-block"
+          >
+            Explore Alternative Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const minutes = Math.floor(timeLeftSeconds / 60);
   const seconds = timeLeftSeconds % 60;
   const isTimerExpired = timeLeftSeconds === 0 && currentOrder.paymentStatus === 'pending';
