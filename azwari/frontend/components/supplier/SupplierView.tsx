@@ -1427,7 +1427,7 @@ export const SupplierView: React.FC = () => {
               <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold">Customer is shielded:</span> No SMS or payment request has been sent yet. If you confirm physical stock, payment instructions are released to the buyer and items are reserved for 45 minutes.
+                  <span className="font-bold">Customer is shielded:</span> No SMS or payment request has been sent yet. If you confirm physical stock, payment instructions are released to the buyer and items are reserved for 15 minutes.
                 </div>
               </div>
 
@@ -1497,7 +1497,7 @@ export const SupplierView: React.FC = () => {
                 className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
-                <span>Yes, in Stock (Hold 45m)</span>
+                <span>Yes, in Stock (Hold 15m)</span>
               </button>
             </div>
           </div>

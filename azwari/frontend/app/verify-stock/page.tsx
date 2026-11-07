@@ -179,7 +179,7 @@ function VerifyStockContent() {
               </div>
               <div className="flex items-center gap-1.5 text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-xl text-xs font-semibold">
                 <Clock className="w-3.5 h-3.5" />
-                <span>Hold 45m</span>
+                <span>Hold 15m</span>
               </div>
             </div>
 
@@ -227,7 +227,7 @@ function VerifyStockContent() {
                 <span>Customer is shielded</span>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                The buyer has <strong>NOT</strong> received a payment link yet. Confirming will hold this item in your physical shop for 45 minutes while the customer transfers payment.
+                The buyer has <strong>NOT</strong> received a payment link yet. Confirming will hold this item in your physical shop for 15 minutes while the customer transfers payment.
               </p>
             </div>
 
@@ -240,7 +240,7 @@ function VerifyStockContent() {
                 className="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
               >
                 <CheckCircle2 className="w-5 h-5" />
-                <span>YES, IN STOCK (Hold 45m)</span>
+                <span>YES, IN STOCK (Hold 15m)</span>
               </button>
 
               <button

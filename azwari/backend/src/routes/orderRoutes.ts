@@ -1105,7 +1105,7 @@ orderRouter.post(
             platformFee,
             supplierNetPayout,
             status: 'AWAITING_MERCHANT_VERIFICATION',
-            stockVerificationExpiresAt: new Date(Date.now() + 45 * 60 * 1000),
+            stockVerificationExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
             paymentExpiresAt,
             items: {
               create: [

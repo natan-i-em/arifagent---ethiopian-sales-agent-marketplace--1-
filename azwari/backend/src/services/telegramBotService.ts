@@ -255,7 +255,7 @@ export class TelegramBotService {
       inline_keyboard: [
         [
           {
-            text: '✅ YES, IN STOCK (Hold 45m)',
+            text: '✅ YES, IN STOCK (Hold 15m)',
             callback_data: `stk:${params.orderId}:yes`,
           },
         ],
@@ -382,7 +382,7 @@ export class TelegramBotService {
         // Update telegram message inline to reflect final decision
         if (chatId && messageId) {
           const confirmationText = isYes
-            ? `✅ <b>IN-STORE STOCK CONFIRMED!</b>\nItem held for 45 minutes. Payment instructions sent to buyer via SMS.`
+            ? `✅ <b>IN-STORE STOCK CONFIRMED!</b>\nItem held for 15 minutes. Payment instructions sent to buyer via SMS.`
             : `❌ <b>OUT OF STOCK / SOLD OUT</b>\nItem zeroed out in catalog. Order cancelled. Customer shielded from notifications.`;
           await this.editMessageText(chatId, messageId, confirmationText).catch(() => {});
         }

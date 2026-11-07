@@ -47,7 +47,7 @@ export async function processStockDecision(
         status: 'PENDING_PAYMENT',
         stockConfirmedAt: new Date(),
         stockConfirmedBy: confirmedBy,
-        paymentExpiresAt: new Date(Date.now() + 45 * 60 * 1000), // 45 minutes to pay
+        paymentExpiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes to pay
       },
       include: {
         business: { include: { paymentAccounts: true } },
