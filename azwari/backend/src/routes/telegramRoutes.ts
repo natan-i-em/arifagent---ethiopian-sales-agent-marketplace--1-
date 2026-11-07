@@ -136,6 +136,206 @@ export async function processStockDecision(
 }
 
 /**
+ * Helper to process customer payment receipt decision (approval / rejection)
+ * Works interchangeably from Telegram Bot OR Platform Web Portal
+ */
+export async function processPaymentDecision(
+  orderId: string,
+  approved: boolean,
+  verifiedBy: string = 'TELEGRAM_BOT',
+  rejectionReason?: string
+): Promise<{ success: boolean; message: string; order?: any }> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      business: { include: { paymentAccounts: true } },
+      items: { include: { product: true, variant: true } },
+      paymentReceipts: { orderBy: { createdAt: 'desc' } },
+      salesPartner: true,
+      commissionEscrow: true,
+    },
+  });
+
+  if (!order) {
+    return { success: false, message: 'Order not found' };
+  }
+
+  // Idempotency: if already confirmed/scheduled/delivered
+  if (approved && ['CONFIRMED', 'SCHEDULED', 'DISPATCHED', 'DELIVERED'].includes(order.status)) {
+    return {
+      success: true,
+      message: `Order #${order.orderNumber} payment is already verified.`,
+      order,
+    };
+  }
+
+  const latestReceipt = order.paymentReceipts[0];
+
+  if (approved) {
+    // 1. Mark Receipt & Order CONFIRMED
+    const updatedOrder = await prisma.$transaction(async (tx: any) => {
+      if (latestReceipt) {
+        await tx.paymentReceipt.update({
+          where: { id: latestReceipt.id },
+          data: {
+            verifiedAt: new Date(),
+            verifiedBy,
+            rejectionReason: null,
+          },
+        });
+      }
+
+      return await tx.order.update({
+        where: { id: order.id },
+        data: { status: 'CONFIRMED' },
+        include: {
+          items: { include: { product: true, variant: true } },
+          paymentReceipts: { orderBy: { createdAt: 'desc' } },
+          commissionEscrow: true,
+          business: { include: { paymentAccounts: true } },
+          salesPartner: true,
+        },
+      });
+    });
+
+    // 2. Audit Log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorRole: verifiedBy.includes('TELEGRAM') ? 'merchant_telegram' : 'supplier',
+          actorName: verifiedBy,
+          action: 'VERIFY_PAYMENT',
+          entityType: 'Order',
+          entityId: order.id,
+          businessId: order.businessId,
+          description: `Payment receipt verified for order #${order.orderNumber} via ${verifiedBy}. Order marked CONFIRMED.`,
+        },
+      });
+    } catch (auditErr) {
+      console.warn('[Audit Log Notice]', auditErr);
+    }
+
+    // 3. Buyer SMS Notification
+    SmsEthiopiaService.sendSms({
+      recipientPhone: order.buyerPhone,
+      messageBody: `Azwari: Payment for order #${order.orderNumber} is verified! Your order is being packed for delivery.`,
+      orderNumber: order.orderNumber,
+      templateName: 'order_payment_verified',
+    }).catch((err) => console.warn('[Buyer Verified SMS Warning]', err));
+
+    // 4. Sales Agent SMS Alert
+    if (order.salesPartner?.phone) {
+      SmsEthiopiaService.sendSms({
+        recipientPhone: order.salesPartner.phone,
+        messageBody: `Azwari Alert: Payment verified for order #${order.orderNumber}! Commission of ETB ${order.commissionAmount} secured in escrow.`,
+        orderNumber: order.orderNumber,
+        templateName: 'agent_payment_verified',
+      }).catch(() => {});
+    }
+
+    // 5. If verified from Web Portal and merchant has Telegram, notify Telegram chat
+    if (!verifiedBy.includes('TELEGRAM') && (order.business as any)?.telegramChatId) {
+      TelegramBotService.sendMessage(
+        (order.business as any).telegramChatId,
+        `✅ <b>Payment Verified via Platform Web Portal</b>\n\nOrder #${order.orderNumber} (${order.buyerName}) has been approved and moved to fulfillment.`
+      ).catch(() => {});
+    }
+
+    // 6. Invalidate caches & emit SSE
+    await cacheService.delPattern('cache:orders:*');
+    await cacheService.delPattern('cache:commissions:*');
+    realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: order.id });
+
+    return {
+      success: true,
+      message: `Payment verified for order #${order.orderNumber}. Order marked CONFIRMED.`,
+      order: updatedOrder,
+    };
+  } else {
+    // REJECT PAYMENT
+    const updatedOrder = await prisma.$transaction(async (tx: any) => {
+      if (latestReceipt) {
+        await tx.paymentReceipt.update({
+          where: { id: latestReceipt.id },
+          data: {
+            rejectionReason: rejectionReason || 'Payment could not be verified in merchant bank statement.',
+          },
+        });
+      }
+
+      return await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'PENDING_PAYMENT',
+          paymentExpiresAt: new Date(Date.now() + 15 * 60 * 1000), // extend 15 mins for re-upload
+        },
+        include: {
+          items: { include: { product: true, variant: true } },
+          paymentReceipts: { orderBy: { createdAt: 'desc' } },
+          commissionEscrow: true,
+          business: { include: { paymentAccounts: true } },
+          salesPartner: true,
+        },
+      });
+    });
+
+    // Audit Log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorRole: verifiedBy.includes('TELEGRAM') ? 'merchant_telegram' : 'supplier',
+          actorName: verifiedBy,
+          action: 'REJECT_PAYMENT',
+          entityType: 'Order',
+          entityId: order.id,
+          businessId: order.businessId,
+          description: `Payment receipt rejected for order #${order.orderNumber} via ${verifiedBy}. Reason: ${rejectionReason}`,
+        },
+      });
+    } catch (auditErr) {
+      console.warn('[Audit Log Notice]', auditErr);
+    }
+
+    // Buyer SMS Notification to re-upload
+    const trackingUrl = `https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${order.publicAccessToken}`;
+    SmsEthiopiaService.sendSms({
+      recipientPhone: order.buyerPhone,
+      messageBody: `Azwari Notice: We could not verify payment for order #${order.orderNumber}. Please check your transaction ID and re-upload screenshot: ${trackingUrl}`,
+      orderNumber: order.orderNumber,
+      templateName: 'order_payment_rejected',
+    }).catch(() => {});
+
+    // Sales Agent SMS Alert
+    if (order.salesPartner?.phone) {
+      SmsEthiopiaService.sendSms({
+        recipientPhone: order.salesPartner.phone,
+        messageBody: `Azwari Alert: Payment slip for order #${order.orderNumber} was rejected by ${order.business.name}. Buyer asked to re-upload.`,
+        orderNumber: order.orderNumber,
+        templateName: 'agent_payment_rejected',
+      }).catch(() => {});
+    }
+
+    // If rejected from Web Portal and merchant has Telegram, notify Telegram chat
+    if (!verifiedBy.includes('TELEGRAM') && (order.business as any)?.telegramChatId) {
+      TelegramBotService.sendMessage(
+        (order.business as any).telegramChatId,
+        `❌ <b>Payment Receipt Rejected via Platform Web Portal</b>\n\nOrder #${order.orderNumber} reverted to pending payment. Customer was asked to re-upload.`
+      ).catch(() => {});
+    }
+
+    // Invalidate caches & emit SSE
+    await cacheService.delPattern('cache:orders:*');
+    realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_REJECTED', orderId: order.id });
+
+    return {
+      success: true,
+      message: `Payment rejected for order #${order.orderNumber}. Buyer notified to re-upload.`,
+      order: updatedOrder,
+    };
+  }
+}
+
+/**
  * POST /api/telegram/webhook
  * Public webhook endpoint called by Telegram Bot API
  */
@@ -145,8 +345,18 @@ telegramRouter.post('/webhook', async (req: Request, res: Response): Promise<voi
     const handledResult = await TelegramBotService.handleWebhookUpdate(update);
 
     if (handledResult.handled && handledResult.orderId && handledResult.action) {
-      const decision = handledResult.action === 'confirm_stock' ? 'confirm' : 'reject';
-      await processStockDecision(handledResult.orderId, decision, 'TELEGRAM_BOT');
+      if (handledResult.action === 'confirm_stock' || handledResult.action === 'reject_stock') {
+        const decision = handledResult.action === 'confirm_stock' ? 'confirm' : 'reject';
+        await processStockDecision(handledResult.orderId, decision, 'TELEGRAM_BOT');
+      } else if (handledResult.action === 'approve_payment' || handledResult.action === 'reject_payment') {
+        const approved = handledResult.action === 'approve_payment';
+        await processPaymentDecision(
+          handledResult.orderId,
+          approved,
+          'TELEGRAM_BOT',
+          approved ? undefined : 'Receipt rejected on Telegram Bot'
+        );
+      }
     }
 
     res.status(200).json({ success: true });

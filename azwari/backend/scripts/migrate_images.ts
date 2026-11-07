@@ -1,4 +1,4 @@
-import { prisma } from '../server/prisma';
+import { prisma } from '../src/prisma.js';
 
 // High-resolution realistic product images for Ethiopian eCommerce
 export const ETHIOPIAN_PRODUCT_IMAGES: Record<string, { imageUrl: string; images: string[] }> = {

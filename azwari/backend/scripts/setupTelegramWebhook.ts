@@ -3,7 +3,6 @@ dotenv.config();
 
 async function setupWebhook() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const username = process.env.TELEGRAM_BOT_USERNAME || 'AzwariMerchantBot';
   const backendUrl = process.argv[2] || process.env.BACKEND_URL || 'https://azwari.onrender.com';
   const webhookUrl = `${backendUrl.replace(/\/$/, '')}/api/telegram/webhook`;
 
@@ -84,3 +83,4 @@ async function setupWebhook() {
 }
 
 setupWebhook();
+

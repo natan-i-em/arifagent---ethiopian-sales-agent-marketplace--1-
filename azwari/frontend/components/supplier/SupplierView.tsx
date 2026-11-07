@@ -32,7 +32,8 @@ import {
   Store,
   ArrowRight,
   Layers,
-  Bot
+  Bot,
+  Eye
 } from 'lucide-react';
 import { SupplierSidebar, SupplierTab } from './SupplierSidebar';
 import { SupplierProductManager } from './SupplierProductManager';
@@ -133,6 +134,7 @@ export const SupplierView: React.FC = () => {
   
   // Verification Modal State
   const [verifyingOrder, setVerifyingOrder] = useState<Order | null>(null);
+  const [verifyingStockOrder, setVerifyingStockOrder] = useState<Order | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
 
@@ -973,6 +975,14 @@ export const SupplierView: React.FC = () => {
                                     {order.orderStatus === 'awaiting_verification' && (
                                       <div className="flex items-center gap-1.5">
                                         <button
+                                          onClick={() => setVerifyingStockOrder(order)}
+                                          className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1"
+                                          title="Review stock details in modal"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                          <span>Details</span>
+                                        </button>
+                                        <button
                                           onClick={() => handleConfirmStock(order.id, 'confirm')}
                                           disabled={stockProcessingId === order.id}
                                           className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs shadow-xs flex items-center gap-1 disabled:opacity-50"
@@ -1384,6 +1394,115 @@ export const SupplierView: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* ============================================================ */}
+      {/* MODAL: VERIFY PHYSICAL IN-STORE STOCK */}
+      {/* ============================================================ */}
+      {verifyingStockOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 flex flex-col min-h-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Physical Stock Verification
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    Order #{verifyingStockOrder.orderNumber}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setVerifyingStockOrder(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Customer is shielded:</span> No SMS or payment request has been sent yet. If you confirm physical stock, payment instructions are released to the buyer and items are reserved for 45 minutes.
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 text-xs">
+                <div>
+                  <span className="text-slate-500 block mb-1">Ordered Items:</span>
+                  <div className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200">
+                    {verifyingStockOrder.items.map((it, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <div className="font-semibold text-slate-900">
+                          {it.productName}
+                          {it.variantName && (
+                            <span className="text-slate-500 font-normal ml-1">({it.variantName})</span>
+                          )}
+                        </div>
+                        <span className="font-mono font-bold text-emerald-700">
+                          x{it.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Delivery Destination:</span>
+                  <span className="font-medium text-slate-800">
+                    {verifyingStockOrder.delivery.subcity} Subcity
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Sales Agent:</span>
+                  <span className="font-medium text-slate-800">
+                    {verifyingStockOrder.salespersonName}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                  <span className="font-semibold text-slate-700">Your Net Payout:</span>
+                  <span className="font-mono font-bold text-sm text-emerald-800">
+                    ETB {verifyingStockOrder.supplierNetPayout.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 border-t border-slate-200/80 bg-slate-50/80 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const id = verifyingStockOrder.id;
+                  setVerifyingStockOrder(null);
+                  handleConfirmStock(id, 'reject');
+                }}
+                disabled={stockProcessingId === verifyingStockOrder.id}
+                className="px-4 py-2.5 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 hover:border-rose-300 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                <span>Out of Stock (Shield Customer)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = verifyingStockOrder.id;
+                  setVerifyingStockOrder(null);
+                  handleConfirmStock(id, 'confirm');
+                }}
+                disabled={stockProcessingId === verifyingStockOrder.id}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>Yes, in Stock (Hold 45m)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* MODAL: VERIFY CUSTOMER PAYMENT EVIDENCE */}

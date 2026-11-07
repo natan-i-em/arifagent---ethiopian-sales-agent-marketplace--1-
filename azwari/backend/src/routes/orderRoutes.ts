@@ -22,7 +22,7 @@ import { walletConfig, etbToCents } from '../config/walletConfig.js';
 import { realtimeEmitter } from './realtimeRoutes.js';
 import { cacheService } from '../services/cacheService.js';
 import { TelegramBotService } from '../services/telegramBotService.js';
-import { processStockDecision } from './telegramRoutes.js';
+import { processStockDecision, processPaymentDecision } from './telegramRoutes.js';
 
 export const orderRouter = Router();
 
@@ -849,6 +849,34 @@ orderRouter.post(
         console.warn('[Audit Log Notice]', auditErr);
       }
 
+      // Dispatch to Telegram Bot with screenshot & interactive approve/reject buttons if merchant connected Telegram
+      if ((updatedOrder.business as any)?.telegramChatId) {
+        const firstItem = updatedOrder.items[0];
+        const totalQuantity = updatedOrder.items.reduce((acc: number, it: any) => acc + it.quantity, 0);
+        const productName = updatedOrder.items.length > 1
+          ? `${firstItem?.product?.title || 'Items'} +${updatedOrder.items.length - 1} more`
+          : (firstItem?.product?.title || 'Product');
+
+        TelegramBotService.sendPaymentVerificationRequest({
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          productName,
+          quantity: totalQuantity,
+          totalAmount: Number(updatedOrder.totalAmount),
+          supplierNetPayout: Number(updatedOrder.supplierPayout),
+          buyerName: updatedOrder.buyerName,
+          buyerPhone: updatedOrder.buyerPhone,
+          provider: body.provider,
+          transactionReference: body.transactionReference,
+          amountShown: Number(body.amountShown),
+          receiptImageUrl: receiptImage,
+          receiptNote: body.receiptNote || null,
+          businessId: updatedOrder.businessId,
+          businessName: updatedOrder.business?.name || 'Store',
+          telegramChatId: (updatedOrder.business as any).telegramChatId,
+        }).catch((err) => console.warn('[Telegram Payment Verification Alert Failed]', err));
+      }
+
       await cacheService.delPattern('cache:orders:*');
       realtimeEmitter.emit('change', {
         type: 'EVIDENCE_SUBMITTED',
@@ -1323,6 +1351,34 @@ orderRouter.post(
         console.warn('[Audit Log Notice]', auditErr);
       }
 
+      // Dispatch to Telegram Bot with screenshot & interactive approve/reject buttons if merchant connected Telegram
+      if ((updatedOrder.business as any)?.telegramChatId) {
+        const firstItem = updatedOrder.items[0];
+        const totalQuantity = updatedOrder.items.reduce((acc: number, it: any) => acc + it.quantity, 0);
+        const productName = updatedOrder.items.length > 1
+          ? `${firstItem?.product?.title || 'Items'} +${updatedOrder.items.length - 1} more`
+          : (firstItem?.product?.title || 'Product');
+
+        TelegramBotService.sendPaymentVerificationRequest({
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          productName,
+          quantity: totalQuantity,
+          totalAmount: Number(updatedOrder.totalAmount),
+          supplierNetPayout: Number(updatedOrder.supplierPayout),
+          buyerName: updatedOrder.buyerName,
+          buyerPhone: updatedOrder.buyerPhone,
+          provider: body.provider,
+          transactionReference: body.transactionReference,
+          amountShown: Number(body.amountShown),
+          receiptImageUrl: body.receiptImageUrl || body.receiptMockImage || null,
+          receiptNote: body.receiptNote || null,
+          businessId: updatedOrder.businessId,
+          businessName: updatedOrder.business?.name || 'Store',
+          telegramChatId: (updatedOrder.business as any).telegramChatId,
+        }).catch((err) => console.warn('[Telegram Payment Verification Alert Failed]', err));
+      }
+
       await cacheService.delPattern('cache:orders:*');
       realtimeEmitter.emit('change', {
         type: 'EVIDENCE_SUBMITTED',
@@ -1355,7 +1411,6 @@ orderRouter.post(
       const order = await prisma.order.findUnique({
         where: { id },
         include: {
-          paymentReceipts: { orderBy: { createdAt: 'desc' } },
           business: true,
         },
       });
@@ -1371,113 +1426,19 @@ orderRouter.post(
         return;
       }
 
-      // State machine guard: Must be in PAYMENT_SUBMITTED or PENDING_PAYMENT
-      if (order.status !== 'PAYMENT_SUBMITTED' && order.status !== 'PENDING_PAYMENT') {
-        res.status(409).json({
-          success: false,
-          error: `Cannot verify payment for order currently in '${order.status}' status`,
-        });
+      const verifiedBy = user.fullName || (user.role === 'admin' ? 'ADMIN_PORTAL' : 'MERCHANT_PORTAL');
+      const result = await processPaymentDecision(id, approved, verifiedBy, rejectionReason);
+
+      if (!result.success) {
+        res.status(400).json({ success: false, error: result.message });
         return;
       }
 
-      const latestReceipt = order.paymentReceipts[0];
-
-      const updatedOrder = await prisma.$transaction(async (tx: any) => {
-        if (approved) {
-          if (latestReceipt) {
-            await tx.paymentReceipt.update({
-              where: { id: latestReceipt.id },
-              data: {
-                verifiedAt: new Date(),
-                verifiedBy: user.fullName || 'Merchant Supplier',
-                rejectionReason: null,
-              },
-            });
-          }
-
-          return await tx.order.update({
-            where: { id: order.id },
-            data: { status: 'CONFIRMED' },
-            include: {
-              items: { include: { product: true, variant: true } },
-              paymentReceipts: { orderBy: { createdAt: 'desc' } },
-              commissionEscrow: true,
-              business: { include: { paymentAccounts: true } },
-              salesPartner: true,
-            },
-          });
-        } else {
-          if (latestReceipt) {
-            await tx.paymentReceipt.update({
-              where: { id: latestReceipt.id },
-              data: {
-                rejectionReason: rejectionReason || 'Payment could not be verified with the bank.',
-              },
-            });
-          }
-
-          // Revert to awaiting payment and extend expiration by 15 minutes to allow re-upload
-          return await tx.order.update({
-            where: { id: order.id },
-            data: {
-              status: 'PENDING_PAYMENT',
-              paymentExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
-            },
-            include: {
-              items: { include: { product: true, variant: true } },
-              paymentReceipts: { orderBy: { createdAt: 'desc' } },
-              commissionEscrow: true,
-              business: { include: { paymentAccounts: true } },
-              salesPartner: true,
-            },
-          });
-        }
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        order: result.order ? formatOrderForFrontend(result.order) : undefined,
       });
-
-      // Audit Log
-      try {
-        await prisma.auditLog.create({
-          data: {
-            actorRole: user.role,
-            actorName: user.fullName || 'Merchant Supplier',
-            action: approved ? 'VERIFY_PAYMENT' : 'REJECT_PAYMENT',
-            entityType: 'Order',
-            entityId: order.id,
-            businessId: order.businessId,
-            description: approved
-              ? `Supplier verified payment receipt for order #${order.orderNumber}. Order marked CONFIRMED.`
-              : `Supplier rejected payment receipt for order #${order.orderNumber}. Reason: ${rejectionReason}`,
-          },
-        });
-      } catch (auditErr) {
-        console.warn('[Audit Log Notice]', auditErr);
-      }
-
-      // Notification SMS
-      if (approved) {
-        SmsEthiopiaService.sendSms({
-          recipientPhone: order.buyerPhone,
-          messageBody: `Azwari: Payment for order #${order.orderNumber} is verified! Your order is being packed for delivery.`,
-          orderNumber: order.orderNumber,
-          templateName: 'order_payment_verified',
-        }).catch(() => { });
-      } else {
-        SmsEthiopiaService.sendSms({
-          recipientPhone: order.buyerPhone,
-          messageBody: `Azwari: Payment receipt for order #${order.orderNumber} could not be verified: ${rejectionReason || 'Please resubmit valid proof'}. Link: https://arifagent-ethiopian-sales-agent-mar.vercel.app/track?token=${order.publicAccessToken}`,
-          orderNumber: order.orderNumber,
-          templateName: 'order_payment_rejected',
-        }).catch(() => { });
-      }
-
-      await cacheService.delPattern('cache:orders:*');
-      await cacheService.delPattern('cache:commissions:*');
-      realtimeEmitter.emit('change', {
-        type: approved ? 'ORDER_PAYMENT_VERIFIED' : 'ORDER_PAYMENT_REJECTED',
-        orderId: updatedOrder.id,
-      });
-
-      res.status(200).json({ success: true, order: formatOrderForFrontend(updatedOrder) });
     } catch (error: any) {
       console.error('[Verify Payment Error]', error);
       res.status(500).json({ success: false, error: error.message || 'Failed to verify payment' });
