@@ -11,6 +11,7 @@
     "test:wallet": "tsx --test tests/wallet-chapa.test.ts",
     "reconcile": "tsx scripts/reconcile_ledger.ts",
     "admin:create": "tsx scripts/create-admin.ts",
+    "telegram:setup": "tsx scripts/setupTelegramWebhook.ts",
     "tunnel:ngrok": "npx ngrok http 5000",
     "tunnel:lt": "npx localtunnel --port 5000"
   },
