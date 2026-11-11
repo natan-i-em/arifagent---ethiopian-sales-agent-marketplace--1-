@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
@@ -119,6 +120,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <ClientLayout>{children}</ClientLayout>
         <InstallPrompt />
+        <Analytics />
       </body>
     </html>
   );
