@@ -126,10 +126,16 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <Layers className="w-3.5 h-3.5 text-white" />
                 </div>
                 <span className="font-bold text-slate-900 text-sm">Azwari</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                  azwari.com.et
+                </span>
               </div>
               <p className="text-slate-500 leading-relaxed">
                 {t('footer.desc')}
               </p>
+              <div className="text-[11px] text-slate-400">
+                <span>📍 Addis Ababa, Ethiopia</span>
+              </div>
             </div>
 
             {/* Column 1: For agents */}
@@ -192,31 +198,30 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </ul>
             </div>
 
-            {/* Column 3: Payments */}
-            <div className="space-y-2">
-              <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                {t('footer.payments')}
-              </span>
-              <ul className="space-y-1.5 text-slate-600">
-                <li>Telebirr</li>
-                <li>CBE</li>
-                <li>Chapa</li>
-              </ul>
-            </div>
-
-            {/* Column 4: Help */}
+            {/* Column 3: Help & Community */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
                 {t('footer.help')}
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
-                  <a href="mailto:support@azwari.et" className="hover:text-slate-900 transition-colors">
-                    {t('footer.contactUs')}
+                  <a href="mailto:support@azwari.com.et" className="hover:text-slate-900 transition-colors">
+                    support@azwari.com.et
                   </a>
                 </li>
                 <li>
-                  <Link href="/#why-trust" className="hover:text-slate-900 transition-colors">
+                  <a
+                    href="https://t.me/azwari"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-slate-900 transition-colors flex items-center gap-1"
+                  >
+                    <span>Telegram Official</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold">@azwari</span>
+                  </a>
+                </li>
+                <li>
+                  <Link href="/#faq" className="hover:text-slate-900 transition-colors">
                     {t('footer.faq')}
                   </Link>
                 </li>
@@ -226,7 +231,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
             <div>
-              {t('footer.copyright')}
+              © 2026 Azwari Technologies (azwari.com.et). All rights reserved. Addis Ababa, Ethiopia.
             </div>
             <div className="flex items-center gap-4 text-slate-500">
               <span className="hover:text-slate-900 cursor-pointer">{t('footer.terms')}</span>

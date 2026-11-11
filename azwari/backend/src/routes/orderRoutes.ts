@@ -135,25 +135,25 @@ export const formatOrderForFrontend = (o: any) => {
     },
     availablePaymentAccounts: (o.business?.paymentAccounts && o.business.paymentAccounts.length > 0)
       ? o.business.paymentAccounts.map((acc: any) => ({
-          id: acc.id,
-          provider: providerDisplayMap[acc.provider] || acc.provider,
-          accountNumber: acc.accountNumber,
-          accountHolderName: acc.accountHolderName,
-          isPrimary: acc.isPrimary,
-          verified: acc.verified,
-          instructions: acc.instructions || 'Transfer and upload payment screenshot.',
-        }))
+        id: acc.id,
+        provider: providerDisplayMap[acc.provider] || acc.provider,
+        accountNumber: acc.accountNumber,
+        accountHolderName: acc.accountHolderName,
+        isPrimary: acc.isPrimary,
+        verified: acc.verified,
+        instructions: acc.instructions || 'Transfer and upload payment screenshot.',
+      }))
       : [
-          {
-            id: 'acc_default',
-            provider: 'Telebirr',
-            accountNumber: o.business?.phone || '0911000000',
-            accountHolderName: o.business?.name || 'Azwari Merchant',
-            isPrimary: true,
-            verified: true,
-            instructions: 'Transfer to Telebirr and upload payment screenshot.',
-          },
-        ],
+        {
+          id: 'acc_default',
+          provider: 'Telebirr',
+          accountNumber: o.business?.phone || '0911000000',
+          accountHolderName: o.business?.name || 'Azwari Merchant',
+          isPrimary: true,
+          verified: true,
+          instructions: 'Transfer to Telebirr and upload payment screenshot.',
+        },
+      ],
     delivery: {
       recipientName: o.buyerName,
       recipientPhone: o.buyerPhone,
@@ -359,52 +359,52 @@ orderRouter.get('/public/:token', async (req: any, res: Response): Promise<void>
               ChapaService.verifyTransaction(ref),
               new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Chapa verification timeout')), 3000)),
             ]);
-          if (ver.status === 'success') {
-            const confirmedOrder = await prisma.$transaction(async (tx) => {
-              const ord = await tx.order.update({
-                where: { id: order.id },
-                data: {
-                  status: 'CONFIRMED',
-                  deliveryNotes: `${order.deliveryNotes || ''} | Verified via Chapa: ${ref}`,
-                },
-                include: {
-                  items: { include: { product: true, variant: true } },
-                  paymentReceipts: { orderBy: { createdAt: 'desc' } },
-                  business: { include: { paymentAccounts: true } },
-                  salesPartner: true,
-                },
-              });
-
-              const existingReceipt = await tx.paymentReceipt.findFirst({
-                where: { orderId: order.id, transactionReference: ref },
-              });
-              if (!existingReceipt) {
-                await tx.paymentReceipt.create({
+            if (ver.status === 'success') {
+              const confirmedOrder = await prisma.$transaction(async (tx) => {
+                const ord = await tx.order.update({
+                  where: { id: order.id },
                   data: {
-                    orderId: order.id,
-                    provider: PaymentProvider.TELEBIRR,
-                    transactionReference: ref,
-                    amountTransferred: order.totalAmount,
-                    buyerNotes: `Chapa Online Payment: ${ref}`,
-                    verifiedAt: new Date(),
-                    verifiedBy: 'CHAPA_SYSTEM',
+                    status: 'CONFIRMED',
+                    deliveryNotes: `${order.deliveryNotes || ''} | Verified via Chapa: ${ref}`,
+                  },
+                  include: {
+                    items: { include: { product: true, variant: true } },
+                    paymentReceipts: { orderBy: { createdAt: 'desc' } },
+                    business: { include: { paymentAccounts: true } },
+                    salesPartner: true,
                   },
                 });
-              }
-              return ord;
-            });
 
-            await cacheService.delPattern('cache:orders:*');
-            realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: order.id });
+                const existingReceipt = await tx.paymentReceipt.findFirst({
+                  where: { orderId: order.id, transactionReference: ref },
+                });
+                if (!existingReceipt) {
+                  await tx.paymentReceipt.create({
+                    data: {
+                      orderId: order.id,
+                      provider: PaymentProvider.TELEBIRR,
+                      transactionReference: ref,
+                      amountTransferred: order.totalAmount,
+                      buyerNotes: `Chapa Online Payment: ${ref}`,
+                      verifiedAt: new Date(),
+                      verifiedBy: 'CHAPA_SYSTEM',
+                    },
+                  });
+                }
+                return ord;
+              });
 
-            const payload = { success: true, order: formatOrderForFrontend(confirmedOrder) };
-            res.status(200).json(payload);
-            return;
-          }
-        } catch {}
+              await cacheService.delPattern('cache:orders:*');
+              realtimeEmitter.emit('change', { type: 'ORDER_PAYMENT_VERIFIED', orderId: order.id });
+
+              const payload = { success: true, order: formatOrderForFrontend(confirmedOrder) };
+              res.status(200).json(payload);
+              return;
+            }
+          } catch { }
+        }
       }
     }
-  }
 
     const payload = { success: true, order: formatOrderForFrontend(order) };
     if (!queryTxRef) {
@@ -452,7 +452,7 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
     if (!frontendOrigin && req.get('referer')) {
       try {
         frontendOrigin = new URL(req.get('referer')!).origin;
-      } catch {}
+      } catch { }
     }
     if (!frontendOrigin) {
       if (process.env.FRONTEND_URL) {
@@ -460,7 +460,7 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
       } else if (walletConfig.chapaReturnUrl) {
         try {
           frontendOrigin = new URL(walletConfig.chapaReturnUrl).origin;
-        } catch {}
+        } catch { }
       }
     }
     if (!frontendOrigin) {
@@ -490,7 +490,7 @@ orderRouter.post('/public/:token/chapa-checkout', async (req: any, res: Response
       data: {
         paymentExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
         status: order.status === 'CANCELLED' ? 'PENDING_PAYMENT' : order.status,
-        deliveryNotes: order.deliveryNotes 
+        deliveryNotes: order.deliveryNotes
           ? `${order.deliveryNotes} | ChapaTx: ${txRef}`
           : `ChapaTx: ${txRef}`,
       },
@@ -753,7 +753,7 @@ orderRouter.post('/public/:token/confirm-delivery', async (req: any, res: Respon
       messageBody: `Azwari: Delivery confirmed for Order #${order.orderNumber}. Thank you for confirming! Your sales agent has received their commission.`,
       orderNumber: order.orderNumber,
       templateName: 'order_delivered',
-    }).catch(() => {});
+    }).catch(() => { });
 
     await cacheService.delPattern('cache:orders:*');
     await cacheService.delPattern('cache:commissions:*');

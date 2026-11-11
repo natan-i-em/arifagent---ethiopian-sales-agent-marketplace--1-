@@ -17,7 +17,9 @@ import {
   Coins,
   CheckCircle2,
   Lock,
-  Eye
+  Eye,
+  HelpCircle,
+  ChevronDown
 } from 'lucide-react';
 
 export const LandingView: React.FC = () => {
@@ -54,6 +56,11 @@ export const LandingView: React.FC = () => {
       <section className="pt-16 pb-20 border-b border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700 mx-auto shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Azwari · Addis Ababa, Ethiopia · azwari.com.et</span>
+            </div>
+
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
               {t('hero.headlinePart1')}{t('hero.headlineHighlight')}{t('hero.headlinePart2')}
             </h1>
@@ -460,6 +467,79 @@ export const LandingView: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* 7. FREQUENTLY ASKED QUESTIONS (FAQ & Knowledge Base) */}
+      <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pt-6">
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-xs font-semibold text-slate-700">
+            <HelpCircle className="w-3.5 h-3.5 text-slate-600" />
+            <span>Frequently Asked Questions</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Everything You Need to Know About Azwari
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Reliable information on agent commissions, 15-minute shelf-stock verification, Telebirr &amp; CBE escrow, and Addis Ababa operations.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {/* FAQ 1 */}
+          <details className="group glass-card rounded-2xl p-5 border border-slate-200/90 transition-all [&_summary::-webkit-details-marker]:hidden cursor-pointer" open>
+            <summary className="flex items-center justify-between font-bold text-sm sm:text-base text-slate-900 list-none">
+              <span>What is Azwari (azwari.com.et)?</span>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0 ml-3" />
+            </summary>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+              Azwari (<strong className="text-slate-800">azwari.com.et</strong>) is Ethiopia&apos;s premier multi-party sales agent marketplace and escrow platform based in Addis Ababa. It bridges wholesale merchants and product distributors with an army of independent, freelance sales agents who market products across Telegram, TikTok, Instagram, and word-of-mouth for guaranteed per-sale commissions without holding inventory.
+            </p>
+          </details>
+
+          {/* FAQ 2 */}
+          <details className="group glass-card rounded-2xl p-5 border border-slate-200/90 transition-all [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+            <summary className="flex items-center justify-between font-bold text-sm sm:text-base text-slate-900 list-none">
+              <span>How do independent sales agents make money?</span>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0 ml-3" />
+            </summary>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+              Agents register for free, browse verified supplier products from Merkato, Bole, and top Addis Ababa distributors, and share their unique product links. When a customer purchases, the merchant fulfills the order, and the agent&apos;s commission (fixed ETB or percentage) is instantly deposited into their Azwari ledger, withdrawable to Telebirr or CBE bank accounts.
+            </p>
+          </details>
+
+          {/* FAQ 3 */}
+          <details className="group glass-card rounded-2xl p-5 border border-slate-200/90 transition-all [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+            <summary className="flex items-center justify-between font-bold text-sm sm:text-base text-slate-900 list-none">
+              <span>How does Azwari ensure products are physically in stock before customers pay?</span>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0 ml-3" />
+            </summary>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+              To solve the retail walk-in inventory challenge, Azwari never requests payment upfront. When an agent creates an order, the merchant receives an instant alert on Telegram and the web dashboard. The merchant has <strong className="text-slate-800">15 minutes</strong> to physically check shelf availability. Only when confirmed is the customer issued a secure payment link, keeping stock reservations guaranteed and avoiding frustrating refunds.
+            </p>
+          </details>
+
+          {/* FAQ 4 */}
+          <details className="group glass-card rounded-2xl p-5 border border-slate-200/90 transition-all [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+            <summary className="flex items-center justify-between font-bold text-sm sm:text-base text-slate-900 list-none">
+              <span>How are customer payments and merchant funds protected?</span>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0 ml-3" />
+            </summary>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+              Azwari acts as a trusted escrow intermediary. Payments submitted via Telebirr or Commercial Bank of Ethiopia (CBE) are verified by the platform or merchant and held safely in escrow. Funds are only settled to the supplier and agent once the customer receives the physical item and verifies it with their confidential delivery PIN.
+            </p>
+          </details>
+
+          {/* FAQ 5 */}
+          <details className="group glass-card rounded-2xl p-5 border border-slate-200/90 transition-all [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+            <summary className="flex items-center justify-between font-bold text-sm sm:text-base text-slate-900 list-none">
+              <span>Where does Azwari operate and deliver?</span>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0 ml-3" />
+            </summary>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+              Azwari currently operates across all sub-cities of Addis Ababa (including Bole, Merkato, Kazanchis, Piassa, Saris, CMC, and Lebu), partnering with trusted local dispatchers and city couriers for same-day and next-day deliveries, with planned regional expansion across Ethiopia.
+            </p>
+          </details>
         </div>
       </section>
 

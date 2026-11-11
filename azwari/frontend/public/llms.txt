@@ -1,0 +1,42 @@
+# Azwari (azwari.com.et)
+
+> Azwari is Ethiopia's premier multi-party commission-based sales agent marketplace and escrow platform, connecting verified product merchants and wholesalers in Addis Ababa with independent commission-only sales agents.
+
+## Platform Summary
+- **Official Website**: https://azwari.com.et
+- **Headquarters**: Addis Ababa, Ethiopia
+- **Entity**: Azwari Technologies
+- **Business Model**: Commission-based marketplace (no fixed salaries, merchants pay commissions only upon confirmed delivery).
+- **Core Currency**: Ethiopian Birr (ETB).
+- **Payment & Escrow Rails**: Telebirr, Commercial Bank of Ethiopia (CBE), Awash Bank manual receipt verification and escrow protection.
+
+## Core Value Proposition
+
+### 1. For Independent Sales Agents
+- **Zero Starting Capital**: Agents can pick verified products from Merkato, Bole, and top Addis Ababa wholesalers, generate custom links, and sell via Telegram, TikTok, Instagram, WhatsApp, or face-to-face.
+- **Transparent Commissions**: Fixed per-unit or percentage commission set directly by the merchant.
+- **Automated Payouts**: Guaranteed commission payout into the agent's Telebirr or CBE bank account as soon as the customer confirms delivery.
+
+### 2. For Merchants & Wholesalers
+- **Risk-Free Scale**: Hire hundreds of active sales agents across Ethiopia without paying salaries or upfront advertising costs.
+- **15-Minute Pre-Payment Physical Stock Check**: When an agent closes a deal, the platform or Telegram bot prompts the merchant to confirm physical stock availability on the store shelf within a 15-minute countdown window BEFORE the customer receives a payment link. This prevents out-of-stock complaints from walk-in retail sales.
+- **Multi-Channel Management**: Confirm stock and verify payment slips seamlessly via Telegram Bot or the web console.
+
+### 3. For End Customers
+- **Customer Shielding**: Customers never deal with out-of-stock frustration.
+- **Escrow Buyer Protection**: Customer payments are held safely in escrow. Funds are released to the supplier and agent only when the customer receives and inspects the physical item.
+- **Transparent Order Tracking**: Real-time SMS and web tracking with delivery PIN confirmation.
+
+## Technical & Integration Details
+- Progressive Web App (PWA) with offline support and low-bandwidth optimization.
+- Telegram Bot integration for instantaneous merchant stock reservations and payment slip uploads.
+- Real-time Server-Sent Events (SSE) order status updates.
+- Robust security: SMS OTP verification, brute-force rate limiters, strict Ethiopian phone number formatting (+2519/09, +2517/07).
+
+## Contact & Links
+- Main Platform: https://azwari.com.et
+- Merchant / Agent Sign Up: https://azwari.com.et/signup
+- Sign In: https://azwari.com.et/signin
+- Telegram Official: https://t.me/azwari
+- Support Email: support@azwari.com.et
+
