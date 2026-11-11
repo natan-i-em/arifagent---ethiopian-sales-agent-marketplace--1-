@@ -18,7 +18,6 @@ import {
   Smartphone,
   ChevronRight,
   TrendingUp,
-  Sparkles,
   Info,
   Clock,
   X

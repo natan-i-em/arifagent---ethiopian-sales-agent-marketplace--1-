@@ -391,12 +391,12 @@ export const AdminView: React.FC = () => {
       <div className="bg-slate-900 text-white rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-slate-800">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center font-bold text-lg border border-white/10 shrink-0">
-            <ShieldCheck className="w-6 h-6 text-amber-400" />
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">Platform Governance & Compliance Desk</h1>
-              <span className="text-[11px] font-mono bg-purple-950 text-purple-200 px-2.5 py-0.5 rounded-md border border-purple-800">
+              <span className="text-[11px] font-mono bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-md border border-slate-700">
                 Super Admin Clearance
               </span>
             </div>
@@ -410,13 +410,6 @@ export const AdminView: React.FC = () => {
               <span>·</span>
               <span className="text-slate-400">SMS Gateway Live</span>
             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/80 text-purple-200 border border-purple-800 text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-            <span>Escrow Control</span>
           </div>
         </div>
       </div>
@@ -447,7 +440,7 @@ export const AdminView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium">Cumulative GMV</span>
-                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                    <TrendingUp className="w-4 h-4 text-slate-600" />
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     ETB {totalGMV.toLocaleString()}
@@ -460,7 +453,7 @@ export const AdminView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium">Platform Fee (20% Cut)</span>
-                    <Coins className="w-4 h-4 text-purple-600" />
+                    <Coins className="w-4 h-4 text-slate-600" />
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     ETB {(platformFeesData?.totals?.totalPlatformFeesIncurred || totalPlatformFees).toLocaleString()}
@@ -473,7 +466,7 @@ export const AdminView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium">Avg Order Value (AOV)</span>
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
+                    <ShoppingBag className="w-4 h-4 text-slate-600" />
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     ETB {avgOrderValue.toLocaleString()}
@@ -486,7 +479,7 @@ export const AdminView: React.FC = () => {
                 <div className="glass-card p-5 rounded-3xl border border-white/90">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium">Fulfillment Rate</span>
-                    <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                    <CheckCircle2 className="w-4 h-4 text-slate-600" />
                   </div>
                   <div className="font-mono-numbers font-bold text-2xl text-slate-900">
                     {deliveryFulfillmentRate}%
@@ -502,7 +495,7 @@ export const AdminView: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-4">
                   <div>
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-purple-700" />
+                      <BarChart3 className="w-4 h-4 text-slate-700" />
                       Order Lifecycle Velocity & Status Breakdown
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -574,7 +567,7 @@ export const AdminView: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-purple-700" />
+                        <MapPin className="w-4 h-4 text-slate-700" />
                         Addis Ababa Subcity Density
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -621,7 +614,7 @@ export const AdminView: React.FC = () => {
                 <div className="glass-card rounded-3xl border border-white/90 p-6 space-y-4">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-emerald-700" />
+                      <CreditCard className="w-4 h-4 text-slate-700" />
                       Payment Rails & Gateway Mix
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">

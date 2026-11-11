@@ -15,9 +15,6 @@ export default function HowItWorksPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-          <span>Azwari · እንዴት እንደሚሰራ</span>
-        </div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
           How Azwari (አዝዋሪ) Works
         </h1>
@@ -58,7 +55,7 @@ export default function HowItWorksPage() {
 
         <div className="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-xl bg-amber-500 text-white font-bold flex items-center justify-center text-sm">
+            <span className="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm">
               3
             </span>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">
@@ -86,7 +83,7 @@ export default function HowItWorksPage() {
 
         <div className="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-xl bg-emerald-600 text-white font-bold flex items-center justify-center text-sm">
+            <span className="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm">
               5
             </span>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">

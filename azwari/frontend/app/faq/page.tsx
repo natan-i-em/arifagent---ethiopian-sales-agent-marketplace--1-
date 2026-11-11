@@ -42,10 +42,6 @@ export default function FaqPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-          <HelpCircle className="w-3.5 h-3.5 text-slate-700" />
-          <span>ተደጋጋሚ ጥያቄዎች · FAQ</span>
-        </div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
           Frequently Asked Questions
         </h1>

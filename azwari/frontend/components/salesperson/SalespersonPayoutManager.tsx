@@ -16,7 +16,6 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Sparkles,
   Info,
   Layers,
   ArrowRight
@@ -105,15 +104,13 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
       {/* Earnings Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Eligible for Settlement (Main Hero Card) */}
-        <div className="relative overflow-hidden p-7 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white shadow-xl border border-indigo-500/20 flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative overflow-hidden p-7 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 {t('payouts.eligibleTitle')}
               </span>
-              <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-bold border border-indigo-400/20">
+              <span className="text-[10px] font-mono bg-white/10 text-slate-300 px-3 py-1 rounded-full font-bold border border-white/10">
                 {t('payouts.awaitingTransfer')}
               </span>
             </div>
@@ -137,10 +134,10 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
           <div>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-500" />
+                <Clock className="w-4 h-4 text-slate-700" />
                 {t('payouts.pendingBalance')}
               </span>
-              <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">
+              <span className="text-[10px] bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full font-semibold border border-slate-200">
                 {t('payouts.activeOrders')}
               </span>
             </div>
@@ -188,9 +185,9 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
       </div>
 
       {/* Explainer Banner */}
-      <div className="p-5 rounded-3xl bg-indigo-50/80 border border-indigo-200/80 text-xs text-indigo-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+      <div className="p-5 rounded-3xl bg-slate-100 border border-slate-200 text-xs text-slate-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-xs">
             <WalletCards className="w-5 h-5" />
           </div>
           <div>
@@ -224,7 +221,7 @@ export const SalespersonPayoutManager: React.FC<SalespersonPayoutManagerProps> =
           <div className="p-4 rounded-2xl glass-card-subtle border border-slate-200/80 flex items-center justify-between">
             <div>
               <span className="text-slate-500 block text-[11px] mb-1">Account / Mobile Number</span>
-              <span className="font-mono font-bold text-indigo-900 text-sm">
+              <span className="font-mono font-bold text-slate-900 text-sm">
                 {currentAgent.payoutDestination?.accountNumber || currentAgent.phone}
               </span>
             </div>

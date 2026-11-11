@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   Search,
   LogIn,
-  Sparkles,
+  ArrowRight,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -150,7 +150,7 @@ export const MobileBottomNav: React.FC = () => {
             }`}
           >
             <div className={`p-1.5 rounded-xl ${isSignUp ? 'bg-slate-900 text-white shadow-xs' : ''}`}>
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <ArrowRight className={`w-4 h-4 ${isSignUp ? 'text-white' : 'text-slate-700'}`} />
             </div>
             <span className="text-[10px] mt-1 tracking-tight font-semibold truncate max-w-[65px]">{t('nav.getStarted')}</span>
           </Link>

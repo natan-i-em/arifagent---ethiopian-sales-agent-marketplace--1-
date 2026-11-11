@@ -503,7 +503,7 @@ export const SupplierView: React.FC = () => {
                     onClick={() => setActiveTab('products')}
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
                   >
-                    <Package className="w-3.5 h-3.5 text-amber-400" />
+                    <Package className="w-3.5 h-3.5 text-white" />
                     <span>Manage Products ({supplierProducts.length})</span>
                   </button>
                   <button
@@ -567,16 +567,16 @@ export const SupplierView: React.FC = () => {
 
                 <div 
                   onClick={() => setActiveTab('settlement')}
-                  className="glass-card-hover p-5 rounded-3xl border border-indigo-500/30 cursor-pointer bg-gradient-to-br from-white via-white to-indigo-50/40"
+                  className="glass-card-hover p-5 rounded-3xl border border-slate-200/80 cursor-pointer bg-white"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 block">{t('supplier.commissionSettlement')}</span>
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">80% Net</span>
+                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">80% Net</span>
                   </div>
                   <div className="font-mono-numbers font-bold text-xl text-slate-900">
                     ETB {Math.round(totalEligibleOwed * 0.8).toLocaleString()}
                   </div>
-                  <span className="text-[11px] text-indigo-700 font-bold mt-1 flex items-center gap-1">
+                  <span className="text-[11px] text-slate-700 font-bold mt-1 flex items-center gap-1">
                     {Object.keys(commissionsByAgent).length > 0 ? `${Object.keys(commissionsByAgent).length} payouts ready →` : 'All settled →'}
                   </span>
                 </div>
@@ -1021,7 +1021,7 @@ export const SupplierView: React.FC = () => {
                                         onClick={() => setSchedulingOrder(order)}
                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-xs"
                                       >
-                                        <Truck className="w-3.5 h-3.5 text-amber-400" />
+                                        <Truck className="w-3.5 h-3.5 text-white" />
                                         <span>Assign Driver & Dispatch</span>
                                       </button>
                                     )}
@@ -1031,7 +1031,7 @@ export const SupplierView: React.FC = () => {
                                         onClick={() => dispatchOrder(order.id)}
                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg text-xs shadow-xs"
                                       >
-                                        <Truck className="w-3.5 h-3.5 text-amber-400" />
+                                        <Truck className="w-3.5 h-3.5 text-white" />
                                         <span>Dispatch to Driver</span>
                                       </button>
                                     )}
@@ -1064,7 +1064,7 @@ export const SupplierView: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
-                      <WalletCards className="w-6 h-6 text-indigo-600" />
+                      <WalletCards className="w-6 h-6 text-slate-700" />
                       Sales Agent Commission Settlement Engine
                     </h2>
                     <p className="text-xs text-slate-500 mt-1.5 max-w-2xl leading-relaxed">
@@ -1075,7 +1075,7 @@ export const SupplierView: React.FC = () => {
                     <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 font-bold rounded-xl border border-emerald-200 shadow-2xs">
                       80% Agent Net Payout
                     </span>
-                    <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-200 shadow-2xs">
+                    <span className="px-3 py-1.5 bg-slate-100 text-slate-800 font-bold rounded-xl border border-slate-200 shadow-2xs">
                       20% Platform Fee
                     </span>
                   </div>
@@ -1100,13 +1100,13 @@ export const SupplierView: React.FC = () => {
                   </div>
 
                   {/* Card 2: Unpaid Platform Fee (20%) */}
-                  <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 via-white to-white border border-indigo-200 shadow-2xs flex flex-col justify-between">
+                  <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">{t('supplier.unpaidPlatformFee')}</span>
-                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">Azwari Cut</span>
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t('supplier.unpaidPlatformFee')}</span>
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">20% Share</span>
                       </div>
-                      <span className="text-2xl font-extrabold font-mono text-indigo-950 block mt-1">
+                      <span className="text-2xl font-extrabold font-mono text-slate-900 block mt-1">
                         ETB {totalPlatformCutDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <span className="text-xs text-slate-500 block mt-1">
@@ -1117,7 +1117,7 @@ export const SupplierView: React.FC = () => {
                       type="button"
                       onClick={() => setShowPlatformFeeModal(true)}
                       disabled={totalPlatformCutDue <= 0}
-                      className="mt-3 px-3.5 py-2 text-xs font-bold rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white disabled:opacity-40 transition-colors shadow-2xs flex items-center justify-between cursor-pointer"
+                      className="mt-3 px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-40 transition-colors shadow-2xs flex items-center justify-between cursor-pointer"
                     >
                       <span>{t('supplier.payPlatformFee')}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -1191,7 +1191,7 @@ export const SupplierView: React.FC = () => {
                             </td>
                             <td className="py-4 px-6">
                               <div className="font-semibold text-slate-800 flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-200">
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold border border-slate-200">
                                   {group.payoutProvider}
                                 </span>
                                 <span className="font-mono text-slate-900 font-bold">{group.payoutAccount}</span>
@@ -1749,7 +1749,7 @@ export const SupplierView: React.FC = () => {
                   type="submit"
                   className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs"
                 >
-                  <Truck className="w-4 h-4 text-amber-400" />
+                  <Truck className="w-4 h-4 text-white" />
                   <span>Confirm & Dispatch to Driver (Send SMS)</span>
                 </button>
               </div>
@@ -1766,7 +1766,7 @@ export const SupplierView: React.FC = () => {
           <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/70 backdrop-blur-md">
               <div className="flex items-center gap-2">
-                <WalletCards className="w-5 h-5 text-indigo-600" />
+                <WalletCards className="w-5 h-5 text-slate-700" />
                 <h3 className="text-sm font-bold text-slate-900">
                   Settle Commission to Sales Agent
                 </h3>
@@ -1788,7 +1788,7 @@ export const SupplierView: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Payment Account:</span>
-                  <span className="font-mono font-bold text-indigo-900">
+                  <span className="font-mono font-bold text-slate-900">
                     {commissionsByAgent[settlingAgentId].payoutProvider} - {commissionsByAgent[settlingAgentId].payoutAccount}
                   </span>
                 </div>
@@ -1804,7 +1804,7 @@ export const SupplierView: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Platform Marketplace Cut (20%):</span>
-                  <span className="font-mono text-indigo-700 font-medium">ETB {commissionsByAgent[settlingAgentId].platformFeeAmount.toLocaleString()}</span>
+                  <span className="font-mono text-slate-700 font-medium">ETB {commissionsByAgent[settlingAgentId].platformFeeAmount.toLocaleString()}</span>
                 </div>
                 <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between font-bold text-sm">
                   <span className="text-emerald-900">Net To Transfer to Agent (80%):</span>
@@ -1864,7 +1864,7 @@ export const SupplierView: React.FC = () => {
                     className="text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                   />
                   {uploadingPayoutScreenshot && (
-                    <span className="text-xs text-indigo-600 font-semibold animate-pulse">Uploading slip...</span>
+                    <span className="text-xs text-slate-600 font-semibold animate-pulse">Uploading slip...</span>
                   )}
                 </div>
                 {payoutScreenshotUrl && (
@@ -1912,7 +1912,7 @@ export const SupplierView: React.FC = () => {
           <div className="glass-modal w-full max-w-lg rounded-3xl shadow-2xl border border-white/90 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-700">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
                   <Layers className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">
@@ -1929,20 +1929,20 @@ export const SupplierView: React.FC = () => {
 
             <form onSubmit={handleExecutePlatformFeeSettlement} className="p-6 space-y-4">
               {/* Azwari Official Bank Account Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-indigo-200 font-semibold">Official Platform Account</span>
-                  <span className="bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-indigo-400/20">
-                    Azwari Technology
+                  <span className="text-slate-300 font-semibold">Official Platform Account</span>
+                  <span className="bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-slate-700">
+                    Azwari
                   </span>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-xs text-indigo-200">Telebirr SuperApp Till: <span className="font-mono font-bold text-white">0931418513</span></div>
-                  <div className="text-xs text-indigo-200">CBE Commercial Bank: <span className="font-mono font-bold text-white">1000481928471</span></div>
-                  <div className="text-[11px] text-indigo-300">Account Name: <span className="font-semibold text-white">Azwari Digital Marketplace</span></div>
+                  <div className="text-xs text-slate-300">Telebirr SuperApp Till: <span className="font-mono font-bold text-white">0931418513</span></div>
+                  <div className="text-xs text-slate-300">CBE Commercial Bank: <span className="font-mono font-bold text-white">1000481928471</span></div>
+                  <div className="text-[11px] text-slate-400">Account Name: <span className="font-semibold text-white">Azwari Digital Marketplace</span></div>
                 </div>
-                <div className="pt-2 border-t border-indigo-700/60 flex items-center justify-between font-bold text-sm">
-                  <span className="text-indigo-200 text-xs">Platform Fee Due:</span>
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-between font-bold text-sm">
+                  <span className="text-slate-300 text-xs">Platform Fee Due:</span>
                   <span className="font-mono text-emerald-400 text-base">ETB {totalPlatformCutDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
@@ -1994,7 +1994,7 @@ export const SupplierView: React.FC = () => {
                     className="text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                   />
                   {uploadingPlatformFeeScreenshot && (
-                    <span className="text-xs text-indigo-600 font-semibold animate-pulse">Uploading slip...</span>
+                    <span className="text-xs text-slate-600 font-semibold animate-pulse">Uploading slip...</span>
                   )}
                 </div>
                 {platformFeeScreenshotUrl && (

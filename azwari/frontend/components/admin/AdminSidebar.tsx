@@ -73,8 +73,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       id: 'funnels',
       label: 'User Journey & Funnels',
       icon: Activity,
-      badge: 'Metrics',
-      badgeColor: 'bg-indigo-600 text-white font-bold',
     },
     {
       id: 'users',
@@ -118,8 +116,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       id: 'finances',
       label: 'Platform Fees & Payouts (20%)',
       icon: Coins,
-      badge: '20% Cut',
-      badgeColor: 'bg-purple-700 text-white font-semibold',
     },
   ];
 
@@ -134,11 +130,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="space-y-6">
         {/* Super Admin Identification Card */}
         <div className="p-4 rounded-2xl bg-slate-900 text-white relative overflow-hidden group shadow-xs">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-purple-500/20 via-amber-400/10 to-transparent rounded-full blur-xl pointer-events-none" />
-
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0 border border-white/15">
-              <ShieldCheck className="w-6 h-6 text-amber-400" />
+              <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -151,7 +145,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 Addis Ababa Central Node
               </p>
               <div className="mt-2 flex items-center gap-1.5">
-                <span className="text-[10px] font-semibold text-purple-200 bg-purple-950/80 border border-purple-800/80 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-semibold text-slate-300 bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
                   Super Admin
                 </span>
               </div>
@@ -178,7 +172,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge !== undefined && (
@@ -198,10 +192,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Bottom Platform Metrics & Health */}
       <div className="pt-4 border-t border-slate-200/80 space-y-3">
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-2.5 shadow-xs">
+        <div className="p-3.5 rounded-2xl bg-slate-900 text-white space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Platform Core
+              <ShieldCheck className="w-3 h-3 text-slate-400" /> System Status
             </span>
             <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-md">
               Operational

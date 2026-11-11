@@ -306,7 +306,7 @@ export const SalespersonView: React.FC = () => {
                     }}
                     className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors whitespace-nowrap"
                   >
-                    <Plus className="w-4 h-4 text-amber-400" />
+                    <Plus className="w-4 h-4 text-white" />
                     <span>Create Order for Buyer</span>
                   </button>
                 </div>
@@ -561,7 +561,7 @@ export const SalespersonView: React.FC = () => {
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-2xs"
                   >
-                    <Plus className="w-3.5 h-3.5 text-amber-400" />
+                    <Plus className="w-3.5 h-3.5 text-white" />
                     <span>New Order</span>
                   </button>
                 </div>

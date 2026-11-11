@@ -15,10 +15,6 @@ export default function ForAgentsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-          <UserCheck className="w-3.5 h-3.5 text-slate-700" />
-          <span>Azwari · ለሽያጭ ወኪሎች (አዝዋሪዎች)</span>
-        </div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
           Earn by Selling Without Buying Inventory
         </h1>
@@ -41,7 +37,7 @@ export default function ForAgentsPage() {
         </div>
 
         <div className="glass-card rounded-3xl p-6 border border-slate-200/90 space-y-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">
             <Share2 className="w-5 h-5 text-white" />
           </div>
           <h2 className="text-base font-bold text-slate-900">
@@ -53,7 +49,7 @@ export default function ForAgentsPage() {
         </div>
 
         <div className="glass-card rounded-3xl p-6 border border-slate-200/90 space-y-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">
             <Smartphone className="w-5 h-5 text-white" />
           </div>
           <h2 className="text-base font-bold text-slate-900">
@@ -71,19 +67,19 @@ export default function ForAgentsPage() {
         </h2>
         <ul className="space-y-3 text-xs sm:text-sm text-slate-600">
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
             <span>Sign up as a sales agent (አዝዋሪ) on Azwari.</span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
             <span>Browse the product catalog and choose products you want to market.</span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
             <span>Generate links or place orders on behalf of your customers.</span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
             <span>The merchant confirms stock in 15 minutes, fulfills the package, and your commission is credited.</span>
           </li>
         </ul>

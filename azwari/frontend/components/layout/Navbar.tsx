@@ -9,7 +9,6 @@ import {
   Building2, 
   LogOut,
   Layers,
-  Sparkles,
   CreditCard,
   Globe
 } from 'lucide-react';
@@ -67,13 +66,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   Azwari
                 </span>
                 {currentUser && (
-                  <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border truncate max-w-[110px] sm:max-w-none ${
-                    currentUser.role === 'salesperson'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : currentUser.role === 'supplier'
-                      ? 'bg-blue-50 text-blue-800 border-blue-200'
-                      : 'bg-purple-50 text-purple-800 border-purple-200'
-                  }`}>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[110px] sm:max-w-none">
                     {currentUser.role === 'salesperson' ? t('nav.agent') : currentUser.role === 'supplier' ? t('nav.merchant') : t('nav.admin')}
                   </span>
                 )}
@@ -105,13 +98,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           {/* Sales Agent View Links */}
           {currentUser?.role === 'salesperson' && (
-            <div className="flex items-center gap-1.5 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200/60 text-emerald-950">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 text-slate-800">
               <Link
                 href="/portal/salesperson"
                 className={`px-3.5 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold ${
                   pathname.startsWith('/portal/salesperson')
-                    ? 'bg-white text-emerald-900 shadow-2xs border border-white'
-                    : 'text-emerald-800 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-2xs border border-white'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
                 {t('nav.agentWorkspace')}
@@ -121,13 +114,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           {/* Supplier View Links */}
           {currentUser?.role === 'supplier' && (
-            <div className="flex items-center gap-1.5 bg-blue-50/80 p-1 rounded-xl border border-blue-200/60 text-blue-950">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 text-slate-800">
               <Link
                 href="/portal/supplier"
                 className={`px-3.5 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold ${
                   pathname.startsWith('/portal/supplier')
-                    ? 'bg-white text-blue-900 shadow-2xs border border-white'
-                    : 'text-blue-800 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-2xs border border-white'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
                 {t('nav.supplierConsole')}
@@ -137,13 +130,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           {/* Admin View Links */}
           {currentUser?.role === 'admin' && (
-            <div className="flex items-center gap-1.5 bg-purple-50/80 p-1 rounded-xl border border-purple-200/60 text-purple-950">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 text-slate-800">
               <Link
                 href="/portal/admin"
                 className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold ${
                   pathname.startsWith('/portal/admin')
-                    ? 'bg-white text-purple-900 shadow-2xs border border-white'
-                    : 'text-purple-800 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-2xs border border-white'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
                 {t('nav.adminConsole')}
@@ -161,7 +154,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             title={language === 'en' ? 'ወደ አማርኛ ቀይር (Switch to Amharic)' : 'Switch to English'}
             className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 transition-all shadow-2xs text-xs font-semibold"
           >
-            <Globe className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <Globe className="w-3.5 h-3.5 text-slate-600 shrink-0" />
             <span className="font-bold text-[11px] sm:text-xs">{language === 'en' ? 'አማርኛ' : 'English'}</span>
           </button>
           {!currentUser ? (
@@ -188,7 +181,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 }`}
               >
                 <span>{t('nav.getStarted')}</span>
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               </Link>
             </div>
           ) : (

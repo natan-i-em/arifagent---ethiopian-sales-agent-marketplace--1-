@@ -56,11 +56,6 @@ export const LandingView: React.FC = () => {
       <section className="pt-16 pb-20 border-b border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-xs font-semibold text-slate-700 mx-auto shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Azwari (አዝዋሪ) · azwari.com.et</span>
-            </div>
-
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
               {t('hero.headlinePart1')}{t('hero.headlineHighlight')}{t('hero.headlinePart2')}
             </h1>
@@ -75,7 +70,7 @@ export const LandingView: React.FC = () => {
                   href={`/portal/${currentUser.role}`}
                   className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2"
                 >
-                  <UserCheck className="w-4 h-4 text-emerald-400" />
+                  <UserCheck className="w-4 h-4 text-white" />
                   <span>
                     {currentUser.role === 'salesperson' 
                       ? t('hero.openAgent') 
@@ -92,7 +87,7 @@ export const LandingView: React.FC = () => {
                     onClick={() => setAuthRolePreference('salesperson')}
                     className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2"
                   >
-                    <UserCheck className="w-4 h-4 text-slate-300" />
+                    <UserCheck className="w-4 h-4 text-white" />
                     <span>{t('hero.startSelling')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
@@ -183,29 +178,29 @@ export const LandingView: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-6 glass-card rounded-3xl">
           <div className="p-3 flex flex-col justify-center">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center mb-2">
+              <CheckCircle2 className="w-4 h-4 text-slate-700" />
             </div>
             <h4 className="font-bold text-sm text-slate-900 leading-snug">{t('promises.p1Title')}</h4>
             <span className="text-[11px] text-slate-500 mt-1 block">{t('promises.p1Desc')}</span>
           </div>
           <div className="p-3 sm:border-l border-slate-200/80 flex flex-col justify-center">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-800 flex items-center justify-center mb-2">
-              <Smartphone className="w-4 h-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center mb-2">
+              <Smartphone className="w-4 h-4 text-slate-700" />
             </div>
             <h4 className="font-bold text-sm text-slate-900 leading-snug">{t('promises.p2Title')}</h4>
             <span className="text-[11px] text-slate-500 mt-1 block">{t('promises.p2Desc')}</span>
           </div>
           <div className="p-3 md:border-l border-slate-200/80 flex flex-col justify-center">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center mb-2">
-              <Building2 className="w-4 h-4 text-amber-600" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center mb-2">
+              <Building2 className="w-4 h-4 text-slate-700" />
             </div>
             <h4 className="font-bold text-sm text-slate-900 leading-snug">{t('promises.p3Title')}</h4>
             <span className="text-[11px] text-slate-500 mt-1 block">{t('promises.p3Desc')}</span>
           </div>
           <div className="p-3 sm:border-l border-slate-200/80 flex flex-col justify-center">
-            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-800 flex items-center justify-center mb-2">
-              <Lock className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/60 flex items-center justify-center mb-2">
+              <Lock className="w-4 h-4 text-slate-700" />
             </div>
             <h4 className="font-bold text-sm text-slate-900 leading-snug">{t('promises.p4Title')}</h4>
             <span className="text-[11px] text-slate-500 mt-1 block">{t('promises.p4Desc')}</span>
@@ -260,11 +255,6 @@ export const LandingView: React.FC = () => {
       <section id="calculator" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="glass-card rounded-3xl p-8 md:p-12 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center border border-white/90">
           <div className="lg:col-span-7 space-y-5">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
-              <Coins className="w-3.5 h-3.5 text-slate-600" />
-              <span>{t('calculator.badge')}</span>
-            </div>
-
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {t('calculator.title')}
             </h2>
@@ -413,9 +403,6 @@ export const LandingView: React.FC = () => {
                     <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                       {prod.category}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                      {prod.badgeLabel || t('catalog.verified')}
-                    </span>
                   </div>
 
                   <h3
@@ -473,12 +460,8 @@ export const LandingView: React.FC = () => {
       {/* 7. FREQUENTLY ASKED QUESTIONS (FAQ & Knowledge Base) */}
       <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pt-6">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-xs font-semibold text-slate-700">
-            <HelpCircle className="w-3.5 h-3.5 text-slate-600" />
-            <span>Frequently Asked Questions · ተደጋጋሚ ጥያቄዎች</span>
-          </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Everything You Need to Know About Azwari (አዝዋሪ)
+            Frequently Asked Questions
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
             Straightforward details on sales agent commissions, 15-minute shelf-stock verification, direct merchant payments, and fulfillment.

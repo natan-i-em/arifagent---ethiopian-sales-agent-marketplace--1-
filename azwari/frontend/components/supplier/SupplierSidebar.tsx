@@ -150,7 +150,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge !== undefined && (
@@ -170,12 +170,12 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
 
       {/* Bottom Settlement Status Card */}
       <div className="pt-4 border-t border-slate-200/80 space-y-3">
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-2 shadow-xs">
+        <div className="p-3.5 rounded-2xl bg-slate-900 text-white space-y-2 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
               Agent Settlements
             </span>
-            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-semibold text-slate-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-md">
               Direct Transfer
             </span>
           </div>
@@ -189,7 +189,7 @@ export const SupplierSidebar: React.FC<SupplierSidebarProps> = ({
           </div>
           <button
             onClick={() => handleSelectTab('settlement')}
-            className="w-full text-center text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 underline pt-1 block"
+            className="w-full text-center text-[11px] font-semibold text-white hover:underline pt-1 block"
           >
             Open Commission Settlements →
           </button>

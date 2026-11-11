@@ -23,7 +23,6 @@ import {
   ArrowUpDown,
   LayoutGrid,
   List,
-  Sparkles,
   Archive,
   RefreshCw,
   Upload,
@@ -559,7 +558,7 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
             onClick={() => setShowAddModal(true)}
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0"
           >
-            <Plus className="w-4 h-4 text-amber-400" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Add New Product</span>
           </button>
         </div>
@@ -892,7 +891,7 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                       onClick={() => handleOpenEdit(prod)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold transition-colors shadow-2xs"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                      <Edit3 className="w-3.5 h-3.5 text-white" />
                       <span>Edit</span>
                     </button>
 
@@ -1171,9 +1170,9 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => uploadDataUrlToStorage(addForm.imageUrl, false)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
                         >
-                          <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                          <Upload className="w-3.5 h-3.5 text-slate-700" />
                           <span>Upload to Cloud</span>
                         </button>
                       )}
@@ -1516,9 +1515,9 @@ export const SupplierProductManager: React.FC<SupplierProductManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => uploadDataUrlToStorage(editForm.imageUrl || '', true)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
                         >
-                          <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                          <Upload className="w-3.5 h-3.5 text-slate-700" />
                           <span>Upload to Cloud</span>
                         </button>
                       )}

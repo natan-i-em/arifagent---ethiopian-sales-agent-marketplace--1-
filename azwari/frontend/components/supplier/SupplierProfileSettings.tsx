@@ -17,7 +17,6 @@ import {
   Lock, 
   ArrowUpRight, 
   Check, 
-  Sparkles,
   AlertCircle,
   X
 } from 'lucide-react';
@@ -278,7 +277,7 @@ export const SupplierProfileSettings: React.FC<SupplierProfileSettingsProps> = (
                   disabled={savingProfile}
                   className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
                 >
-                  <Save className="w-4 h-4 text-amber-400" />
+                  <Save className="w-4 h-4 text-white" />
                   <span>{savingProfile ? 'Saving...' : 'Save Profile Changes'}</span>
                 </button>
               </div>

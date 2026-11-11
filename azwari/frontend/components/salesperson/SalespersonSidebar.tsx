@@ -135,7 +135,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
               </p>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" /> {t('agentSidebar.verifiedAgent')}
+                  <ShieldCheck className="w-3 h-3 text-slate-700" /> {t('agentSidebar.verifiedAgent')}
                 </span>
               </div>
             </div>
@@ -172,7 +172,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
           }}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
         >
-          <Plus className="w-4 h-4 text-amber-400" />
+          <Plus className="w-4 h-4 text-white" />
           <span>{t('agentSidebar.createOrder')}</span>
         </button>
 
@@ -195,7 +195,7 @@ export const SalespersonSidebar: React.FC<SalespersonSidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge !== undefined && (

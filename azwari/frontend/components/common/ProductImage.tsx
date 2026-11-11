@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Package, Image as ImageIcon } from 'lucide-react';
 
 export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
   'Fashion & Leather': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80',

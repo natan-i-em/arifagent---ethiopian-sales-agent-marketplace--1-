@@ -22,7 +22,6 @@ import {
   CreditCard,
   ArrowRight,
   RefreshCw,
-  Sparkles,
   ExternalLink,
   Image as ImageIcon,
   X,

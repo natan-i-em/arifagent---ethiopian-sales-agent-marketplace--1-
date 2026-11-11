@@ -16,7 +16,6 @@ import {
   ShoppingBag, 
   Package, 
   MapPin,
-  Sparkles,
   ChevronRight
 } from 'lucide-react';
 
@@ -119,9 +118,6 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-slate-500">{t('modals.supplierInfo')}</span>
                   <strong className="text-xs text-slate-800">{product.supplierName}</strong>
-                  <span className="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
-                    {t('catalog.verified')}
-                  </span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 leading-snug">
                   {product.name}
@@ -152,7 +148,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 {/* Sales Agent Commission Highlight */}
                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <Coins className="w-4 h-4 text-emerald-600" />
+                    <Coins className="w-4 h-4 text-slate-700" />
                     <span className="text-xs font-bold text-slate-900">{t('catalog.yourCommission')}</span>
                   </div>
                   <div className="text-right">
@@ -229,7 +225,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 }}
                 className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
               >
-                <ShoppingBag className="w-4 h-4 text-amber-400" />
+                <ShoppingBag className="w-4 h-4 text-white" />
                 <span>{t('catalog.sellThis')}</span>
               </button>
             )}
