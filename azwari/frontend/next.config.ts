@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.azwari.com.et',
+          },
+        ],
+        destination: 'https://azwari.com.et/:path*',
+        permanent: true,
+      },
+      {
         source: '/order/:path*',
         destination: '/track',
         permanent: false,

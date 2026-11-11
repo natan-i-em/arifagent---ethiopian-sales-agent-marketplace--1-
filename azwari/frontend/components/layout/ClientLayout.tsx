@@ -125,7 +125,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-xs">
                   <Layers className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-bold text-slate-900 text-sm">Azwari</span>
+                <span className="font-bold text-slate-900 text-sm">Azwari (አዝዋሪ)</span>
                 <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
                   azwari.com.et
                 </span>
@@ -133,9 +133,6 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <p className="text-slate-500 leading-relaxed">
                 {t('footer.desc')}
               </p>
-              <div className="text-[11px] text-slate-400">
-                <span>📍 Addis Ababa, Ethiopia</span>
-              </div>
             </div>
 
             {/* Column 1: For agents */}
@@ -145,6 +142,16 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
+                  <Link href="/for-agents" className="hover:text-slate-900 transition-colors block">
+                    Sales Agent Guide
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/how-it-works" className="hover:text-slate-900 transition-colors block">
+                    {t('footer.howItWorks')}
+                  </Link>
+                </li>
+                <li>
                   <button
                     onClick={() => handleFooterRoleClick('salesperson')}
                     className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
@@ -152,16 +159,6 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <span>{t('footer.agentPortal')}</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
-                </li>
-                <li>
-                  <Link href="/#how-it-works" className="hover:text-slate-900 transition-colors block">
-                    {t('footer.howItWorks')}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/#calculator" className="hover:text-slate-900 transition-colors block">
-                    {t('footer.calc')}
-                  </Link>
                 </li>
               </ul>
             </div>
@@ -173,13 +170,9 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
-                  <button
-                    onClick={() => handleFooterRoleClick('supplier')}
-                    className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
-                  >
-                    <span>{t('footer.merchantConsole')}</span>
-                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
+                  <Link href="/for-merchants" className="hover:text-slate-900 transition-colors block">
+                    Merchant Overview
+                  </Link>
                 </li>
                 <li>
                   <Link
@@ -191,38 +184,36 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/#why-trust" className="hover:text-slate-900 transition-colors block">
-                    {t('footer.depositWorks')}
-                  </Link>
+                  <button
+                    onClick={() => handleFooterRoleClick('supplier')}
+                    className="hover:text-slate-900 transition-colors text-left flex items-center gap-1 group"
+                  >
+                    <span>{t('footer.merchantConsole')}</span>
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
                 </li>
               </ul>
             </div>
 
-            {/* Column 3: Help & Community */}
+            {/* Column 3: Company & Information */}
             <div className="space-y-2">
               <span className="font-bold text-slate-900 uppercase tracking-wider text-[11px] block">
-                {t('footer.help')}
+                Company &amp; Info
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li>
-                  <a href="mailto:support@azwari.com.et" className="hover:text-slate-900 transition-colors">
-                    support@azwari.com.et
-                  </a>
+                  <Link href="/about" className="hover:text-slate-900 transition-colors block">
+                    About Azwari (አዝዋሪ)
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="https://t.me/azwari"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-slate-900 transition-colors flex items-center gap-1"
-                  >
-                    <span>Telegram Official</span>
-                    <span className="text-[10px] text-emerald-600 font-semibold">@azwari</span>
-                  </a>
+                  <Link href="/faq" className="hover:text-slate-900 transition-colors block">
+                    FAQ &amp; Knowledge Base
+                  </Link>
                 </li>
                 <li>
-                  <Link href="/#faq" className="hover:text-slate-900 transition-colors">
-                    {t('footer.faq')}
+                  <Link href="/contact" className="hover:text-slate-900 transition-colors block">
+                    Contact Us
                   </Link>
                 </li>
               </ul>
@@ -231,7 +222,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
             <div>
-              © 2026 Azwari Technologies (azwari.com.et). All rights reserved. Addis Ababa, Ethiopia.
+              © 2026 Azwari (አዝዋሪ) · azwari.com.et. All rights reserved.
             </div>
             <div className="flex items-center gap-4 text-slate-500">
               <span className="hover:text-slate-900 cursor-pointer">{t('footer.terms')}</span>

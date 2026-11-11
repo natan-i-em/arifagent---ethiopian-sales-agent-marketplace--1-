@@ -1,42 +1,31 @@
-# Azwari (azwari.com.et)
+# Azwari (አዝዋሪ) - azwari.com.et
 
-> Azwari is Ethiopia's premier multi-party commission-based sales agent marketplace and escrow platform, connecting verified product merchants and wholesalers in Addis Ababa with independent commission-only sales agents.
+> Azwari (አዝዋሪ) is an Ethiopian commission-based sales marketplace connecting product merchants with independent sales agents.
 
-## Platform Summary
-- **Official Website**: https://azwari.com.et
-- **Headquarters**: Addis Ababa, Ethiopia
-- **Entity**: Azwari Technologies
-- **Business Model**: Commission-based marketplace (no fixed salaries, merchants pay commissions only upon confirmed delivery).
+## Overview
+- **Website**: https://azwari.com.et
+- **Languages**: English, Amharic (አማርኛ)
+- **Model**: Commission-only sales network (merchants set commission; agents earn when sales complete).
 - **Core Currency**: Ethiopian Birr (ETB).
-- **Payment & Escrow Rails**: Telebirr, Commercial Bank of Ethiopia (CBE), Awash Bank manual receipt verification and escrow protection.
 
-## Core Value Proposition
+## How Azwari Works
 
-### 1. For Independent Sales Agents
-- **Zero Starting Capital**: Agents can pick verified products from Merkato, Bole, and top Addis Ababa wholesalers, generate custom links, and sell via Telegram, TikTok, Instagram, WhatsApp, or face-to-face.
-- **Transparent Commissions**: Fixed per-unit or percentage commission set directly by the merchant.
-- **Automated Payouts**: Guaranteed commission payout into the agent's Telebirr or CBE bank account as soon as the customer confirms delivery.
+### 1. For Merchants
+- **Zero Fixed Sales Overhead**: Merchants list physical products and define the sales commission per unit or percentage.
+- **15-Minute In-Store Stock Confirmation**: Before payment instructions are provided to a customer, the merchant receives a notification to physically verify that the item is on the shelf within a 15-minute window. This avoids customer disappointment from walk-in inventory changes.
+- **Direct Payment**: Customers pay the merchant directly (via Telebirr, CBE bank transfer, or cash on delivery). Azwari does not hold customer funds.
 
-### 2. For Merchants & Wholesalers
-- **Risk-Free Scale**: Hire hundreds of active sales agents across Ethiopia without paying salaries or upfront advertising costs.
-- **15-Minute Pre-Payment Physical Stock Check**: When an agent closes a deal, the platform or Telegram bot prompts the merchant to confirm physical stock availability on the store shelf within a 15-minute countdown window BEFORE the customer receives a payment link. This prevents out-of-stock complaints from walk-in retail sales.
-- **Multi-Channel Management**: Confirm stock and verify payment slips seamlessly via Telegram Bot or the web console.
+### 2. For Sales Agents (አዝዋሪዎች)
+- **Zero Upfront Capital**: Agents select products from verified local merchants and market them to buyers in person or across social channels (Telegram, TikTok, WhatsApp).
+- **Guaranteed Commission**: Agents earn their designated commission once the customer confirms delivery of the goods.
 
-### 3. For End Customers
-- **Customer Shielding**: Customers never deal with out-of-stock frustration.
-- **Escrow Buyer Protection**: Customer payments are held safely in escrow. Funds are released to the supplier and agent only when the customer receives and inspects the physical item.
-- **Transparent Order Tracking**: Real-time SMS and web tracking with delivery PIN confirmation.
+### 3. For Customers
+- **Stock Guaranteed**: No orders proceed to payment until the merchant physically confirms availability.
+- **Direct Purchase**: Direct payment and transparent delivery confirmation.
 
-## Technical & Integration Details
-- Progressive Web App (PWA) with offline support and low-bandwidth optimization.
-- Telegram Bot integration for instantaneous merchant stock reservations and payment slip uploads.
-- Real-time Server-Sent Events (SSE) order status updates.
-- Robust security: SMS OTP verification, brute-force rate limiters, strict Ethiopian phone number formatting (+2519/09, +2517/07).
-
-## Contact & Links
-- Main Platform: https://azwari.com.et
-- Merchant / Agent Sign Up: https://azwari.com.et/signup
-- Sign In: https://azwari.com.et/signin
-- Telegram Official: https://t.me/azwari
-- Support Email: support@azwari.com.et
-
+## Key Links
+- Home: https://azwari.com.et
+- How It Works: https://azwari.com.et/how-it-works
+- For Merchants: https://azwari.com.et/for-merchants
+- For Sales Agents: https://azwari.com.et/for-agents
+- FAQ: https://azwari.com.et/faq

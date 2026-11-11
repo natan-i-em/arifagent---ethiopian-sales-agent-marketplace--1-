@@ -8,43 +8,24 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/track',
-          '/portal/',
-          '/api/',
-        ],
+        disallow: ['/api/'],
       },
       {
         userAgent: [
+          'OAI-SearchBot',
+          'Claude-SearchBot',
+          'Claude-User',
           'GPTBot',
-          'ChatGPT-User',
           'ClaudeBot',
-          'anthropic-ai',
           'Google-Extended',
           'PerplexityBot',
           'Applebot-Extended',
-          'cohere-ai',
-          'OAI-SearchBot',
-          'CCBot',
         ],
-        allow: [
-          '/',
-          '/llms.txt',
-          '/llms-full.txt',
-          '/signin',
-          '/signup',
-          '/offline',
-          '/forgot-password',
-        ],
-        disallow: [
-          '/track',
-          '/portal/',
-          '/api/',
-        ],
+        allow: '/',
+        disallow: ['/api/'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,
   };
 }
-

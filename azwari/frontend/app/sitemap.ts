@@ -5,36 +5,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
   return [
-    {
-      url: baseUrl,
-      lastModified,
-      changeFrequency: 'daily',
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/signin`,
-      lastModified,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/signup`,
-      lastModified,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/forgot-password`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/offline`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
+    { url: baseUrl, lastModified },
+    { url: `${baseUrl}/how-it-works`, lastModified },
+    { url: `${baseUrl}/for-merchants`, lastModified },
+    { url: `${baseUrl}/for-agents`, lastModified },
+    { url: `${baseUrl}/about`, lastModified },
+    { url: `${baseUrl}/contact`, lastModified },
+    { url: `${baseUrl}/faq`, lastModified },
   ];
 }
-
