@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: '%s | Azwari (አዝዋሪ)',
   },
   description:
-    'Commission-based sales marketplace connecting Ethiopian merchants with independent sales agents. Sell products with 15-minute stock confirmation and direct commission payouts.',
+    'Commission-based marketplace connecting Ethiopian merchants with independent sales agents. Sell products, earn commission, and get paid directly.',
   applicationName: 'Azwari (አዝዋሪ)',
   alternates: {
     canonical: './',
